@@ -4,8 +4,17 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
+// var User = require('./models/User')
+// var Datastore = require('nedb');
+
+// db = {}
+// db.users = new Datastore({ filename: './users.db', autoload: true });
+// db.users.insert(new User("martin", "martin"))
+// db.users.insert(new User("filip", "filip"))
+
+
 var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/api');
+var usersRouter = require('./routes/users');
 
 var app = express();
 
@@ -20,7 +29,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/api', usersRouter);
+app.use('/users', usersRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
