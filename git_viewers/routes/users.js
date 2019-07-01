@@ -5,12 +5,11 @@ var User = require('../models/User')
 var users = require('../controllers/UserCtrl')
 
 router.get('/', function(req, res, next) {
-  console.log("------------------\n");
-  // res.json(users.getAllUsers())
   users.getAllUsers().then((data) => {
-    res.json(data);
+    // res.json(data);
+    res.render('users', { title: 'USERS', users: data });
   });
-  console.log("------------------\n");
+  
 });
 
 module.exports = router;
