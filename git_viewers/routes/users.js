@@ -9,7 +9,7 @@ router.get('/', function(req, res, next) {
     // res.json(data);
     res.render('users', { title: 'USERS', users: data });
   });
-  
+
 });
 
 module.exports = router;
