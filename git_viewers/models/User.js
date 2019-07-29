@@ -1,8 +1,6 @@
-var Datastore = require('nedb');
+var Datastore = require('nedb-fsync');
 var path = require('path');
-db_location = path.join(__dirname, '..', 'users.db');
-db_location= db_location.replace(/\\/g,"/");
-users_db = new Datastore({ filename: db_location, autoload: true });
+users_db = new Datastore({ filename: 'users.db', autoload: true });
 
 // class User {
 //     constructor(username, password) {
