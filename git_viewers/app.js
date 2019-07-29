@@ -3,15 +3,9 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var mongoose = require('mongoose');
 
-// var User = require('./models/User')
-// var Datastore = require('nedb');
-
-// db = {}
-// db.users = new Datastore({ filename: './users.db', autoload: true });
-// db.users.insert(new User("martin", "martin"))
-// db.users.insert(new User("filip", "filip"))
-
+mongoose.connect(`mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@mongo/app?authSource=admin`, {useNewUrlParser: true});
 
 var indexRouter = require('./routes/index');
 
