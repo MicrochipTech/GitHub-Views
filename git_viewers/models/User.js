@@ -1,12 +1,10 @@
-var Datastore = require('nedb-fsync');
-var path = require('path');
-users_db = new Datastore({ filename: 'users.db', autoload: true });
+var mongoose = require('mongoose');
 
-// class User {
-//     constructor(username, password) {
-//         this.username = username
-//         this.password = password
-//     }
-// }
+var userSchema = new mongoose.Schema({
+    username: String,
+    githubId: String
+});
 
-module.exports = users_db
+var User = mongoose.model('User', userSchema);
+
+module.exports = User;

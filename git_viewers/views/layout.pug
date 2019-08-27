@@ -3,5 +3,14 @@ html
   head
     title= title
     link(rel='stylesheet', href='/stylesheets/style.css')
+
+    a(href='/auth/logout') Logout
+    |
+    |
+    a(class='button' href='/auth/login') Login
+    |
+    |
+    a(class='button', href='/') Homepage
+
   body
     block content
