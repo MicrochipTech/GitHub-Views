@@ -7,11 +7,16 @@ var mongoose = require('mongoose');
 var passportSetup = require('./config/passport-setup');
 var cookieSession = require('cookie-session');
 var passport = require('passport');
+var cron = require('node-cron');
 
 var authRoutes = require('./routes/auth-routes');
 var profileRoutes = require('./routes/profile-routes');
 
 mongoose.connect(`mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@mongo/app?authSource=admin`, {useNewUrlParser: true});
+
+cron.schedule('11 0 * * monday', () => {
+  console.log('running a task every monday at 11:00');
+});
 
 var indexRouter = require('./routes/index');
 
