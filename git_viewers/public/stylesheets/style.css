@@ -1,8 +1,36 @@
 body {
   padding: 50px;
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  background-color: #efefef;
+}
+
+h1, h2, h3 {
+  font-family: 'Fjalla One', sans-serif;
+}
+
+* {
+  font-family: 'Noto Sans', sans-serif;
 }
 
 a {
   color: #00B7FF;
+}
+
+h2.first-page-title {
+  margin-top: 20px;
+}
+
+nav ul {
+  padding: 0px;
+  margin: 0px;
+}
+
+nav ul li {
+  list-style-type: none;
+  padding: 10px;
+}
+
+nav ul li:hover {
+  background-color: #dfdfdf;
+  cursor: pointer;
 }

@@ -1,0 +1,31 @@
+extends layout
+
+block content
+  div.container
+    div.row
+      div.container-fluid
+        h3.float-left GitHub Views
+        span.float-right Logged in as <b>#{user.username}</b>
+        br
+        a.float-right(href="/auth/logout") Logout
+    hr
+    div.row
+      div.col-md-3
+        nav
+          ul
+            li My Repositories
+            li Shared Repositories
+            li Aggregate Charts
+      div.col-md-9
+        each val in data.myRepos
+          div.row
+            div.container-fluid
+              div.row
+                h3 #{val.repoName}
+            canvas(id=val.repoId)
+          br
+
+  script.
+    var data = !{JSON.stringify(data)}
+  script(src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0")
+  script(src="/main.js")
