@@ -1,5 +1,12 @@
 extends layout
 
 block content
-  h1= title
-  p Welcome to #{title}
+  center
+    img(src="/github-icon.png" height=200)
+    br
+    h2.first-page-title GitHub Views
+    a(class='btn btn-primary' href='/auth/github') Login With GitHub Account
+    br
+    br
+    p This tool will automatically collect views data for all the repositories you have access to.
+    p It will not be shared with anyone unless you give access to.
