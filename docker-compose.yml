@@ -22,6 +22,7 @@ services:
 
   web:
     build: ./git_viewers
+    restart: always
     command: npm start
     volumes:
       - ./git_viewers:/usr/app/
@@ -33,3 +34,5 @@ services:
       PORT: 8000
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
+
+  
