@@ -34,3 +34,16 @@ nav ul li:hover {
   background-color: #dfdfdf;
   cursor: pointer;
 }
+
+.share {
+  padding-right: 15px;
+}
+
+.share:hover{
+  cursor: pointer;
+  color: gray;
+}
+
+h3.repo-title{
+  word-break: break-all;
+}

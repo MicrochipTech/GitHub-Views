@@ -49,12 +49,16 @@ router.post('/share', function(req, res, next) {
   var repoId = req.body.repoId;
   var username = req.body.username;
 
-  userCtrl.getUserByUsername(username).then((userr) => {
-    userr.sharedRepos.push({"repoId": repoId});
-    userr.save();
+  userCtrl.getUserByUsername(username).then((user) => {
+    if(user){
+      console.log(user);
+      user.sharedRepos.push(repoId);
+      user.save();
+      res.send("Success sharing the repo!");
+    } else {
+      res.send("User not found!");
+    }
   });
-  
-  res.send("Success sharing the repo!");
 })
 
 module.exports = router;

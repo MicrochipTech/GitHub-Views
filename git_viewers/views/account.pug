@@ -13,19 +13,42 @@ block content
       div.col-md-3
         nav
           ul
-            li My Repositories
-            li Shared Repositories
-            li Aggregate Charts
+            li(id='myReposButton', onClick='divSwitcher(userRepositories)') My Repositories
+            li(id='sharedRepositoriesButton', onClick='divSwitcher(sharedRepositories)') Shared Repositories
+            li(id='aggregateChartsButton', onClick='divSwitcher(aggregateCharts)') Aggregate Charts
       div.col-md-9
-        each val in data.myRepos
-          div.row
-            div.container-fluid
-              div.row
-                h3 #{val.repoName}
-            canvas(id=val.repoId)
-          br
+        div(id='userRepositories')
+          each val in data.userRepos
+            div.row
+              div.container-fluid
+                div.row
+                  i(class='share fas fa-share-alt fa-2x', data-toggle='modal' data-repoId=val._id data-target='#exampleModal')
+                  h3.repo-title #{val.reponame}
+              canvas(id=val._id)
+            br
+            
+        div(id='sharedRepositories')
+          each val in data.sharedRepos
+            div.row
+              div.container-fluid
+                div.row
+                  h3.repo-title #{val.reponame}
+              canvas(id=val._id)
+            br
 
-  script.
-    var data = !{JSON.stringify(data)}
-  script(src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0")
-  script(src="/main.js")
+        div(id='aggregateCharts')
+          ul
+            li aggregateCharts
+
+        #exampleModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='exampleModalLabel' aria-hidden='true')
+          .modal-dialog(role='document')
+            .modal-content
+              .modal-header
+                h5#exampleModalLabel.modal-title Share this repository with:
+                button.close(type='button' data-dismiss='modal' aria-label='Close')
+                  span(aria-hidden='true') &times;
+              .modal-body
+                input#share-with.form-control(type='text', placeholder='username' name='name')
+              .modal-footer
+                button.btn.btn-secondary(type='button' data-dismiss='modal') Close
+                button.btn.btn-primary(type='button', data-dismiss='modal', onClick='shareRepository()') Share

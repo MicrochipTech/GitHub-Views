@@ -9,8 +9,16 @@ module.exports = {
         return RepositoryModel.findById(id);
     },
 
+    getAllReposByUserId: (userId) => {
+        return RepositoryModel.find({user_id: userId});
+    },
+
     getAllWithPopulate: (str) => {
         return RepositoryModel.find().populate(str);
+    },
+
+    getRepoByFullname: (fullname) => {
+        return RepositoryModel.findOne({reponame: fullname});
     },
 
     create: (user_id, reponame, count, uniques, views) => {

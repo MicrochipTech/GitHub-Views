@@ -4,9 +4,7 @@ var userSchema = new mongoose.Schema({
     username: String,
     githubId: String,
     token: String,
-    sharedRepos: [{
-        repoId: String
-    }]
+    sharedRepos: [{type: mongoose.Schema.Types.ObjectId, ref: 'Repository'}]
 });
 
 var User = mongoose.model('User', userSchema);

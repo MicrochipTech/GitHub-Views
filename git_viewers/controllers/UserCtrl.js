@@ -21,6 +21,10 @@ module.exports = {
         return UserModel.findOneAndUpdate({githubId: githubId}, {$set: {token: token}});
     },
 
+    getUserByIdWithPopulate: (id, str) => {
+        return UserModel.findById(id).populate(str);
+    },
+
     create: (username, githubId, token) => {
         var user = new UserModel({
             username: username,
