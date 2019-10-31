@@ -6,7 +6,7 @@ html
     link(rel='stylesheet', href='/stylesheets/style.css')
     link(rel='stylesheet', href='https://use.fontawesome.com/releases/v5.7.2/css/all.css')
     link(href="https://fonts.googleapis.com/css?family=Fjalla+One|Noto+Sans:400,700&display=swap" rel="stylesheet")
-    
+
   body
     block content
 
@@ -15,5 +15,6 @@ html
     script(src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js", integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM", crossorigin="anonymous")
     script.
       var data = !{JSON.stringify(data)}
+    script(src="/moment.min.js")
     script(src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0")
     script(src="/main.js")

@@ -10,13 +10,13 @@ block content
         a.float-right(href="/auth/logout") Logout
     hr
     div.row
-      div.col-md-3
+      div.col-md-2
         nav
           ul
             li(id='myReposButton', onClick='divSwitcher(userRepositories)') My Repositories
             li(id='sharedRepositoriesButton', onClick='divSwitcher(sharedRepositories)') Shared Repositories
             li(id='aggregateChartsButton', onClick='divSwitcher(aggregateCharts)') Aggregate Charts
-      div.col-md-9
+      div.col-md-10
         div(id='userRepositories')
           each val in data.userRepos
             div.row
@@ -26,7 +26,7 @@ block content
                   h3.repo-title #{val.reponame}
               canvas(id=val._id)
             br
-            
+
         div(id='sharedRepositories')
           each val in data.sharedRepos
             div.row
