@@ -47,3 +47,7 @@ nav ul li:hover {
 h3.repo-title{
   word-break: break-all;
 }
+
+div.container {
+  max-width: 1400px;
+}

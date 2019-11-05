@@ -11,4 +11,6 @@ router.get('/all', function(req, res, next) {
 
 });
 
+router.get('/startsWith', userCtrl.getWhereUsernameStartsWith);
+
 module.exports = router;
