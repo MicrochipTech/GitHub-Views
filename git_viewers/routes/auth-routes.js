@@ -1,5 +1,5 @@
-var router = require('express').Router();
-var passport = require('passport');
+const router = require('express').Router();
+const passport = require('passport');
 
 /* Auth login */
 router.get('/login', (req, res) => {
@@ -15,13 +15,13 @@ router.get('/logout', (req, res) => {
 
 /* Auth with GitHub */
 router.get('/github', passport.authenticate('github', {
-    scope: ['user', 'repo']
+    scope: ['user', 'repo'],
 }));
 
 /* Callback route */
 router.get('/github/redirect', passport.authenticate('github'), (req, res) => {
-    //res.send(req.user);
-    res.redirect('/')
+    // res.send(req.user);
+    res.redirect('/');
 });
 
 module.exports = router;

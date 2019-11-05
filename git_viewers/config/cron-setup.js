@@ -1,20 +1,18 @@
-var cron = require('node-cron');
-var repositoryCtrl = require('../controllers/RepositoryCtrl');
-var userCtrl = require('../controllers/UserCtrl');
-var axios = require('axios');
-var fs = require('fs');
+const cron = require('node-cron');
+const axios = require('axios');
+const fs = require('fs');
+const repositoryCtrl = require('../controllers/RepositoryCtrl');
+const userCtrl = require('../controllers/UserCtrl');
 
 function test() {
+    const rawdata = fs.readFileSync('/usr/app/config/dat.json');
+    const data = JSON.parse(rawdata);
 
-    let rawdata = fs.readFileSync('/usr/app/config/dat.json');
-    let data = JSON.parse(rawdata);
+    repositoryCtrl.getRepoById('5da47a339c48760059db7363').then((testRepo) => {
+        let viewsToUpdate = data.views;
 
-    repositoryCtrl.getRepoById('5da47a339c48760059db7363').then( (testRepo) => {
-        
-        viewsToUpdate = data.views;
-        if(testRepo.count != 0){
-            viewsToUpdate = data.views.filter(info => 
-                (new Date(info.timestamp)) > (testRepo.views[testRepo.views.length - 1].timestamp));
+        if (testRepo.count !== 0) {
+            viewsToUpdate = data.views.filter((info) => (new Date(info.timestamp)) > (testRepo.views[testRepo.views.length - 1].timestamp));
         }
 
         for (let view of viewsToUpdate) {
@@ -28,7 +26,7 @@ function test() {
             testRepo.uniques += viewData.uniques;
             testRepo.views.push(viewData);
         }
-        
+
         testRepo.save();
     });
 }

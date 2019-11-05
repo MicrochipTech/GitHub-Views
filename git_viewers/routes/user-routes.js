@@ -1,15 +1,7 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const userCtrl = require('../controllers/UserCtrl');
 
-var userCtrl = require('../controllers/UserCtrl');
-
-router.get('/all', function(req, res, next) {
-  userCtrl.getAll().then((data) => {
-    // res.json(data);
-    res.render('users', { title: 'USERS', users: data });
-  });
-
-});
+const router = express.Router();
 
 router.get('/startsWith', userCtrl.getWhereUsernameStartsWith);
 

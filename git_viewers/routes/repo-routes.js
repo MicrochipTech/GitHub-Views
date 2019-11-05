@@ -1,64 +1,19 @@
-var router = require('express').Router();
-var axios = require('axios');
-var userCtrl = require('../controllers/UserCtrl');
-var repositoryCtrl = require('../controllers/RepositoryCtrl');
+const router = require('express').Router();
+const userCtrl = require('../controllers/UserCtrl');
 
-router.get('/', (req, res) => {
-  repositoryCtrl.getAllWithPopulate('user_id').then((data) => {
-    res.send(data.map(repo => repo['user_id'].username));
-  });
-});
+router.post('/share', (req, res) => {
+    const { repoId, username } = req.body;
 
-router.get('/fetch', (req, res) => {
-  axios({
-      url: 'http://localhost:8082/data.json',
-  })
-  .then(function (response) {
-      console.log(response.toJSON());
-  })
-  .catch(function (error) {
-  console.log(error);
-  })
-  .then(function () {
-  // always executed
-  });
-});
-
-/* Get repos */
-router.get('/names', (req, res) => {
-  userCtrl.getUserById(req.user.id).then((user) => {
-    axios({
-      url: 'https://api.github.com/users/' + user.username +'/repos',
-      headers: {'Authorization': 'token ' + user.token}
-    })
-    .then(function (response) {
-      var name_arr = response.data.map(repo => repo['name']);
-      res.send(name_arr);
-    })
-    .catch(function (error) {
-      console.log(error);
-    })
-    .then(function () {
-      // always executed
+    userCtrl.getUserByUsername(username).then((user) => {
+        if (user) {
+            console.log(user);
+            user.sharedRepos.push(repoId);
+            user.save();
+            res.send('Success sharing the repo!');
+        } else {
+            res.send('User not found!');
+        }
     });
-  });
 });
-
-router.post('/share', function(req, res, next) {
-
-  var repoId = req.body.repoId;
-  var username = req.body.username;
-
-  userCtrl.getUserByUsername(username).then((user) => {
-    if(user){
-      console.log(user);
-      user.sharedRepos.push(repoId);
-      user.save();
-      res.send("Success sharing the repo!");
-    } else {
-      res.send("User not found!");
-    }
-  });
-})
 
 module.exports = router;
