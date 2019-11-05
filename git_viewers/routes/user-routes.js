@@ -1,7 +1,5 @@
-const express = require('express');
+const router = require('express').Router();
 const userCtrl = require('../controllers/UserCtrl');
-
-const router = express.Router();
 
 router.get('/startsWith', userCtrl.getWhereUsernameStartsWith);
 

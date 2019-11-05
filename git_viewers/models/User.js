@@ -1,12 +1,12 @@
-var mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
-var userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
     username: String,
     githubId: String,
     token: String,
-    sharedRepos: [{type: mongoose.Schema.Types.ObjectId, ref: 'Repository'}]
+    sharedRepos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Repository' }],
 });
 
-var User = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
 
 module.exports = User;

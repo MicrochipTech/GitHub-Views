@@ -1,19 +1,6 @@
 const router = require('express').Router();
-const userCtrl = require('../controllers/UserCtrl');
+const repoCtrl = require('../controllers/RepositoryCtrl');
 
-router.post('/share', (req, res) => {
-    const { repoId, username } = req.body;
-
-    userCtrl.getUserByUsername(username).then((user) => {
-        if (user) {
-            console.log(user);
-            user.sharedRepos.push(repoId);
-            user.save();
-            res.send('Success sharing the repo!');
-        } else {
-            res.send('User not found!');
-        }
-    });
-});
+router.post('/share', repoCtrl.share);
 
 module.exports = router;

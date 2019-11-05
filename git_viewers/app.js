@@ -5,20 +5,16 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const mongoose = require('mongoose');
 const cookieSession = require('cookie-session');
-const passportSetup = require('./config/passport-setup');
-const cronSetup = require('./config/cron-setup');
 const passport = require('passport');
-const cron = require('node-cron');
+
+require('./config/passport-setup');
+require('./config/cron-setup');
 
 const authRoutes = require('./routes/auth-routes');
 const repoRoutes = require('./routes/repo-routes');
 const userRoutes = require('./routes/user-routes');
 
 mongoose.connect(`mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@mongo/app?authSource=admin`, { useNewUrlParser: true });
-
-// cron.schedule('11 0 * * monday', () => {
-//   console.log('running a task every monday at 11:00');
-// });
 
 const indexRouter = require('./routes/index');
 

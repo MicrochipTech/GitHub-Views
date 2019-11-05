@@ -1,27 +1,9 @@
 const router = require('express').Router();
-const passport = require('passport');
+const authCtrl = require('../controllers/AuthCtrl');
 
-/* Auth login */
-router.get('/login', (req, res) => {
-    res.render('login');
-});
-
-/* Auth logout */
-router.get('/logout', (req, res) => {
-    // handle with passport
-    req.logout();
-    res.redirect('/');
-});
-
-/* Auth with GitHub */
-router.get('/github', passport.authenticate('github', {
-    scope: ['user', 'repo'],
-}));
-
-/* Callback route */
-router.get('/github/redirect', passport.authenticate('github'), (req, res) => {
-    // res.send(req.user);
-    res.redirect('/');
-});
+router.get('/login', authCtrl.login);
+router.get('/logout', authCtrl.logout);
+router.get('/github', authCtrl.github);
+router.get('/github/redirect', authCtrl.githubCallback, authCtrl.redirectHome);
 
 module.exports = router;

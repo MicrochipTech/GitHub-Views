@@ -4,14 +4,15 @@ const axios = require('axios');
 const userCtrl = require('../controllers/UserCtrl');
 const repositoryCtrl = require('../controllers/RepositoryCtrl');
 
+const UserModel = require('../models/User');
+
 passport.serializeUser((user, done) => {
     done(null, user.id);
 });
 
-passport.deserializeUser((id, done) => {
-    userCtrl.getUserById(id).then((user) => {
-        done(null, user);
-    });
+passport.deserializeUser(async (id, done) => {
+    const user = await UserModel.findById(id);
+    done(null, user);
 });
 
 passport.use(
