@@ -35,6 +35,9 @@ function test() {
 
 function updateRepos() {
 
+    var current_time = new Date();
+    current_time.setHours(0, 0, 0, 0);
+
     var one_week_ago = new Date();
     one_week_ago.setHours(0, 0, 0, 0);
     one_week_ago.setDate(one_week_ago.getDate() - 7);
@@ -47,19 +50,18 @@ function updateRepos() {
                 headers: {'Authorization': 'token ' + repoEntry.user_id.token}
             })
             .then(function (response) {
-
                 time = one_week_ago;
-                /* TODO time index */
 
                 if(repoEntry.views.length != 0){
                     time = repoEntry.views[repoEntry.views.length - 1].timestamp;
                     time.setDate(one_week_ago.getDate() + 1);
-                }
+                } 
                 
                 var viewsToUpdate = response.data['views'].filter(info => (new Date(info.timestamp)) >= time);
+                days = (time.getTime() - current_time.getTime()) / (1000 * 3600 * 24);
                 var index = 0;
 
-                while(index < 7) {
+                while(index < days) {
                     if(viewsToUpdate[index] == undefined) {
                         viewsToUpdate.push({ timestamp: time.toISOString(), count: 0, uniques: 0});
                     } else if(time < new Date(viewsToUpdate[index].timestamp)){
