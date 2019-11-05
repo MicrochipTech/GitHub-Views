@@ -9,18 +9,21 @@ data.userRepos.forEach(repo => {
 
       // The data for our dataset
       data: {
-          labels: repo.views.map(h=>h.timestamp),
-          datasets: [{
-              label: 'Unique Views',
-              backgroundColor: 'rgb(0,0,0, 0)',
-              borderColor: '#FDCB00',
-              data: repo.views.map(h=>h.uniques),
-          }, {
-              label: 'Views',
-              backgroundColor: 'rgb(0,0,0, 0)',
-              borderColor: '#603A8B',
-              data: repo.views.map(h=>h.count),
-          }]
+        labels: repo.views.map(h=>h.timestamp),
+        datasets: [
+          {
+            label: 'Unique Views',
+            backgroundColor: 'rgb(0,0,0, 0)',
+            borderColor: '#FDCB00',
+            data: repo.views.map(h=>h.uniques),
+          }, 
+          {
+            label: 'Views',
+            backgroundColor: 'rgb(0,0,0, 0)',
+            borderColor: '#603A8B',
+            data: repo.views.map(h=>h.count),
+          }
+        ]
       },
 
       // Configuration options go here

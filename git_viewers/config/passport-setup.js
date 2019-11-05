@@ -35,12 +35,30 @@ passport.use(
                             headers: {'Authorization': 'token ' + user.token}
                         })
                         .then(function (response) {
+                            var time = new Date();
+                            time.setHours(0, 0, 0, 0);
+                            time.setDate(time.getDate() - 14);
+
+                            views = response.data['views'];
+                            var index = 0;
+
+                            while(index < 14) {
+                                if(views[index] == undefined) {
+                                    views.push({ timestamp: time.toISOString(), count: 0, uniques: 0});
+                                } else if(time < new Date(views[index].timestamp)){
+                                    views.splice(index, 0, { timestamp: time.toISOString(), count: 0, uniques: 0});
+                                }
+
+                                time.setDate(time.getDate() + 1);
+                                ++index;
+                            }
+
                             repositoryCtrl.create(
                                 user._id,
                                 reponame,
                                 response.data['count'],
                                 response.data['uniques'],
-                                response.data['views']);
+                                views);
                         })
                         .catch(function (error) {
                         console.log(error);
