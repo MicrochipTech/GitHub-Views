@@ -90,7 +90,7 @@ data.sharedRepos.forEach(repo => {
 
   var chart = new Chart(ctx, {
       // The type of chart we want to create
-      type: 'line',
+      type: 'LineWithLine',
 
       // The data for our dataset
       data: {
@@ -194,7 +194,7 @@ function addCustomChart() {
 
   chartToEdit = new Chart(ctx, {
       // The type of chart we want to create
-      type: 'line',
+      type: 'LineWithLine',
 
       // Configuration options go here
       options: chartOptions
