@@ -22,7 +22,10 @@ block content
             div.row
               div.container-fluid
                 div.row
-                  i(class='share fas fa-share-alt fa-2x', data-toggle='modal' data-repoId=val._id data-target='#exampleModal')
+                  button(type="button" class="margin-10 add-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#addModal')
+                    i(class='fas fa-plus')
+                  button(type="button" class="margin-10 share-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#shareModal')
+                    i(class='fas fa-share-alt')
                   h3.repo-title #{val.reponame}
               canvas(id=val._id)
             br
@@ -32,19 +35,22 @@ block content
             div.row
               div.container-fluid
                 div.row
+                  button(type="button" class="margin-10 add-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#addModal')
+                    i(class='fas fa-plus')
                   h3.repo-title #{val.reponame}
               canvas(id=val._id)
             br
 
         div(id='aggregateCharts')
-          ul
-            li aggregateCharts
+          div(id='customCharts')
+          button.btn-block(type="button" class="btn btn-outline-dark" onClick='addCustomChart()')
+            i(class="fas fa-chart-bar") &nbsp; Add new custom chart
 
-        #exampleModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='exampleModalLabel' aria-hidden='true')
+        #shareModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='shareModalLabel' aria-hidden='true')
           .modal-dialog(role='document')
             .modal-content
               .modal-header
-                h5#exampleModalLabel.modal-title Share this repository with:
+                h5#shareModalLabel.modal-title Share this repository with:
                 button.close(type='button' data-dismiss='modal' aria-label='Close')
                   span(aria-hidden='true') &times;
               .modal-body
@@ -52,3 +58,15 @@ block content
               .modal-footer
                 button.btn.btn-secondary(type='button' data-dismiss='modal') Close
                 button.btn.btn-primary(type='button', data-dismiss='modal', onClick='shareRepository()') Share
+
+        #addModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='addModalLabel' aria-hidden='true')
+          .modal-dialog(role='document')
+            .modal-content
+              .modal-header
+                h5#addModalLabel.modal-title Aggregate this to:
+                button.close(type='button' data-dismiss='modal' aria-label='Close')
+                  span(aria-hidden='true') &times;
+              .modal-body
+                div.btn-group-vertical(id='modalChartList' style="width: 100%")
+              .modal-footer
+                button.btn.btn-primary(type='button', data-dismiss='modal') Done

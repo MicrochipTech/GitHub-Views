@@ -44,6 +44,23 @@ nav ul li:hover {
   color: gray;
 }
 
+.add {
+  padding-right: 15px;
+}
+
+.padding-15{
+  padding-right: 15px;
+}
+
+.margin-10{
+  margin-right: 10px;
+}
+
+.add:hover{
+  cursor: pointer;
+  color: gray;
+}
+
 h3.repo-title{
   word-break: break-all;
 }
