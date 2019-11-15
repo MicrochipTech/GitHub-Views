@@ -1,5 +1,26 @@
 var repoId = null;
 
+chartOptions = {
+  tooltips: {
+    intersect: false,
+    mode: 'label',
+    position: 'nearPointer',
+  },
+  scales: {
+    xAxes: [{
+      ticks: {
+        autoSkip: true,
+        maxTicksLimit: 8
+      }
+    }],
+  },
+  elements: {
+    line: {
+      tension: 0
+    }
+  }
+}
+
 Chart.defaults.LineWithLine = Chart.defaults.line;
 Chart.controllers.LineWithLine = Chart.controllers.line.extend({
    draw: function(ease) {
@@ -60,26 +81,7 @@ data.userRepos.forEach(repo => {
       },
 
       // Configuration options go here
-      options: {
-        tooltips: {
-        intersect: false,
-        mode: 'label',
-        position: 'nearPointer',
-    },
-        scales: {
-          xAxes: [{
-              ticks: {
-                  autoSkip: true,
-                  maxTicksLimit: 8
-              }
-          }],
-        },
-        elements: {
-          line: {
-              tension: 0
-          }
-        }
-      }
+      options: chartOptions
   });
 });
 
@@ -107,13 +109,7 @@ data.sharedRepos.forEach(repo => {
       },
 
       // Configuration options go here
-      options: {
-        elements: {
-          line: {
-              tension: 0
-          }
-        }
-      }
+      options: chartOptions
   });
 });
 
@@ -166,7 +162,7 @@ function addCustomChart() {
   div.id = nameofChart;
 
   var rawDiv = document.createElement('div');
-  rawDiv.className = 'raw';
+  rawDiv.className = 'row';
 
   var h3 = document.createElement('h3');
   h3.innerHTML = nameofChart;
@@ -201,26 +197,7 @@ function addCustomChart() {
       type: 'line',
 
       // Configuration options go here
-      options: {
-        tooltips: {
-        intersect: false,
-        mode: 'label',
-        position: 'nearPointer',
-    },
-        scales: {
-          xAxes: [{
-              ticks: {
-                  autoSkip: true,
-                  maxTicksLimit: 8
-              }
-          }],
-        },
-        elements: {
-          line: {
-              tension: 0
-          }
-        }
-      }
+      options: chartOptions
   });
 
   /* Local save for the new chart */

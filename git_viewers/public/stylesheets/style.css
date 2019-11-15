@@ -63,6 +63,8 @@ nav ul li:hover {
 
 h3.repo-title{
   word-break: break-all;
+  margin-top: auto;
+  margin-bottom: auto;
 }
 
 div.container {
