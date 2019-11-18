@@ -19,6 +19,8 @@ services:
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: 190e544f8382a0b1090ecbe3ddf8422a
 
   web:
     build: ./git_viewers
@@ -34,5 +36,3 @@ services:
       PORT: 8000
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
-
-  
