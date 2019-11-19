@@ -6,19 +6,24 @@ const logger = require('morgan');
 const mongoose = require('mongoose');
 const cookieSession = require('cookie-session');
 const passport = require('passport');
-
+//const cron = require('node-cron');
 require('./config/passport-setup');
 require('./config/cron-setup');
 
 const authRoutes = require('./routes/auth-routes');
 const repoRoutes = require('./routes/repo-routes');
+//const profileRoutes = require('./routes/profile-routes');
 const userRoutes = require('./routes/user-routes');
 
 mongoose.connect(`mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@mongo/app?authSource=admin`, { useNewUrlParser: true });
 
-const indexRouter = require('./routes/index');
+// cron.schedule('11 0 * * monday', () => {
+//   console.log('running a task every monday at 11:00');
+// });
 
-const app = express();
+var indexRouter = require('./routes/index');
+
+var app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -38,6 +43,7 @@ app.use(passport.session());
 
 app.use('/', indexRouter);
 app.use('/auth', authRoutes);
+//app.use('/profile', profileRoutes);
 app.use('/repo', repoRoutes);
 app.use('/user', userRoutes);
 
@@ -47,7 +53,7 @@ app.use((req, res, next) => {
 });
 
 // error handler
-app.use((err, req, res) => {
+app.use((err, req, res, next) => {
     // set locals, only providing error in development
     res.locals.message = err.message;
     res.locals.error = req.app.get('env') === 'development' ? err : {};
