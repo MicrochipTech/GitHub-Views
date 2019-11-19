@@ -1,11 +1,10 @@
-var mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
-var repositorySchema = new mongoose.Schema({
-    userId: userId,
-    
-    repoId: [{type: mongoose.Schema.Types.ObjectId, ref: 'Repository'}]
+const aggregateChartSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    repoId: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Repository' }],
 });
 
-var Chart = mongoose.model('Chart', chartSchema);
+const Chart = mongoose.model('Chart', aggregateChartSchema);
 
 module.exports = Chart;

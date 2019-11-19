@@ -1,24 +1,9 @@
-var RepositoryModel = require('../models/Repository.js');
+const RepositoryModel = require('../models/Repository.js');
+const userCtrl = require('../controllers/UserCtrl');
 
 module.exports = {
-    getAll: () => {
-        return RepositoryModel.find();
-    },
-
-    getRepoById: (id) => {
-        return RepositoryModel.findById(id);
-    },
-
-    getAllReposByUserId: (userId) => {
-        return RepositoryModel.find({user_id: userId});
-    },
-
     getAllWithPopulate: (str) => {
         return RepositoryModel.find().populate(str);
-    },
-
-    getRepoByFullname: (fullname) => {
-        return RepositoryModel.findOne({reponame: fullname});
     },
 
     create: (user_id, reponame, count, uniques, views) => {
@@ -30,5 +15,20 @@ module.exports = {
             views: views
         });
         return repository.save();
+    },
+
+    share: (req, res) => {
+        const { repoId, username } = req.body;
+
+        userCtrl.getUserByUsername(username).then((user) => {
+            if (user) {
+                console.log(user);
+                user.sharedRepos.push(repoId);
+                user.save();
+                res.send('Success sharing the repo!');
+            } else {
+                res.send('User not found!');
+            }
+        });
     },
 };

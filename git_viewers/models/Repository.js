@@ -1,17 +1,17 @@
-var mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
-var repositorySchema = new mongoose.Schema({
-    user_id: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+const repositorySchema = new mongoose.Schema({
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     reponame: String,
     count: Number,
     uniques: Number,
     views: [{
         timestamp: Date,
         count: Number,
-        uniques: Number
-    }]
+        uniques: Number,
+    }],
 });
 
-var Repository = mongoose.model('Repository', repositorySchema);
+const Repository = mongoose.model('Repository', repositorySchema);
 
 module.exports = Repository;

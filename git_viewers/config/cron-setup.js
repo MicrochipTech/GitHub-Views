@@ -1,8 +1,8 @@
-var cron = require('node-cron');
-var repositoryCtrl = require('../controllers/RepositoryCtrl');
-var userCtrl = require('../controllers/UserCtrl');
-var axios = require('axios');
-var fs = require('fs');
+const cron = require('node-cron');
+const axios = require('axios');
+const fs = require('fs');
+const repositoryCtrl = require('../controllers/RepositoryCtrl');
+const userCtrl = require('../controllers/UserCtrl');
 
 function updateRepos() {
 
