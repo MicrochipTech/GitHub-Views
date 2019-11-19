@@ -1,69 +1,79 @@
 const cron = require('node-cron');
 const axios = require('axios');
-const fs = require('fs');
 const repositoryCtrl = require('../controllers/RepositoryCtrl');
-const userCtrl = require('../controllers/UserCtrl');
 
 function updateRepos() {
+    const currentTime = new Date();
+    currentTime.setHours(0, 0, 0, 0);
 
-    var current_time = new Date();
-    current_time.setHours(0, 0, 0, 0);
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setHours(0, 0, 0, 0);
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    var one_week_ago = new Date();
-    one_week_ago.setHours(0, 0, 0, 0);
-    one_week_ago.setDate(one_week_ago.getDate() - 7);
+    repositoryCtrl.getAllWithPopulate('user_id').then((repos) => {
+        for (let repoIndex = 0; repoIndex < repos.length; repoIndex += 1) {
+            const repoEntry = repos[repoIndex];
 
-    repositoryCtrl.getAllWithPopulate('User').then((repos) => {
-        
-        for (let repoEntry of repos) {
-            console.log(repoEntry.reponame + " " + repoEntry.user_id.token);
             axios({
-                url: 'https://api.github.com/repos/' + repoEntry.reponame + '/traffic/views',
-                headers: {'Authorization': 'token ' + repoEntry.user_id.token}
+                url: `https://api.github.com/repos/${repoEntry.reponame}/traffic/views`,
+                headers: { Authorization: `token ${repoEntry.user_id.token}` },
             })
-            .then(function (response) {
-                time = one_week_ago;
+                .then((response) => {
+                    let timeIndex = oneWeekAgo;
 
-                if(repoEntry.views.length != 0){
-                    time = repoEntry.views[repoEntry.views.length - 1].timestamp;
-                    time.setDate(one_week_ago.getDate() + 1);
-                } 
-                
-                var viewsToUpdate = response.data['views'].filter(info => (new Date(info.timestamp)) >= time);
-                days = (time.getTime() - current_time.getTime()) / (1000 * 3600 * 24);
-                var index = 0;
-
-                while(index < days) {
-                    if(viewsToUpdate[index] == undefined) {
-                        viewsToUpdate.push({ timestamp: time.toISOString(), count: 0, uniques: 0});
-                    } else if(time < new Date(viewsToUpdate[index].timestamp)){
-                        viewsToUpdate.splice(index, 0, { timestamp: time.toISOString(), count: 0, uniques: 0});
+                    if (repoEntry.views.length !== 0) {
+                        timeIndex = repoEntry.views[repoEntry.views.length - 1].timestamp;
+                        timeIndex.setDate(oneWeekAgo.getDate() + 1);
                     }
 
-                    time.setDate(time.getDate() + 1);
-                    ++index;
-                }
+                    const viewsToUpdate = response.data.views.filter(
+                        (info) => (new Date(info.timestamp)) >= timeIndex,
+                    );
+                    const days = (timeIndex.getTime() - currentTime.getTime()) / (1000 * 3600 * 24);
 
-                for (let view of viewsToUpdate) {
+                    let index = 0;
 
-                    var viewData = {
-                        timestamp: new Date(view.timestamp),
-                        count: Number(view.count),
-                        uniques: Number(view.uniques)
+                    while (index < days) {
+                        if (viewsToUpdate[index] === undefined) {
+                            viewsToUpdate.push({
+                                timestamp: timeIndex.toISOString(),
+                                count: 0,
+                                uniques: 0,
+                            });
+                        } else if (timeIndex < new Date(viewsToUpdate[index].timestamp)) {
+                            viewsToUpdate.splice(index, 0, {
+                                timestamp: timeIndex.toISOString(),
+                                count: 0,
+                                uniques: 0,
+                            });
+                        }
+
+                        timeIndex.setDate(timeIndex.getDate() + 1);
+                        index += 1;
                     }
 
-                    repoEntry.count += viewData.count;
-                    repoEntry.uniques += viewData.uniques;
-                    repoEntry.views.push(viewData);
-                }
-                repoEntry.save();
-            })
-            .catch(function (error) {
-            //console.log(error);
-            })
-            .then(function () {
-            // always executed
-            });
+                    for (let viewIndex = 0; viewIndex < viewsToUpdate.length; viewIndex += 1) {
+                        const view = viewsToUpdate[viewIndex];
+
+                        const viewData = {
+                            timestamp: new Date(view.timestamp),
+                            count: Number(view.count),
+                            uniques: Number(view.uniques),
+                        };
+
+                        repoEntry.count += viewData.count;
+                        repoEntry.uniques += viewData.uniques;
+                        repoEntry.views.push(viewData);
+                    }
+
+                    repoEntry.save();
+                })
+                .catch((error) => {
+                    console.log(error);
+                })
+                .then(() => {
+                    // always executed
+                });
         }
     });
 }
