@@ -22,11 +22,13 @@ block content
             div.row
               div.container-fluid
                 div.row
-                  button(type="button" class="margin-10 add-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#addModal')
-                    i(class='fas fa-plus')
-                  button(type="button" class="margin-10 share-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#shareModal')
-                    i(class='fas fa-share-alt')
                   h3.repo-title #{val.reponame}
+                  div.actionButtons
+                    button(type="button" class="margin-8 add-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#addModal')
+                      i(class='fas fa-plus')
+                    button(type="button" class="margin-8 share-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#shareModal')
+                      i(class='fas fa-share-alt')
+                  
               canvas(id=val._id)
             br
 
@@ -35,16 +37,18 @@ block content
             div.row
               div.container-fluid
                 div.row
-                  button(type="button" class="margin-10 add-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#addModal')
-                    i(class='fas fa-plus')
                   h3.repo-title #{val.reponame}
+                  div.actionButtons
+                    button(type="button" class="margin-8 add-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#addModal')
+                      i(class='fas fa-plus')
+                  
               canvas(id=val._id)
             br
 
         div(id='aggregateCharts')
           div(id='customCharts')
           button.btn-block(type="button" class="btn btn-outline-dark" onClick='addCustomChart()')
-            i(class="fas fa-chart-bar") &nbsp; Add new custom chart
+            i(class="fas fa-chart-bar") &nbsp; Add new aggregate chart
 
         #shareModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='shareModalLabel' aria-hidden='true')
           .modal-dialog(role='document')

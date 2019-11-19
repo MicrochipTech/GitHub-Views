@@ -26,7 +26,7 @@ router.get('/', function(req, res, next) {
           userRepos: userRepos,
           sharedRepos: data.sharedRepos
         };
-        console.log(dataToPlot);
+        
         res.render('account', {user: req.user, data: dataToPlot});
       });
     });

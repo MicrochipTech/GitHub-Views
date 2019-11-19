@@ -52,8 +52,8 @@ nav ul li:hover {
   padding-right: 15px;
 }
 
-.margin-10{
-  margin-right: 10px;
+.margin-8{
+  margin-right: 8px;
 }
 
 .add:hover{
@@ -69,4 +69,8 @@ h3.repo-title{
 
 div.container {
   max-width: 1400px;
+}
+
+.actionButtons {
+  margin-left: auto;
 }

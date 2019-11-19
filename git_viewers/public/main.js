@@ -134,7 +134,7 @@ function shareRepository() {
     dataType: 'json',
     data: "name=get_username" + "&repoId=" + repoId + "&username=" + username,
     success: function (data) {
-        console.log(data);
+
     },
     error: function () {
 
@@ -168,22 +168,21 @@ function addCustomChart() {
   h3.innerHTML = nameofChart;
   h3.className = 'repo-title';
 
+  var allignToRight = document.createElement('div');
+  allignToRight.className = 'actionButtons';
+
   var deleteButton = document.createElement('button');
-  deleteButton.className = 'margin-10 add-btn btn btn-outline-dark';
+  deleteButton.className = 'margin-8 add-btn btn btn-outline-dark';
   deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
   deleteButton.addEventListener('click', chartDeleteListener);
-
-  var saveButton = document.createElement('button');
-  saveButton.className = 'margin-10 add-btn btn btn-outline-dark';
-  saveButton.innerHTML = '<i class="fas fa-save"></i>';
-  saveButton.addEventListener('click', chartSaveListener);
 
   var canv = document.createElement('canvas');
   canv.height = 100;
 
-  rawDiv.appendChild(saveButton);
-  rawDiv.appendChild(deleteButton);
   rawDiv.appendChild(h3);
+
+  allignToRight.appendChild(deleteButton);
+  rawDiv.appendChild(allignToRight);
 
   div.appendChild(rawDiv);
   div.appendChild(canv);
@@ -340,7 +339,6 @@ function chartButtonListener(e) {
 jQuery(function(){
   $("button.share-btn").on("click", function(){
     repoId = $(this).attr("data-repoId");
-    console.log(repoId);
   })
 });
 
@@ -348,19 +346,13 @@ $(function () {
   $('[data-toggle="popover"]').popover();
 })
 
-function chartSaveListener(e) {
-  console.log("TODO SAVING");
-  button = e.target;
-
-  /* Save to database */
-
-}
-
 function chartDeleteListener(e) {
   console.log("TODO DELETEING");
   button = e.target;
 
   /* Remove from database */
 
-  /* Remove from HTML Page */
+  /* Remove from HTML Page*/
+
+  /* Remove from aggregateChartArray */
 }

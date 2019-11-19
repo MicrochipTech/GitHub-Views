@@ -14,7 +14,7 @@ router.get('/fetch', (req, res) => {
       url: 'http://localhost:8082/data.json',
   })
   .then(function (response) {
-      console.log(response.toJSON());
+    
   })
   .catch(function (error) {
   console.log(error);
@@ -51,7 +51,7 @@ router.post('/share', function(req, res, next) {
 
   userCtrl.getUserByUsername(username).then((user) => {
     if(user){
-      console.log(user);
+      
       user.sharedRepos.push(repoId);
       user.save();
       res.send("Success sharing the repo!");
