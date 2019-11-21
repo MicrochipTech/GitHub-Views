@@ -1,55 +1,28 @@
 const cron = require('node-cron');
 const axios = require('axios');
 const repositoryCtrl = require('../controllers/RepositoryCtrl');
+const userCtrl = require('../controllers/UserCtrl');
 
 function updateRepos() {
-    const currentTime = new Date();
-    currentTime.setHours(0, 0, 0, 0);
-
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setHours(0, 0, 0, 0);
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
+    console.log("Updating repositories");
     repositoryCtrl.getAllWithPopulate('user_id').then((repos) => {
+        /* Iterate trough all repos in database */
         for (let repoIndex = 0; repoIndex < repos.length; repoIndex += 1) {
             const repoEntry = repos[repoIndex];
 
+            /* Get traffic for the current repo */
             axios({
                 url: `https://api.github.com/repos/${repoEntry.reponame}/traffic/views`,
                 headers: { Authorization: `token ${repoEntry.user_id.token}` },
             })
                 .then((response) => {
-                    let timeIndex = oneWeekAgo;
+                    let viewsToUpdate = response.data.views;
 
                     if (repoEntry.views.length !== 0) {
-                        timeIndex = repoEntry.views[repoEntry.views.length - 1].timestamp;
-                        timeIndex.setDate(oneWeekAgo.getDate() + 1);
-                    }
-
-                    const viewsToUpdate = response.data.views.filter(
-                        (info) => (new Date(info.timestamp)) >= timeIndex,
-                    );
-                    const days = (timeIndex.getTime() - currentTime.getTime()) / (1000 * 3600 * 24);
-
-                    let index = 0;
-
-                    while (index < days) {
-                        if (viewsToUpdate[index] === undefined) {
-                            viewsToUpdate.push({
-                                timestamp: timeIndex.toISOString(),
-                                count: 0,
-                                uniques: 0,
-                            });
-                        } else if (timeIndex < new Date(viewsToUpdate[index].timestamp)) {
-                            viewsToUpdate.splice(index, 0, {
-                                timestamp: timeIndex.toISOString(),
-                                count: 0,
-                                uniques: 0,
-                            });
-                        }
-
-                        timeIndex.setDate(timeIndex.getDate() + 1);
-                        index += 1;
+                        lastTimestamp = repoEntry.views[repoEntry.views.length - 1].timestamp;
+                        viewsToUpdate = viewsToUpdate.filter(
+                            (info) => (new Date(info.timestamp)).getDate() > lastTimestamp.getDate(),
+                        );
                     }
 
                     for (let viewIndex = 0; viewIndex < viewsToUpdate.length; viewIndex += 1) {
@@ -78,12 +51,58 @@ function updateRepos() {
     });
 }
 
-// cron.schedule('11 0 * * monday', () => {
-//     console.log('running a task every monday at 11:00');
-//     updateRepos();
-// });
+function checkForNewRepos() {
+    console.log("Checking for new repos");
 
-cron.schedule('*/1 * * * *', () => {
+    userCtrl.getAllUsers().then((users) => {
+        for (let userIndex = 0; userIndex < users.length; userIndex += 1) {
+            axios({
+                url: `https://api.github.com/users/${users[userIndex].username}/repos`,
+                headers: { Authorization: `token ${users[userIndex].token}` },
+                params: { type: 'all' },
+            })
+                .then((response) => {
+                    const getRepoTraffic = (user, reponame) => {
+                        axios({
+                            url: `https://api.github.com/repos/${reponame}/traffic/views`,
+                            headers: { Authorization: `token ${user.token}` },
+                        })
+                            .then((response) => {
+
+                                const { count, uniques, views } = response.data;
+
+                                repositoryCtrl.create(
+                                    user._id,
+                                    reponame,
+                                    count,
+                                    uniques,
+                                    views,
+                                );
+                            })
+                            .catch((error) => {
+                                console.log(error);
+                            });
+                    };
+
+                    repos = response.data;
+                    
+                    for (let repoIndex = 0; repoIndex < repos.length; repoIndex += 1) {
+                        repositoryCtrl.getRepoByName(repos[repoIndex].full_name).then((repo) => {
+                            if(repo == undefined) {
+                                getRepoTraffic(users[userIndex], repos[repoIndex].full_name);
+                            }
+                        });
+                    }
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
+        }
+    });
+}
+
+cron.schedule('00 7 * * *', () => {
     console.log('running task every minute');
     updateRepos();
+    checkForNewRepos();
 });

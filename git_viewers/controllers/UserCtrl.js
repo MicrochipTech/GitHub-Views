@@ -1,6 +1,10 @@
 const UserModel = require('../models/User');
 
 module.exports = {
+    getAllUsers: () => {
+        return UserModel.find();
+    },
+
     getWhereUsernameStartsWith: async (req, res) => {
         const { q } = req.query;
         const users = await UserModel.find({

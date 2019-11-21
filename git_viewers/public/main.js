@@ -55,7 +55,10 @@ Chart.Tooltip.positioners.nearPointer = function(elements, eventPosition) {
     };
 };
 
-data.userRepos.forEach(repo => {
+data.userRepos.forEach(userRepo => {
+  //console.log(userRepo);
+  let repo = prepareRepo(userRepo);
+  //console.log(repo);
   var ctx = document.getElementById(repo._id).getContext('2d');
   document.getElementById(repo._id).height = 100;
   var chart = new Chart(ctx, {
@@ -83,9 +86,11 @@ data.userRepos.forEach(repo => {
       // Configuration options go here
       options: chartOptions
   });
+  //console.log(chart);
 });
 
-data.sharedRepos.forEach(repo => {
+data.sharedRepos.forEach(sharedRepo => {
+  let repo = prepareRepo(sharedRepo);
   var ctx = document.getElementById(repo._id).getContext('2d');
 
   var chart = new Chart(ctx, {
@@ -112,6 +117,53 @@ data.sharedRepos.forEach(repo => {
       options: chartOptions
   });
 });
+
+function prepareRepo(repo) {
+  let firstTimestamp = new Date();
+  firstTimestamp.setHours(0, 0, 0, 0);
+  firstTimestamp.setDate(firstTimestamp.getDate() - 14);
+
+  let lastTimestamp = new Date();
+  lastTimestamp.setHours(0, 0, 0, 0);
+  lastTimestamp.setDate(lastTimestamp.getDate() - 1);
+
+  if (repo.views.length != 0) {
+    let first = new Date(repo.views[0].timestamp);
+    let last = new Date(repo.views[repo.views.length - 1].timestamp);
+
+    if (first < firstTimestamp) {
+      firstTimestamp = first;
+    }
+
+    if (last > lastTimestamp) {
+      lastTimestamp = last;
+    }
+  }
+
+  let index = 0;
+  let timeIndex = firstTimestamp;
+  
+  while (timeIndex <= lastTimestamp) {
+    if (repo.views[index] === undefined) {
+      repo.views.push({
+          timestamp: timeIndex.toISOString(),
+          count: 0,
+          uniques: 0,
+      });
+    } else if (timeIndex.getDate() < new Date(repo.views[index].timestamp).getDate()) {
+      repo.views.splice(index, 0, {
+        timestamp: timeIndex.toISOString(),
+        count: 0,
+        uniques: 0,
+      });
+    }
+    
+    index += 1;
+    timeIndex.setDate(timeIndex.getDate() + 1);
+  }
+
+  return repo;
+}
 
 function divSwitcher(e) {
   var elements = e.parentElement.children;

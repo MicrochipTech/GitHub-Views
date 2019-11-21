@@ -29,63 +29,32 @@ passport.use(
                     done(null, updatedUser);
                 });
             } else {
-                userCtrl.create(profile.username, profile.id, accessToken).then((newUser) => {
-                    const getRepoTraffic = (user, reponame) => {
-                        axios({
+                userCtrl.create(profile.username, profile.id, accessToken).then(async (newUser) => {
+                    const getRepoTraffic = async (user, reponame) => {
+                        let response = await axios({
                             url: `https://api.github.com/repos/${reponame}/traffic/views`,
                             headers: { Authorization: `token ${user.token}` },
-                        })
-                            .then((response) => {
-                                const time = new Date();
-                                time.setHours(0, 0, 0, 0);
-                                time.setDate(time.getDate() - 14);
+                        });
+                        const { count, uniques, views } = response.data;
 
-                                const { count, uniques, views } = response.data;
-
-                                for (let index = 0; index < 14; index += 1) {
-                                    if (views[index] === undefined) {
-                                        views.push({
-                                            timestamp: time.toISOString(),
-                                            count: 0,
-                                            uniques: 0,
-                                        });
-                                    } else if (time < new Date(views[index].timestamp)) {
-                                        views.splice(index, 0, {
-                                            timestamp: time.toISOString(),
-                                            count: 0,
-                                            uniques: 0,
-                                        });
-                                    }
-
-                                    time.setDate(time.getDate() + 1);
-                                }
-
-                                repositoryCtrl.create(
-                                    user._id,
-                                    reponame,
-                                    count,
-                                    uniques,
-                                    views,
-                                );
-                            })
-                            .catch((error) => {
-                                console.log(error);
-                            });
+                        repositoryCtrl.create(
+                            user._id,
+                            reponame,
+                            count,
+                            uniques,
+                            views,
+                        );
                     };
 
-                    axios({
+                    let response = await axios({
                         url: `https://api.github.com/users/${newUser.username}/repos`,
                         headers: { Authorization: `token ${newUser.token}` },
                         params: { type: 'all' },
-                    })
-                        .then((response) => {
-                            response.data.forEach((repo) => {
-                                getRepoTraffic(newUser, repo.full_name);
-                            });
-                        })
-                        .catch((error) => {
-                            console.log(error);
-                        });
+                    });
+
+                    response.data.forEach((repo) => {
+                        getRepoTraffic(newUser, repo.full_name);
+                    });
 
                     done(null, newUser);
                 });
