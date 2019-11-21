@@ -10,20 +10,15 @@ const passport = require('passport');
 require('./config/passport-setup');
 require('./config/cron-setup');
 
-const authRoutes = require('./routes/auth-routes');
-const repoRoutes = require('./routes/repo-routes');
-//const profileRoutes = require('./routes/profile-routes');
-const userRoutes = require('./routes/user-routes');
-
 mongoose.connect(`mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@mongo/app?authSource=admin`, { useNewUrlParser: true });
 
 // cron.schedule('11 0 * * monday', () => {
 //   console.log('running a task every monday at 11:00');
 // });
 
-var indexRouter = require('./routes/index');
+const routes = require('./routes');
 
-var app = express();
+const app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -41,11 +36,7 @@ app.use(cookieSession({
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use('/', indexRouter);
-app.use('/auth', authRoutes);
-//app.use('/profile', profileRoutes);
-app.use('/repo', repoRoutes);
-app.use('/user', userRoutes);
+app.use('/', routes);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
