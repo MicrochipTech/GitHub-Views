@@ -1,4 +1,5 @@
 var repoId = null;
+var chartIndexToEdit = undefined;
 
 chartOptions = {
   tooltips: {
@@ -55,10 +56,33 @@ Chart.Tooltip.positioners.nearPointer = function(elements, eventPosition) {
     };
 };
 
+function addRepoInToggleList(repo) {
+  let toggleDiv = document.createElement('div');
+  toggleDiv.className = 'custom-control custom-switch';
+  
+  // toggleDiv.innerHTML = `<input type="checkbox" class="custom-control-input" id="${repo.reponame}">
+  // <label class="custom-control-label" for="${repo.reponame}">${repo.reponame}</label>`;
+
+  let input = document.createElement('input');
+  input.type = 'checkbox';
+  input.className = 'custom-control-input';
+  input.id = repo.reponame;
+  input.addEventListener('click', addRepoListener);
+
+  let label = document.createElement('label');
+  label.className = 'custom-control-label';
+  label.setAttribute('for', `${repo.reponame}`);
+  label.innerText = repo.reponame;
+
+  toggleDiv.appendChild(input);
+  toggleDiv.appendChild(label);
+  document.getElementById('fullRepoNames').appendChild(toggleDiv);
+}
+
 data.userRepos.forEach(userRepo => {
-  //console.log(userRepo);
   let repo = prepareRepo(userRepo);
-  //console.log(repo);
+  addRepoInToggleList(repo);
+
   var ctx = document.getElementById(repo._id).getContext('2d');
   document.getElementById(repo._id).height = 100;
   var chart = new Chart(ctx, {
@@ -91,6 +115,8 @@ data.userRepos.forEach(userRepo => {
 
 data.sharedRepos.forEach(sharedRepo => {
   let repo = prepareRepo(sharedRepo);
+  addRepoInToggleList(repo);
+
   var ctx = document.getElementById(repo._id).getContext('2d');
 
   var chart = new Chart(ctx, {
@@ -119,23 +145,26 @@ data.sharedRepos.forEach(sharedRepo => {
 });
 
 function prepareRepo(repo) {
+  //console.log("----------------");
   let firstTimestamp = new Date();
-  firstTimestamp.setHours(0, 0, 0, 0);
-  firstTimestamp.setDate(firstTimestamp.getDate() - 14);
+  firstTimestamp.setUTCHours(0, 0, 0, 0);
+  firstTimestamp.setUTCDate(firstTimestamp.getUTCDate() - 14);
 
   let lastTimestamp = new Date();
-  lastTimestamp.setHours(0, 0, 0, 0);
-  lastTimestamp.setDate(lastTimestamp.getDate() - 1);
+  lastTimestamp.setUTCHours(0, 0, 0, 0);
+  lastTimestamp.setUTCDate(lastTimestamp.getUTCDate() - 1);
 
   if (repo.views.length != 0) {
     let first = new Date(repo.views[0].timestamp);
+    //first.setUTCHours(0, 0, 0, 0);
     let last = new Date(repo.views[repo.views.length - 1].timestamp);
+    //last.setUTCHours(0, 0, 0, 0);
 
-    if (first < firstTimestamp) {
+    if (first.getTime() < firstTimestamp.getTime()) {
       firstTimestamp = first;
     }
 
-    if (last > lastTimestamp) {
+    if (last.getTime() > lastTimestamp.getTime()) {
       lastTimestamp = last;
     }
   }
@@ -143,25 +172,31 @@ function prepareRepo(repo) {
   let index = 0;
   let timeIndex = firstTimestamp;
   
-  while (timeIndex <= lastTimestamp) {
+  while (timeIndex.getTime() <= lastTimestamp.getTime()) {
+    //console.log(timeIndex + " " + timeIndex.toISOString());
     if (repo.views[index] === undefined) {
       repo.views.push({
-          timestamp: timeIndex.toISOString(),
-          count: 0,
-          uniques: 0,
-      });
-    } else if (timeIndex.getDate() < new Date(repo.views[index].timestamp).getDate()) {
-      repo.views.splice(index, 0, {
         timestamp: timeIndex.toISOString(),
         count: 0,
         uniques: 0,
       });
-    }
-    
-    index += 1;
-    timeIndex.setDate(timeIndex.getDate() + 1);
-  }
+    } else {
+      currentTimestamp = new Date(repo.views[index].timestamp);
+      //currentTimestamp.setHours(0, 0, 0, 0);
 
+      if (timeIndex.getTime() < currentTimestamp.getTime()) {
+        repo.views.splice(index, 0, {
+          timestamp: timeIndex.toISOString(),
+          count: 0,
+          uniques: 0,
+        });
+      }
+    }
+    //console.log(repo.views);
+    index += 1;
+    timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+  }
+  
   return repo;
 }
 
@@ -200,15 +235,6 @@ repoIdToAdd = undefined;
 function addCustomChart() {
   var nameofChart = 'chart' + aggregateChartArray.length;
 
-  /* Create a button in modal */
-  button = document.createElement('button');
-  button.innerText = nameofChart;
-  button.className = "chart-btn btn btn-outline-dark";
-  button.type = "button";
-  button.id = aggregateChartArray.length;
-  button.addEventListener('click', chartButtonListener);
-  document.getElementById('modalChartList').appendChild(button);
-
   /* Create HTML elements */
   var div = document.createElement('div');
   div.id = nameofChart;
@@ -222,6 +248,13 @@ function addCustomChart() {
 
   var allignToRight = document.createElement('div');
   allignToRight.className = 'actionButtons';
+  
+  var editButton = document.createElement('button');
+  editButton.setAttribute('data-target', '#editModal');
+  editButton.className = 'margin-8 add-btn btn btn-outline-dark';
+  editButton.innerHTML = `<i class="fas fa-edit"></i>`;
+  editButton.id = aggregateChartArray.length;
+  editButton.addEventListener('click', chartEditListener);
 
   var deleteButton = document.createElement('button');
   deleteButton.className = 'margin-8 add-btn btn btn-outline-dark';
@@ -233,6 +266,7 @@ function addCustomChart() {
 
   rawDiv.appendChild(h3);
 
+  allignToRight.appendChild(editButton);
   allignToRight.appendChild(deleteButton);
   rawDiv.appendChild(allignToRight);
 
@@ -257,11 +291,21 @@ function addCustomChart() {
     repoArray: [],
     name: canv.id
   });
+
+  /* Show the modal for editing the creating chart */
+  chartIndexToEdit = aggregateChartArray.length - 1;
+
+  let repoStates = document.querySelectorAll('#fullRepoNames input');
+  for (var i = 0; i < repoStates.length; i++) {
+    repoStates[i].checked = false;
+  }
+
+  $('#editModal').modal('show');
 }
 
-function getRepoFromData(repoId) {
-  fromUserRepo = data.userRepos.filter(repo => (repo._id == repoId));
-  fromSharedRepo = data.sharedRepos.filter(repo => (repo._id == repoId));
+function getRepoFromData(reponame) {
+  fromUserRepo = data.userRepos.filter(repo => (repo.reponame == reponame));
+  fromSharedRepo = data.sharedRepos.filter(repo => (repo.reponame == reponame));
   
   if(fromUserRepo.length != 0) {
     return fromUserRepo[0];
@@ -272,10 +316,10 @@ function getRepoFromData(repoId) {
   }
 }
 
-function removeFromAggregateChart(chartIndex, repoId) {
+function removeFromAggregateChart(chartIndex, reponame) {
   for(var i = 0; i < aggregateChartArray.length; ++i) {
     for(var j = 0; j < aggregateChartArray[i].repoArray.length; ++j) {
-      if(aggregateChartArray[i].repoArray[j]._id == repoId) {
+      if(aggregateChartArray[i].repoArray[j].reponame == reponame) {
         
         aggregateChartArray[i].repoArray.splice(j, 1);
 
@@ -287,9 +331,9 @@ function removeFromAggregateChart(chartIndex, repoId) {
   chartUpdate(chartIndex);
 }
 
-function aggregateTwoCharts(chartIndex, repoId) {
+function aggregateTwoCharts(chartIndex, reponame) {
   /* Searching in data for the repo */
-  repoToAdd = getRepoFromData(repoId);
+  repoToAdd = getRepoFromData(reponame);
 
   /* Add the repo to the chart structure */
   aggregateChartArray[chartIndex].repoArray.push(repoToAdd);
@@ -302,7 +346,7 @@ function chartUpdate(index) {
   aggregateChartArray[index].chartToEdit.data.datasets = [];
 
   if(aggregateChartArray[index].repoArray.length == 0) {
-    aggregateChartArray[index].chartToEdit.update(); 
+    aggregateChartArray[index].chartToEdit.update();
     return;
   }
 
@@ -310,24 +354,37 @@ function chartUpdate(index) {
   repoWithMinTimestamp = aggregateChartArray[index].repoArray[0];
 
   aggregateChartArray[index].repoArray.forEach(repo => {
-    if(new Date(repo.views[0].timestamp) < new Date(repoWithMinTimestamp.views[0].timestamp)) {
+    let minStartDate = new Date(repoWithMinTimestamp.views[0].timestamp);
+    //minStartDate.setUTCHours(0, 0, 0, 0);
+    let repoStartDate = new Date(repo.views[0].timestamp);
+    //repoStartDate.setUTCHours(0, 0, 0, 0);
+
+    if(repoStartDate.getTime() < minStartDate.getTime()) {
       repoWithMinTimestamp = repo;
     }
   });
 
   /* Get the oldest date */
   startDate = new Date(repoWithMinTimestamp.views[0].timestamp);
-
+  //startDate.setUTCHours(0, 0, 0, 0);
+  //console.log("start date: " + startDate);
   /* Adding dummy data to all repos to start from the oldest date */
   aggregateChartArray[index].repoArray.map(repo => {
-    days = Math.abs(new Date(repo.views[0].timestamp).getTime() - startDate.getTime()) / (1000 * 3600 * 24);
-  
+
+    let repoStartDate = new Date(repo.views[0].timestamp);
+    //repoStartDate.setUTCHours(0, 0, 0, 0);
+    
+    days = Math.abs(repoStartDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+    
     if(days != 0) {
-      var time = startDate;
+      //console.log(repo.views);
+      //console.log(`Adding ${days} days to ${repo.reponame}`);
+      var time = new Date(repoWithMinTimestamp.views[0].timestamp);
       for(var index = 0; index < days; ++index) {
-        repo.views.splice(index, 0, { timestamp: time, count: 0, uniques: 0});
-        time.setDate(time.getDate() + 1);
+        repo.views.splice(index, 0, { timestamp: time.toISOString(), count: 0, uniques: 0});
+        time.setUTCDate(time.getUTCDate() + 1);
       }
+      console.log(repo.views);
     }
   });
 
@@ -353,58 +410,45 @@ function chartUpdate(index) {
 }
 
 jQuery(function(){
-  $("button.add-btn").on("click", function(){
-    repoIdToAdd = $(this).attr("data-repoId");
-    
-    /* Update charts buttons state */
-    for(var i = 0; i < aggregateChartArray.length; ++i) {
-      buttonState = false;
-      for(var j = 0; j < aggregateChartArray[i].repoArray.length; ++j) {
-        if(aggregateChartArray[i].repoArray[j]._id == repoIdToAdd) {
-          buttonState = true;
-          break;
-        }
-      }
-
-      if(buttonState) {
-        document.getElementById(i).className = "chart-btn btn btn-dark";
-      } else {
-        document.getElementById(i).className = "chart-btn btn btn-outline-dark";
-      }
-    }
-    
-  })
-});
-
-function chartButtonListener(e) {
-  button = e.target;
-
-  if(button.classList.contains('btn-outline-dark')) {
-    aggregateTwoCharts(button.id, repoIdToAdd);
-    button.className = "chart-btn btn btn-dark";
-  } else if(button.classList.contains('btn-dark')) {
-    removeFromAggregateChart(button.id, repoIdToAdd);
-    button.className = "chart-btn btn btn-outline-dark";
-  }
-}
-
-jQuery(function(){
   $("button.share-btn").on("click", function(){
     repoId = $(this).attr("data-repoId");
   })
 });
 
-$(function () {
-  $('[data-toggle="popover"]').popover();
-})
-
 function chartDeleteListener(e) {
   console.log("TODO DELETEING");
-  button = e.target;
+  button = e.currentTarget;
 
   /* Remove from database */
 
   /* Remove from HTML Page*/
 
   /* Remove from aggregateChartArray */
+}
+
+function addRepoListener(e) {
+  reponameToAdd = e.currentTarget.id;
+  if (e.currentTarget.checked) {
+    aggregateTwoCharts(chartIndexToEdit, reponameToAdd);
+  } else {
+    removeFromAggregateChart(chartIndexToEdit, reponameToAdd);
+  }
+}
+
+function chartEditListener(e) {
+  chartIndexToEdit  = e.currentTarget.id;
+  let aggregateChart = aggregateChartArray[chartIndexToEdit];
+
+  let repoStates = document.querySelectorAll('#fullRepoNames input');
+  for (var i = 0; i < repoStates.length; i++) {
+    repoStates[i].checked = false;
+
+    for(var j = 0; j < aggregateChart.repoArray.length; j += 1) {
+      if(aggregateChart.repoArray[j].reponame == repoStates[i].id) {
+        repoStates[i].checked = true;
+      }
+    }
+  }
+
+  $('#editModal').modal('show');
 }

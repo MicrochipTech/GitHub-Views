@@ -19,10 +19,21 @@ function updateRepos() {
                     let viewsToUpdate = response.data.views;
 
                     if (repoEntry.views.length !== 0) {
+                        var today = new Date();
+                        today.setUTCHours(0, 0, 0, 0);
+
                         lastTimestamp = repoEntry.views[repoEntry.views.length - 1].timestamp;
-                        viewsToUpdate = viewsToUpdate.filter(
-                            (info) => (new Date(info.timestamp)).getDate() > lastTimestamp.getDate(),
-                        );
+                        viewsToUpdate = viewsToUpdate.filter((info) => {
+                            let timestampDate = new Date(info.timestamp);
+                            //timestampDate.setUTCHours(0, 0, 0, 0);
+
+                            if((timestampDate.getTime() > lastTimestamp.getTime()) &&
+                                (timestampDate.getTime() < today.getTime())) {
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                        });
                     }
 
                     for (let viewIndex = 0; viewIndex < viewsToUpdate.length; viewIndex += 1) {
@@ -62,26 +73,36 @@ function checkForNewRepos() {
                 params: { type: 'all' },
             })
                 .then((response) => {
-                    const getRepoTraffic = (user, reponame) => {
-                        axios({
+                    const getRepoTraffic = async (user, reponame) => {
+                        let response = await axios({
                             url: `https://api.github.com/repos/${reponame}/traffic/views`,
                             headers: { Authorization: `token ${user.token}` },
-                        })
-                            .then((response) => {
+                        });
+                        var { count, uniques, views } = response.data;
+                        
+                        var today = new Date();
+                        today.setUTCHours(0, 0, 0, 0);
+                        
+                        views = views.filter(
+                            (info) => {
+                                infoTimestamp = new Date(info.timestamp);
+                                //infoTimestamp.setUTCHours(0, 0, 0, 0);
 
-                                const { count, uniques, views } = response.data;
+                                if (infoTimestamp.getTime() < today.getTime()) {
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            }
+                        );
 
-                                repositoryCtrl.create(
-                                    user._id,
-                                    reponame,
-                                    count,
-                                    uniques,
-                                    views,
-                                );
-                            })
-                            .catch((error) => {
-                                console.log(error);
-                            });
+                        repositoryCtrl.create(
+                            user._id,
+                            reponame,
+                            count,
+                            uniques,
+                            views,
+                        );
                     };
 
                     repos = response.data;
