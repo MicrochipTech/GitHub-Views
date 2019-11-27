@@ -142,7 +142,7 @@ function prepareRepo(repo) {
 
   let index = 0;
   let timeIndex = firstTimestamp;
-  
+
   while (timeIndex <= lastTimestamp) {
     if (repo.views[index] === undefined) {
       repo.views.push({
@@ -157,7 +157,7 @@ function prepareRepo(repo) {
         uniques: 0,
       });
     }
-    
+
     index += 1;
     timeIndex.setDate(timeIndex.getDate() + 1);
   }
@@ -262,7 +262,7 @@ function addCustomChart() {
 function getRepoFromData(repoId) {
   fromUserRepo = data.userRepos.filter(repo => (repo._id == repoId));
   fromSharedRepo = data.sharedRepos.filter(repo => (repo._id == repoId));
-  
+
   if(fromUserRepo.length != 0) {
     return fromUserRepo[0];
   }
@@ -276,7 +276,7 @@ function removeFromAggregateChart(chartIndex, repoId) {
   for(var i = 0; i < aggregateChartArray.length; ++i) {
     for(var j = 0; j < aggregateChartArray[i].repoArray.length; ++j) {
       if(aggregateChartArray[i].repoArray[j]._id == repoId) {
-        
+
         aggregateChartArray[i].repoArray.splice(j, 1);
 
         break;
@@ -293,7 +293,7 @@ function aggregateTwoCharts(chartIndex, repoId) {
 
   /* Add the repo to the chart structure */
   aggregateChartArray[chartIndex].repoArray.push(repoToAdd);
-  chartUpdate(chartIndex); 
+  chartUpdate(chartIndex);
 }
 
 function chartUpdate(index) {
@@ -302,7 +302,7 @@ function chartUpdate(index) {
   aggregateChartArray[index].chartToEdit.data.datasets = [];
 
   if(aggregateChartArray[index].repoArray.length == 0) {
-    aggregateChartArray[index].chartToEdit.update(); 
+    aggregateChartArray[index].chartToEdit.update();
     return;
   }
 
@@ -321,7 +321,7 @@ function chartUpdate(index) {
   /* Adding dummy data to all repos to start from the oldest date */
   aggregateChartArray[index].repoArray.map(repo => {
     days = Math.abs(new Date(repo.views[0].timestamp).getTime() - startDate.getTime()) / (1000 * 3600 * 24);
-  
+
     if(days != 0) {
       var time = startDate;
       for(var index = 0; index < days; ++index) {
@@ -349,13 +349,13 @@ function chartUpdate(index) {
                                     });
   });
 
-  aggregateChartArray[index].chartToEdit.update();  
+  aggregateChartArray[index].chartToEdit.update();
 }
 
 jQuery(function(){
   $("button.add-btn").on("click", function(){
     repoIdToAdd = $(this).attr("data-repoId");
-    
+
     /* Update charts buttons state */
     for(var i = 0; i < aggregateChartArray.length; ++i) {
       buttonState = false;
@@ -372,7 +372,7 @@ jQuery(function(){
         document.getElementById(i).className = "chart-btn btn btn-outline-dark";
       }
     }
-    
+
   })
 });
 
