@@ -12,10 +12,6 @@ require('./config/cron-setup');
 
 mongoose.connect(`mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@mongo/app?authSource=admin`, { useNewUrlParser: true });
 
-// cron.schedule('11 0 * * monday', () => {
-//   console.log('running a task every monday at 11:00');
-// });
-
 const routes = require('./routes');
 
 const app = express();
