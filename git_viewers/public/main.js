@@ -59,9 +59,6 @@ Chart.Tooltip.positioners.nearPointer = function(elements, eventPosition) {
 function addRepoInToggleList(repo) {
   let toggleDiv = document.createElement('div');
   toggleDiv.className = 'custom-control custom-switch';
-  
-  // toggleDiv.innerHTML = `<input type="checkbox" class="custom-control-input" id="${repo.reponame}">
-  // <label class="custom-control-label" for="${repo.reponame}">${repo.reponame}</label>`;
 
   let input = document.createElement('input');
   input.type = 'checkbox';
@@ -110,7 +107,6 @@ data.userRepos.forEach(userRepo => {
       // Configuration options go here
       options: chartOptions
   });
-  //console.log(chart);
 });
 
 data.sharedRepos.forEach(sharedRepo => {
@@ -145,7 +141,6 @@ data.sharedRepos.forEach(sharedRepo => {
 });
 
 function prepareRepo(repo) {
-  //console.log("----------------");
   let firstTimestamp = new Date();
   firstTimestamp.setUTCHours(0, 0, 0, 0);
   firstTimestamp.setUTCDate(firstTimestamp.getUTCDate() - 14);
@@ -156,9 +151,7 @@ function prepareRepo(repo) {
 
   if (repo.views.length != 0) {
     let first = new Date(repo.views[0].timestamp);
-    //first.setUTCHours(0, 0, 0, 0);
     let last = new Date(repo.views[repo.views.length - 1].timestamp);
-    //last.setUTCHours(0, 0, 0, 0);
 
     if (first.getTime() < firstTimestamp.getTime()) {
       firstTimestamp = first;
@@ -173,7 +166,6 @@ function prepareRepo(repo) {
   let timeIndex = firstTimestamp;
   
   while (timeIndex.getTime() <= lastTimestamp.getTime()) {
-    //console.log(timeIndex + " " + timeIndex.toISOString());
     if (repo.views[index] === undefined) {
       repo.views.push({
         timestamp: timeIndex.toISOString(),
@@ -182,7 +174,6 @@ function prepareRepo(repo) {
       });
     } else {
       currentTimestamp = new Date(repo.views[index].timestamp);
-      //currentTimestamp.setHours(0, 0, 0, 0);
 
       if (timeIndex.getTime() < currentTimestamp.getTime()) {
         repo.views.splice(index, 0, {
@@ -192,7 +183,7 @@ function prepareRepo(repo) {
         });
       }
     }
-    //console.log(repo.views);
+    
     index += 1;
     timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
   }
@@ -355,9 +346,7 @@ function chartUpdate(index) {
 
   aggregateChartArray[index].repoArray.forEach(repo => {
     let minStartDate = new Date(repoWithMinTimestamp.views[0].timestamp);
-    //minStartDate.setUTCHours(0, 0, 0, 0);
     let repoStartDate = new Date(repo.views[0].timestamp);
-    //repoStartDate.setUTCHours(0, 0, 0, 0);
 
     if(repoStartDate.getTime() < minStartDate.getTime()) {
       repoWithMinTimestamp = repo;
@@ -366,25 +355,20 @@ function chartUpdate(index) {
 
   /* Get the oldest date */
   startDate = new Date(repoWithMinTimestamp.views[0].timestamp);
-  //startDate.setUTCHours(0, 0, 0, 0);
-  //console.log("start date: " + startDate);
+  
   /* Adding dummy data to all repos to start from the oldest date */
   aggregateChartArray[index].repoArray.map(repo => {
 
     let repoStartDate = new Date(repo.views[0].timestamp);
-    //repoStartDate.setUTCHours(0, 0, 0, 0);
     
     days = Math.abs(repoStartDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
     
     if(days != 0) {
-      //console.log(repo.views);
-      //console.log(`Adding ${days} days to ${repo.reponame}`);
       var time = new Date(repoWithMinTimestamp.views[0].timestamp);
       for(var index = 0; index < days; ++index) {
         repo.views.splice(index, 0, { timestamp: time.toISOString(), count: 0, uniques: 0});
         time.setUTCDate(time.getUTCDate() + 1);
       }
-      console.log(repo.views);
     }
   });
 
@@ -394,14 +378,14 @@ function chartUpdate(index) {
     aggregateChartArray[index].chartToEdit.data.datasets.push({
                                       label: 'Unique Views (' + repo.reponame + ')',
                                       backgroundColor: 'rgb(0,0,0, 0)',
-                                      borderColor: '#FDCB00',
+                                      borderColor: '#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6),
                                       data: repo.views.map(h=>h.uniques),
                                     });
 
     aggregateChartArray[index].chartToEdit.data.datasets.push({
                                       label: 'Views (' + repo.reponame + ')',
                                       backgroundColor: 'rgb(0,0,0, 0)',
-                                      borderColor: '#603A8B',
+                                      borderColor: '#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6),
                                       data: repo.views.map(h=>h.count),
                                     });
   });

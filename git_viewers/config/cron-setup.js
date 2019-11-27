@@ -25,7 +25,6 @@ function updateRepos() {
                         lastTimestamp = repoEntry.views[repoEntry.views.length - 1].timestamp;
                         viewsToUpdate = viewsToUpdate.filter((info) => {
                             let timestampDate = new Date(info.timestamp);
-                            //timestampDate.setUTCHours(0, 0, 0, 0);
 
                             if((timestampDate.getTime() > lastTimestamp.getTime()) &&
                                 (timestampDate.getTime() < today.getTime())) {
@@ -86,7 +85,6 @@ function checkForNewRepos() {
                         views = views.filter(
                             (info) => {
                                 infoTimestamp = new Date(info.timestamp);
-                                //infoTimestamp.setUTCHours(0, 0, 0, 0);
 
                                 if (infoTimestamp.getTime() < today.getTime()) {
                                     return true;

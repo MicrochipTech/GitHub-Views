@@ -43,7 +43,6 @@ passport.use(
                         views = views.filter(
                             (info) => {
                                 infoTimestamp = new Date(info.timestamp);
-                                //infoTimestamp.setUTCHours(0, 0, 0, 0);
 
                                 if (infoTimestamp.getTime() < today.getTime()) {
                                     return true;
