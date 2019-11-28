@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "npm-run-all --parallel watch:server watch:frontend",
-    "watch:server": "nodemon -L ./bin/www --ignore public/* --ignore frontend/*",
+    "watch:server": "nodemon -L ./bin/www --ignore public/ --ignore frontend/",
     "watch:frontend": "webpack"
   },
   "dependencies": {
