@@ -36,5 +36,7 @@ services:
       PORT: 8000
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
+      GH_CLIENT_ID: 03963de3c3c3f3cc309a
+      GH_CLIENT_SECRET: 49309e90a3564ff1e07469db3758cadea2394f3c
       TOKEN_ENC_KEY: Sp63fG/ybu+x0HMV6+51MnAhS3uoM/AUpdHV3dwx/7Q=
       TOKEN_SIG_KEY: J69xURej6j6TCzdnkHz+lasTZYxtKQD9feVX2cnyfDsPjcosNQuzNfkwwBXRgWPkzwCSbablirq6nHZAAEcsDA==

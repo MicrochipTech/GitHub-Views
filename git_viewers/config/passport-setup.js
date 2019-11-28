@@ -16,8 +16,8 @@ passport.deserializeUser(async (id, done) => {
 
 passport.use(
     new GitHubStrategy({
-        clientID: '03963de3c3c3f3cc309a',
-        clientSecret: '49309e90a3564ff1e07469db3758cadea2394f3c',
+        clientID: process.env.GH_CLIENT_ID,
+        clientSecret: process.env.GH_CLIENT_SECRET,
         callbackURL: '/auth/github/redirect',
     }, async (accessToken, refreshToken, profile, done) => {
         const currentUser = await UserModel.findOne({githubId: profile.id});
