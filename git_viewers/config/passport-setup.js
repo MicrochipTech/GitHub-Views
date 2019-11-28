@@ -35,7 +35,22 @@ passport.use(
                             url: `https://api.github.com/repos/${reponame}/traffic/views`,
                             headers: { Authorization: `token ${user.token}` },
                         });
-                        const { count, uniques, views } = response.data;
+                        var { count, uniques, views } = response.data;
+                        
+                        var today = new Date();
+                        today.setUTCHours(0, 0, 0, 0);
+
+                        views = views.filter(
+                            (info) => {
+                                infoTimestamp = new Date(info.timestamp);
+
+                                if (infoTimestamp.getTime() < today.getTime()) {
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            }
+                        );
 
                         repositoryCtrl.create(
                             user._id,

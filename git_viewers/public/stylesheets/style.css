@@ -61,7 +61,7 @@ nav ul li:hover {
   color: gray;
 }
 
-h3.repo-title{
+.repo-title{
   word-break: break-all;
   margin-top: auto;
   margin-bottom: auto;
@@ -73,4 +73,12 @@ div.container {
 
 .actionButtons {
   margin-left: auto;
+}
+
+#aggregateCharts {
+  display: none;
+}
+
+#sharedRepositories {
+  display: none;
 }
