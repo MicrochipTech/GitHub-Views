@@ -129,12 +129,14 @@ data.sharedRepos.forEach(sharedRepo => {
           labels: repo.views.map(h=>h.timestamp),
           datasets: [{
               label: 'Unique Views',
-              backgroundColor: 'rgb(0,0,0, 0)',
+              fill: false,
+              backgroundColor: '#FDCB00',
               borderColor: '#FDCB00',
               data: repo.views.map(h=>h.uniques),
           }, {
               label: 'Views',
-              backgroundColor: 'rgb(0,0,0, 0)',
+              fill: false,
+              backgroundColor: '#603A8B',
               borderColor: '#603A8B',
               data: repo.views.map(h=>h.count),
           }]
@@ -380,17 +382,21 @@ function chartUpdate(index) {
   aggregateChartArray[index].chartToEdit.data.labels = repoWithMinTimestamp.views.map(h => moment(h.timestamp).format("DD MMM YYYY"));
 
   aggregateChartArray[index].repoArray.forEach(repo => {
+    const uvColor = '#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6),
+        vColor = '#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6);
     aggregateChartArray[index].chartToEdit.data.datasets.push({
-                                      label: 'Unique Views (' + repo.reponame + ')',
-                                      backgroundColor: 'rgb(0,0,0, 0)',
-                                      borderColor: '#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6),
+                                      label: `${repo.reponame.split('/')[1]} - Unique Views`,
+                                      fill: false,
+                                      backgroundColor: uvColor,
+                                      borderColor: uvColor,
                                       data: repo.views.map(h=>h.uniques),
                                     });
 
     aggregateChartArray[index].chartToEdit.data.datasets.push({
-                                      label: 'Views (' + repo.reponame + ')',
-                                      backgroundColor: 'rgb(0,0,0, 0)',
-                                      borderColor: '#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6),
+                                      label: `${repo.reponame.split('/')[1]} - Views`,
+                                      fill: false,
+                                      backgroundColor: vColor,
+                                      borderColor: vColor,
                                       data: repo.views.map(h=>h.count),
                                     });
   });
