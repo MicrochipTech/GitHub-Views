@@ -1,21 +1,25 @@
 export default {
   tooltips: {
     intersect: false,
-    mode: 'label',
-    position: 'nearPointer',
+    mode: "label",
+    position: "nearPointer"
   },
   scales: {
-    xAxes: [{
-      ticks: {
-        autoSkip: true,
-        maxTicksLimit: 8
+    xAxes: [
+      {
+        ticks: {
+          autoSkip: true,
+          maxTicksLimit: 8
+        }
       }
-    }],
-    yAxes: [{
-      ticks: {
-        beginAtZero: true
+    ],
+    yAxes: [
+      {
+        ticks: {
+          beginAtZero: true
+        }
       }
-    }]
+    ]
   },
   elements: {
     line: {
