@@ -5,6 +5,7 @@ const userCtrl = require('../controllers/UserCtrl');
 
 function updateRepos() {
     console.log("Updating repositories");
+
     repositoryCtrl.getAllWithPopulate('user_id').then((repos) => {
         /* Iterate trough all repos in database */
         for (let repoIndex = 0; repoIndex < repos.length; repoIndex += 1) {
@@ -36,17 +37,7 @@ function updateRepos() {
                     }
 
                     for (let viewIndex = 0; viewIndex < viewsToUpdate.length; viewIndex += 1) {
-                        const view = viewsToUpdate[viewIndex];
-
-                        const viewData = {
-                            timestamp: new Date(view.timestamp),
-                            count: Number(view.count),
-                            uniques: Number(view.uniques),
-                        };
-
-                        repoEntry.count += viewData.count;
-                        repoEntry.uniques += viewData.uniques;
-                        repoEntry.views.push(viewData);
+                        repoEntry.views.push(viewsToUpdate[viewIndex]);
                     }
 
                     repoEntry.save();
@@ -120,8 +111,7 @@ function checkForNewRepos() {
     });
 }
 
-cron.schedule('00 7 * * *', () => {
-    console.log('running task every minute');
+cron.schedule('00 07 * * *', () => {
     updateRepos();
     checkForNewRepos();
 });
