@@ -141,7 +141,7 @@ function prepareRepo(repo) {
   return repo;
 }
 
-function divSwitcher(e) {
+window.divSwitcher = (e) => {
   var elements = e.parentElement.children;
 
   for (var i = 0; i < elements.length; i++) {
@@ -173,7 +173,7 @@ function shareRepository() {
 const aggregateChartArray = [];
 let repoIdToAdd = undefined;
 
-function addCustomChart() {
+window.addCustomChart = () => {
   var nameofChart = 'chart' + aggregateChartArray.length;
 
   /* Create HTML elements */
@@ -218,7 +218,7 @@ function addCustomChart() {
   /* Creating the chart */
   var ctx = canv.getContext('2d');
 
-  chartToEdit = new Chart(ctx, {
+  const chartToEdit = new Chart(ctx, {
       // The type of chart we want to create
       type: 'LineWithLine',
 
@@ -245,8 +245,8 @@ function addCustomChart() {
 }
 
 function getRepoFromData(reponame) {
-  fromUserRepo = data.userRepos.filter(repo => (repo.reponame == reponame));
-  fromSharedRepo = data.sharedRepos.filter(repo => (repo.reponame == reponame));
+  const fromUserRepo = data.userRepos.filter(repo => (repo.reponame == reponame));
+  const fromSharedRepo = data.sharedRepos.filter(repo => (repo.reponame == reponame));
 
   if(fromUserRepo.length != 0) {
     return fromUserRepo[0];
@@ -274,7 +274,7 @@ function removeFromAggregateChart(chartIndex, reponame) {
 
 function aggregateTwoCharts(chartIndex, reponame) {
   /* Searching in data for the repo */
-  repoToAdd = getRepoFromData(reponame);
+  const repoToAdd = getRepoFromData(reponame);
 
   /* Add the repo to the chart structure */
   aggregateChartArray[chartIndex].repoArray.push(repoToAdd);
@@ -292,7 +292,7 @@ function chartUpdate(index) {
   }
 
   /* Find the repo wih the oldest timestamp */
-  repoWithMinTimestamp = aggregateChartArray[index].repoArray[0];
+  let repoWithMinTimestamp = aggregateChartArray[index].repoArray[0];
 
   aggregateChartArray[index].repoArray.forEach(repo => {
     let minStartDate = new Date(repoWithMinTimestamp.views[0].timestamp);
@@ -304,14 +304,14 @@ function chartUpdate(index) {
   });
 
   /* Get the oldest date */
-  startDate = new Date(repoWithMinTimestamp.views[0].timestamp);
+  const startDate = new Date(repoWithMinTimestamp.views[0].timestamp);
 
   /* Adding dummy data to all repos to start from the oldest date */
   aggregateChartArray[index].repoArray.map(repo => {
 
     let repoStartDate = new Date(repo.views[0].timestamp);
 
-    days = Math.abs(repoStartDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+    const days = Math.abs(repoStartDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
 
     if(days != 0) {
       var time = new Date(repoWithMinTimestamp.views[0].timestamp);
@@ -365,7 +365,7 @@ function chartDeleteListener(e) {
 }
 
 function addRepoListener(e) {
-  reponameToAdd = e.currentTarget.id;
+  const reponameToAdd = e.currentTarget.id;
   if (e.currentTarget.checked) {
     aggregateTwoCharts(chartIndexToEdit, reponameToAdd);
   } else {
