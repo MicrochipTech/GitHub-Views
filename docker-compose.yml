@@ -36,3 +36,5 @@ services:
       PORT: 8000
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
+      TOKEN_ENC_KEY: Sp63fG/ybu+x0HMV6+51MnAhS3uoM/AUpdHV3dwx/7Q=
+      TOKEN_SIG_KEY: J69xURej6j6TCzdnkHz+lasTZYxtKQD9feVX2cnyfDsPjcosNQuzNfkwwBXRgWPkzwCSbablirq6nHZAAEcsDA==
