@@ -1,20 +1,23 @@
 import chartOptions from "./chartOptions";
 import "./ChartWithLine";
 
-var repoId = null;
-var chartIndexToEdit = undefined;
+let repoId;
+let chartIndexToEdit;
+let chartIdToEdit;
+const aggregateChartArray = [];
+let repoIdToAdd;
 
 function addRepoInToggleList(repo) {
-  let toggleDiv = document.createElement("div");
+  const toggleDiv = document.createElement("div");
   toggleDiv.className = "custom-control custom-switch";
 
-  let input = document.createElement("input");
+  const input = document.createElement("input");
   input.type = "checkbox";
   input.className = "custom-control-input";
   input.id = repo.reponame;
   input.addEventListener("click", addRepoListener);
 
-  let label = document.createElement("label");
+  const label = document.createElement("label");
   label.className = "custom-control-label";
   label.setAttribute("for", `${repo.reponame}`);
   label.innerText = repo.reponame;
@@ -96,6 +99,28 @@ data.sharedRepos.forEach(sharedRepo => {
   });
 });
 
+data.aggregateCharts.forEach(aggregateChart => {
+  createChartElements(aggregateChart._id);
+  const c = aggregateChartArray[aggregateChartArray.length - 1];
+  c.repoArray = aggregateChart.repo_list.map((repoId) => {
+    const fromUserRepo = data.userRepos.filter(
+      repo => repo._id === repoId
+    );
+    const fromSharedRepo = data.sharedRepos.filter(
+      repo => repo._id === repoId
+    );
+  
+    if (fromUserRepo.length !== 0) {
+      return fromUserRepo[0];
+    }
+  
+    if (fromSharedRepo.length !== 0) {
+      return fromSharedRepo[0];
+    }
+  });
+  chartUpdate(aggregateChartArray.length - 1);
+});
+
 function prepareRepo(repo) {
   let firstTimestamp = new Date();
   firstTimestamp.setUTCHours(0, 0, 0, 0);
@@ -105,9 +130,9 @@ function prepareRepo(repo) {
   lastTimestamp.setUTCHours(0, 0, 0, 0);
   lastTimestamp.setUTCDate(lastTimestamp.getUTCDate() - 1);
 
-  if (repo.views.length != 0) {
-    let first = new Date(repo.views[0].timestamp);
-    let last = new Date(repo.views[repo.views.length - 1].timestamp);
+  if (repo.views.length !== 0) {
+    const first = new Date(repo.views[0].timestamp);
+    const last = new Date(repo.views[repo.views.length - 1].timestamp);
 
     if (first.getTime() < firstTimestamp.getTime()) {
       firstTimestamp = first;
@@ -119,7 +144,7 @@ function prepareRepo(repo) {
   }
 
   let index = 0;
-  let timeIndex = firstTimestamp;
+  const timeIndex = firstTimestamp;
 
   while (timeIndex.getTime() <= lastTimestamp.getTime()) {
     if (repo.views[index] === undefined) {
@@ -148,10 +173,10 @@ function prepareRepo(repo) {
 }
 
 window.divSwitcher = e => {
-  var elements = e.parentElement.children;
+  const elements = e.parentElement.children;
 
-  for (var i = 0; i < elements.length; i++) {
-    if (elements[i] == e) {
+  for (let i = 0; i < elements.length; i += 1) {
+    if (elements[i] === e) {
       elements[i].style.display = "block";
     } else {
       elements[i].style.display = "none";
@@ -159,8 +184,8 @@ window.divSwitcher = e => {
   }
 };
 
-function shareRepository() {
-  username = document.getElementById("share-with").value;
+window.shareRepository = () => {
+  const username = document.getElementById("share-with").value;
 
   $.ajax({
     url: "/repo/share",
@@ -172,39 +197,55 @@ function shareRepository() {
   });
 }
 
-const aggregateChartArray = [];
-let repoIdToAdd = undefined;
+window.saveChartToDatabase = async () => {
+  const repoList = aggregateChartArray[chartIndexToEdit].repoArray.map(repo => {
+    return repo._id;
+  });
 
-window.addCustomChart = () => {
-  var nameofChart = "chart" + aggregateChartArray.length;
+  const dataJSON = {
+    chartId: chartIdToEdit,
+    repoList
+  };
+
+  const updateResponse = await $.ajax({
+    url: `/aggCharts/update`,
+    type: `GET`,
+    dataType: `application/json`,
+    data: dataJSON
+  });
+};
+
+function createChartElements(createdChartId) {
+  const nameofChart = `chart${aggregateChartArray.length}`;
 
   /* Create HTML elements */
-  var div = document.createElement("div");
+  const div = document.createElement("div");
   div.id = nameofChart;
 
-  var rawDiv = document.createElement("div");
+  const rawDiv = document.createElement("div");
   rawDiv.className = "row";
 
-  var h3 = document.createElement("h3");
+  const h3 = document.createElement("h3");
   h3.innerHTML = nameofChart;
   h3.className = "repo-title";
 
-  var allignToRight = document.createElement("div");
+  const allignToRight = document.createElement("div");
   allignToRight.className = "actionButtons";
 
-  var editButton = document.createElement("button");
+  const editButton = document.createElement("button");
   editButton.setAttribute("data-target", "#editModal");
   editButton.className = "margin-8 add-btn btn btn-outline-dark";
   editButton.innerHTML = `<i class="fas fa-edit"></i>`;
-  editButton.id = aggregateChartArray.length;
+  editButton.id = createdChartId;
   editButton.addEventListener("click", chartEditListener);
 
-  var deleteButton = document.createElement("button");
+  const deleteButton = document.createElement("button");
   deleteButton.className = "margin-8 add-btn btn btn-outline-dark";
   deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
+  deleteButton.setAttribute("data-chartId", createdChartId);
   deleteButton.addEventListener("click", chartDeleteListener);
 
-  var canv = document.createElement("canvas");
+  const canv = document.createElement("canvas");
   canv.height = 100;
 
   rawDiv.appendChild(h3);
@@ -218,7 +259,7 @@ window.addCustomChart = () => {
   document.getElementById("customCharts").appendChild(div);
 
   /* Creating the chart */
-  var ctx = canv.getContext("2d");
+  const ctx = canv.getContext("2d");
 
   const chartToEdit = new Chart(ctx, {
     // The type of chart we want to create
@@ -230,16 +271,31 @@ window.addCustomChart = () => {
 
   /* Local save for the new chart */
   aggregateChartArray.push({
-    chartToEdit: chartToEdit,
+    chartToEdit,
     repoArray: [],
-    name: canv.id
+    name: canv.id,
+    id: createdChartId
   });
 
+  console.log(aggregateChartArray);
+}
+
+window.addCustomChart = async () => {
+  const createResponse = await $.ajax({
+    url: `/aggCharts/create`,
+    type: `GET`
+  });
+
+  const createdChartId = createResponse._id;
+  /* Create DOM elements for chart */
+  createChartElements(createdChartId);
+
   /* Show the modal for editing the creating chart */
+  chartIdToEdit = createdChartId;
   chartIndexToEdit = aggregateChartArray.length - 1;
 
-  let repoStates = document.querySelectorAll("#fullRepoNames input");
-  for (var i = 0; i < repoStates.length; i++) {
+  const repoStates = document.querySelectorAll("#fullRepoNames input");
+  for (let i = 0; i < repoStates.length; i += 1) {
     repoStates[i].checked = false;
   }
 
@@ -247,24 +303,27 @@ window.addCustomChart = () => {
 };
 
 function getRepoFromData(reponame) {
-  const fromUserRepo = data.userRepos.filter(repo => repo.reponame == reponame);
+  const fromUserRepo = data.userRepos.filter(
+    repo => repo.reponame === reponame
+  );
   const fromSharedRepo = data.sharedRepos.filter(
-    repo => repo.reponame == reponame
+    repo => repo.reponame === reponame
   );
 
-  if (fromUserRepo.length != 0) {
+  if (fromUserRepo.length !== 0) {
     return fromUserRepo[0];
   }
 
-  if (fromSharedRepo.length != 0) {
+  if (fromSharedRepo.length !== 0) {
     return fromSharedRepo[0];
   }
+  return undefined;
 }
 
 function removeFromAggregateChart(chartIndex, reponame) {
-  for (var i = 0; i < aggregateChartArray.length; ++i) {
-    for (var j = 0; j < aggregateChartArray[i].repoArray.length; ++j) {
-      if (aggregateChartArray[i].repoArray[j].reponame == reponame) {
+  for (let i = 0; i < aggregateChartArray.length; i += 1) {
+    for (let j = 0; j < aggregateChartArray[i].repoArray.length; j += 1) {
+      if (aggregateChartArray[i].repoArray[j].reponame === reponame) {
         aggregateChartArray[i].repoArray.splice(j, 1);
 
         break;
@@ -288,17 +347,22 @@ function chartUpdate(index) {
   aggregateChartArray[index].chartToEdit.data.labels = [];
   aggregateChartArray[index].chartToEdit.data.datasets = [];
 
-  if (aggregateChartArray[index].repoArray.length == 0) {
+  if (aggregateChartArray[index].repoArray.length === 0) {
     aggregateChartArray[index].chartToEdit.update();
     return;
   }
 
   /* Find the repo wih the oldest timestamp */
+  if (aggregateChartArray[index].repoArray.length === 0) {
+    return;
+  }
+
   let repoWithMinTimestamp = aggregateChartArray[index].repoArray[0];
+  console.log(repoWithMinTimestamp);
 
   aggregateChartArray[index].repoArray.forEach(repo => {
-    let minStartDate = new Date(repoWithMinTimestamp.views[0].timestamp);
-    let repoStartDate = new Date(repo.views[0].timestamp);
+    const minStartDate = new Date(repoWithMinTimestamp.views[0].timestamp);
+    const repoStartDate = new Date(repo.views[0].timestamp);
 
     if (repoStartDate.getTime() < minStartDate.getTime()) {
       repoWithMinTimestamp = repo;
@@ -310,16 +374,16 @@ function chartUpdate(index) {
 
   /* Adding dummy data to all repos to start from the oldest date */
   aggregateChartArray[index].repoArray.map(repo => {
-    let repoStartDate = new Date(repo.views[0].timestamp);
+    const repoStartDate = new Date(repo.views[0].timestamp);
 
     const days =
       Math.abs(repoStartDate.getTime() - startDate.getTime()) /
       (1000 * 3600 * 24);
 
-    if (days != 0) {
-      var time = new Date(repoWithMinTimestamp.views[0].timestamp);
-      for (var index = 0; index < days; ++index) {
-        repo.views.splice(index, 0, {
+    if (days !== 0) {
+      const time = new Date(repoWithMinTimestamp.views[0].timestamp);
+      for (let i = 0; i < days; i += 1) {
+        repo.views.splice(i, 0, {
           timestamp: time.toISOString(),
           count: 0,
           uniques: 0
@@ -366,15 +430,24 @@ jQuery(function() {
   });
 });
 
-function chartDeleteListener(e) {
-  console.log("TODO DELETEING");
-  button = e.currentTarget;
-
-  /* Remove from database */
+async function chartDeleteListener(e) {
+  const button = e.currentTarget;
+  const chartId = button.getAttribute("data-chartId");
+  console.log(chartId);
 
   /* Remove from HTML Page*/
+  let chartToRemove = button.parentElement.parentElement.parentElement;
+  chartToRemove.parentElement.removeChild(chartToRemove);
 
   /* Remove from aggregateChartArray */
+  
+  /* Remove from database */
+  const deleteResponse = await $.ajax({
+    url: `/aggCharts/delete`,
+    type: `GET`,
+    dataType: `application/json`,
+    data: { chartId }
+  });
 }
 
 function addRepoListener(e) {
@@ -387,15 +460,23 @@ function addRepoListener(e) {
 }
 
 function chartEditListener(e) {
-  chartIndexToEdit = e.currentTarget.id;
-  let aggregateChart = aggregateChartArray[chartIndexToEdit];
+  chartIdToEdit = e.currentTarget.id;
 
-  let repoStates = document.querySelectorAll("#fullRepoNames input");
-  for (var i = 0; i < repoStates.length; i++) {
+  for (let i = 0; i < aggregateChartArray.length; i += 1) {
+    if (aggregateChartArray[i].id === chartIdToEdit) {
+      chartIndexToEdit = i;
+      break;
+    }
+  }
+
+  const aggregateChart = aggregateChartArray[chartIndexToEdit];
+  const repoStates = document.querySelectorAll("#fullRepoNames input");
+
+  for (let i = 0; i < repoStates.length; i += 1) {
     repoStates[i].checked = false;
 
-    for (var j = 0; j < aggregateChart.repoArray.length; j += 1) {
-      if (aggregateChart.repoArray[j].reponame == repoStates[i].id) {
+    for (let j = 0; j < aggregateChart.repoArray.length; j += 1) {
+      if (aggregateChart.repoArray[j].reponame === repoStates[i].id) {
         repoStates[i].checked = true;
       }
     }

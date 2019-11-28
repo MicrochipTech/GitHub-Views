@@ -2,6 +2,7 @@ const AggregateChart = require("../models/AggregateChart");
 
 module.exports = {
   getAllForCurrentUser: async (req, res) => {
+    console.log("USER : " + req.user._id);
     const userAggCharts = AggregateChart.find({ user: req.user._id }).populate(
       "repo_list"
     );
@@ -19,7 +20,7 @@ module.exports = {
   },
 
   delete: async (req, res) => {
-    const { chartId } = req.body;
+    const { chartId } = req.query;
     await AggregateChart.deleteOne({ _id: chartId });
 
     res.send({
@@ -27,16 +28,15 @@ module.exports = {
     });
   },
 
-  addRepo: async (req, res) => {
-    const { chartId, repoId } = req.body;
+  updateRepoList: async (req, res) => {
+    const { chartId, repoList } = req.query;
+
     await AggregateChart.update(
       {
         _id: chartId
       },
       {
-        repo_list: {
-          $push: repoId
-        }
+        repo_list: repoList
       }
     );
 

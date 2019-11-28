@@ -3,7 +3,7 @@ const userCtrl = require("../controllers/UserCtrl");
 
 module.exports = {
   getRepoByName: reponame => {
-    return RepositoryModel.findOne({ reponame: reponame });
+    return RepositoryModel.findOne({ reponame });
   },
 
   getAllWithPopulate: str => {
