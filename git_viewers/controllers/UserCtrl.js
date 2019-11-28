@@ -15,20 +15,7 @@ module.exports = {
         res.send(users.map((u) => u.username));
     },
 
-    getUserByGithubId: (githubId) => {
-        return UserModel.findOne({githubId: githubId});
-    },
-
     getUserByUsername: (username) => {
         return UserModel.findOne({username: username})
-    },
-
-    create: (username, githubId, token) => {
-        const user = new UserModel({
-            username: username,
-            githubId: githubId,
-            token: token,
-        });
-        return user.save();
     },
 };
