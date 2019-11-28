@@ -14,6 +14,11 @@ chartOptions = {
         maxTicksLimit: 8
       }
     }],
+    yAxes: [{
+      ticks: {
+        beginAtZero: true
+      }
+    }]
   },
   elements: {
     line: {
