@@ -24,8 +24,6 @@ block content
                 div.row
                   h3.repo-title #{val.reponame}
                   div.actionButtons
-                    button(type="button" class="margin-8 add-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#addModal')
-                      i(class='fas fa-plus')
                     button(type="button" class="margin-8 share-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#shareModal')
                       i(class='fas fa-share-alt')
                   
@@ -39,8 +37,6 @@ block content
                 div.row
                   h3.repo-title #{val.reponame}
                   div.actionButtons
-                    button(type="button" class="margin-8 add-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#addModal')
-                      i(class='fas fa-plus')
                   
               canvas(id=val._id)
             br
@@ -63,14 +59,14 @@ block content
                 button.btn.btn-secondary(type='button' data-dismiss='modal') Close
                 button.btn.btn-primary(type='button', data-dismiss='modal', onClick='shareRepository()') Share
 
-        #addModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='addModalLabel' aria-hidden='true')
+        #editModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='editModalLabel' aria-hidden='true')
           .modal-dialog(role='document')
             .modal-content
               .modal-header
-                h5#addModalLabel.modal-title Aggregate this to:
+                h5#editModalLabel.modal-title Select charts:
                 button.close(type='button' data-dismiss='modal' aria-label='Close')
                   span(aria-hidden='true') &times;
               .modal-body
-                div.btn-group-vertical(id='modalChartList' style="width: 100%")
+                .div(id='fullRepoNames')
               .modal-footer
-                button.btn.btn-primary(type='button', data-dismiss='modal') Done
+                button.btn.btn-primary(type='button', data-dismiss='modal', onClick='saveChartToDatabase()') Apply and Save

@@ -1,64 +1,83 @@
-const passport = require('passport');
-const GitHubStrategy = require('passport-github').Strategy;
-const axios = require('axios');
-const userCtrl = require('../controllers/UserCtrl');
-const repositoryCtrl = require('../controllers/RepositoryCtrl');
+const passport = require("passport");
+const GitHubStrategy = require("passport-github").Strategy;
+const axios = require("axios");
+const RepositoryModel = require("../models/Repository.js");
 
-const UserModel = require('../models/User');
+const UserModel = require("../models/User");
 
 passport.serializeUser((user, done) => {
-    done(null, user.id);
+  done(null, user.id);
 });
 
 passport.deserializeUser(async (id, done) => {
-    const user = await UserModel.findById(id);
-    done(null, user);
+  const user = await UserModel.findById(id);
+  done(null, user);
 });
 
 passport.use(
-    new GitHubStrategy({
-        clientID: '03963de3c3c3f3cc309a',
-        clientSecret: '49309e90a3564ff1e07469db3758cadea2394f3c',
-        callbackURL: '/auth/github/redirect',
-    }, (accessToken, refreshToken, profile, done) => {
-        userCtrl.getUserByGithubId(profile.id).then((currentUser) => {
-            if (currentUser) {
-                const existingUser = currentUser;
-                existingUser.token = accessToken;
-                existingUser.save().then((updatedUser) => {
-                    done(null, updatedUser);
-                });
-            } else {
-                userCtrl.create(profile.username, profile.id, accessToken).then(async (newUser) => {
-                    const getRepoTraffic = async (user, reponame) => {
-                        let response = await axios({
-                            url: `https://api.github.com/repos/${reponame}/traffic/views`,
-                            headers: { Authorization: `token ${user.token}` },
-                        });
-                        const { count, uniques, views } = response.data;
+  new GitHubStrategy(
+    {
+      clientID: process.env.GH_CLIENT_ID,
+      clientSecret: process.env.GH_CLIENT_SECRET,
+      callbackURL: "/auth/github/redirect"
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      const currentUser = await UserModel.findOne({ githubId: profile.id });
 
-                        repositoryCtrl.create(
-                            user._id,
-                            reponame,
-                            count,
-                            uniques,
-                            views,
-                        );
-                    };
+      if (currentUser) {
+        const updatedUser = await UserModel.findOneAndUpdate(
+          {
+            githubId: profile.id
+          },
+          {
+            token: accessToken
+          }
+        );
+        done(null, updatedUser);
+      } else {
+        const newUser = await new UserModel({
+          username: profile.username,
+          githubId: profile.id,
+          token: accessToken
+        }).save();
 
-                    let response = await axios({
-                        url: `https://api.github.com/users/${newUser.username}/repos`,
-                        headers: { Authorization: `token ${newUser.token}` },
-                        params: { type: 'all' },
-                    });
-
-                    response.data.forEach((repo) => {
-                        getRepoTraffic(newUser, repo.full_name);
-                    });
-
-                    done(null, newUser);
-                });
-            }
+        const response = await axios({
+          url: `https://api.github.com/users/${newUser.username}/repos`,
+          headers: { Authorization: `token ${newUser.token}` },
+          params: { type: "all" }
         });
-    }),
+
+        for (repo of response.data) {
+          const response = await axios({
+            url: `https://api.github.com/repos/${repo.full_name}/traffic/views`,
+            headers: { Authorization: `token ${newUser.token}` }
+          });
+          const { count, uniques } = response.data;
+          let { views } = response.data;
+          const today = new Date();
+          today.setUTCHours(0, 0, 0, 0);
+
+          views = views.filter(info => {
+            infoTimestamp = new Date(info.timestamp);
+
+            if (infoTimestamp.getTime() < today.getTime()) {
+              return true;
+            } else {
+              return false;
+            }
+          });
+
+          await new RepositoryModel({
+            user_id: newUser._id,
+            reponame: repo.full_name,
+            count: count,
+            uniques: uniques,
+            views: views
+          }).save();
+        }
+
+        done(null, newUser);
+      }
+    }
+  )
 );

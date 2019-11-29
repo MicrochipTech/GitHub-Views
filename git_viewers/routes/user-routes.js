@@ -1,6 +1,6 @@
-const router = require('express').Router();
-const userCtrl = require('../controllers/UserCtrl');
+const router = require("express").Router();
+const userCtrl = require("../controllers/UserCtrl");
 
-router.get('/startsWith', userCtrl.getWhereUsernameStartsWith);
+router.get("/startsWith", userCtrl.getWhereUsernameStartsWith);
 
 module.exports = router;
