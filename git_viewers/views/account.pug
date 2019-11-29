@@ -24,7 +24,7 @@ block content
                 div.row
                   h3.repo-title #{val.reponame}
                   div.actionButtons
-                    button(type="button" class="margin-8 share-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#shareModal')
+                    button(type="button" class="margin-8 share-btn btn btn-outline-dark" data-toggle='modal' data-repoId=val._id data-target='#shareModal' onClick="repoShareListener(this)")
                       i(class='fas fa-share-alt')
                   
               canvas(id=val._id)
