@@ -11,7 +11,7 @@ require("./config/passport-setup");
 require("./config/cron-setup");
 
 mongoose.connect(
-  `mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@mongo/app?authSource=admin`,
+  `mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@mongo/${process.env.MONGO_INITDB_DATABASE}?authSource=admin`,
   { useNewUrlParser: true }
 );
 
