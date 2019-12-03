@@ -6,7 +6,7 @@ const logger = require("morgan");
 const mongoose = require("mongoose");
 const cookieSession = require("cookie-session");
 const passport = require("passport");
-//const cron = require('node-cron');
+
 require("./config/passport-setup");
 require("./config/cron-setup");
 
@@ -44,7 +44,9 @@ app.use((req, res, next) => {
   next(createError(404));
 });
 
-// error handler
+// Error handler
+// Error handler must have 4 parameters, even if not used
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   // set locals, only providing error in development
   res.locals.message = err.message;

@@ -47,34 +47,35 @@ passport.use(
           params: { type: "all" }
         });
 
-        for (repo of response.data) {
-          const response = await axios({
+        const promises = response.data.map(async repo => {
+          const repoTrafficResponse = await axios({
             url: `https://api.github.com/repos/${repo.full_name}/traffic/views`,
             headers: { Authorization: `token ${newUser.token}` }
           });
-          const { count, uniques } = response.data;
-          let { views } = response.data;
+          const { count, uniques } = repoTrafficResponse.data;
+          let { views } = repoTrafficResponse.data;
           const today = new Date();
           today.setUTCHours(0, 0, 0, 0);
 
           views = views.filter(info => {
-            infoTimestamp = new Date(info.timestamp);
+            const infoTimestamp = new Date(info.timestamp);
 
             if (infoTimestamp.getTime() < today.getTime()) {
               return true;
-            } else {
-              return false;
             }
+
+            return false;
           });
 
           await new RepositoryModel({
             user_id: newUser._id,
             reponame: repo.full_name,
-            count: count,
-            uniques: uniques,
-            views: views
+            count,
+            uniques,
+            views
           }).save();
-        }
+        });
+        await Promise.all(promises);
 
         done(null, newUser);
       }

@@ -20,22 +20,22 @@ function updateRepos() {
           let viewsToUpdate = response.data.views;
 
           if (repoEntry.views.length !== 0) {
-            var today = new Date();
+            const today = new Date();
             today.setUTCHours(0, 0, 0, 0);
 
-            lastTimestamp =
+            const lastTimestamp =
               repoEntry.views[repoEntry.views.length - 1].timestamp;
             viewsToUpdate = viewsToUpdate.filter(info => {
-              let timestampDate = new Date(info.timestamp);
+              const timestampDate = new Date(info.timestamp);
 
               if (
                 timestampDate.getTime() > lastTimestamp.getTime() &&
                 timestampDate.getTime() < today.getTime()
               ) {
                 return true;
-              } else {
-                return false;
               }
+
+              return false;
             });
           }
 
@@ -71,35 +71,36 @@ function checkForNewRepos() {
       })
         .then(response => {
           const getRepoTraffic = async (user, reponame) => {
-            let response = await axios({
+            const repoTrafficResponse = await axios({
               url: `https://api.github.com/repos/${reponame}/traffic/views`,
               headers: { Authorization: `token ${user.token}` }
             });
-            var { count, uniques, views } = response.data;
+            const { count, uniques } = repoTrafficResponse.data;
+            let { views } = repoTrafficResponse.data;
 
-            var today = new Date();
+            const today = new Date();
             today.setUTCHours(0, 0, 0, 0);
 
             views = views.filter(info => {
-              infoTimestamp = new Date(info.timestamp);
+              const infoTimestamp = new Date(info.timestamp);
 
               if (infoTimestamp.getTime() < today.getTime()) {
                 return true;
-              } else {
-                return false;
               }
+
+              return false;
             });
 
             repositoryCtrl.create(user._id, reponame, count, uniques, views);
           };
 
-          repos = response.data;
+          const repos = response.data;
 
           for (let repoIndex = 0; repoIndex < repos.length; repoIndex += 1) {
             repositoryCtrl
               .getRepoByName(repos[repoIndex].full_name)
               .then(repo => {
-                if (repo == undefined) {
+                if (repo === undefined) {
                   getRepoTraffic(users[userIndex], repos[repoIndex].full_name);
                 }
               });
@@ -108,18 +109,6 @@ function checkForNewRepos() {
         .catch(error => {
           console.log(error);
         });
-    }
-  });
-}
-
-function deleteTraffic() {
-  console.log("Deleting traffic for last 7 days");
-
-  repositoryCtrl.getAllWithPopulate("user_id").then(repos => {
-    /* Iterate trough all repos in database */
-    for (let repoIndex = 0; repoIndex < repos.length; repoIndex += 1) {
-      const repoEntry = repos[repoIndex];
-      repoEntry.views.splice(-7, 7);
     }
   });
 }
