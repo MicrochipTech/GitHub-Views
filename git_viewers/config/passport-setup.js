@@ -1,8 +1,7 @@
 const passport = require("passport");
 const GitHubStrategy = require("passport-github").Strategy;
-const axios = require("axios");
+const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryModel = require("../models/Repository.js");
-
 const UserModel = require("../models/User");
 
 passport.serializeUser((user, done) => {
@@ -41,37 +40,25 @@ passport.use(
           token: accessToken
         }).save();
 
-        const response = await axios({
-          url: `https://api.github.com/users/${newUser.username}/repos`,
-          headers: { Authorization: `token ${newUser.token}` },
-          params: { type: "all" }
-        });
+        const response = await GitHubApiCtrl.getUserRepos(newUser);
 
         const promises = response.data.map(async repo => {
-          const repoTrafficResponse = await axios({
-            url: `https://api.github.com/repos/${repo.full_name}/traffic/views`,
-            headers: { Authorization: `token ${newUser.token}` }
-          });
-          const { count, uniques } = repoTrafficResponse.data;
-          let { views } = repoTrafficResponse.data;
-          const today = new Date();
-          today.setUTCHours(0, 0, 0, 0);
+          const repoTrafficResponse = await GitHubApiCtrl.getRepoTraffic(
+            repo.full_name,
+            newUser.token
+          );
+          const { views } = repoTrafficResponse.data;
 
-          views = views.filter(info => {
-            const infoTimestamp = new Date(info.timestamp);
-
-            if (infoTimestamp.getTime() < today.getTime()) {
-              return true;
-            }
-
-            return false;
-          });
+          if (
+            new Date(views[views.length - 1].timestamp).getTime() >=
+            new Date().setUTCHours(0, 0, 0, 0).getTime()
+          ) {
+            views.pop();
+          }
 
           await new RepositoryModel({
             user_id: newUser._id,
             reponame: repo.full_name,
-            count,
-            uniques,
             views
           }).save();
         });
