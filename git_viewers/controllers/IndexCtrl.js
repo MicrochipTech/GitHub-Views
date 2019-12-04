@@ -12,13 +12,13 @@ module.exports = {
       const aggregateCharts = await AggregateChartModel.find({
         user: req.user._id
       });
-
+      
       const dataToPlot = {
         userRepos,
         sharedRepos: user.sharedRepos,
         aggregateCharts
       };
-
+      
       res.render("account", { user: req.user, data: dataToPlot });
     } else {
       res.render("index");
