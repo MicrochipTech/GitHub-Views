@@ -41,7 +41,7 @@ if (data.sharedRepos) {
   });
 }
 
-if (data.aggregateChart) {
+if (data.aggregateCharts) {
   data.aggregateCharts.forEach(aggregateChart => {
     createChartElements(aggregateChart._id);
     const c = window.aggregateChartArray[window.aggregateChartArray.length - 1];
