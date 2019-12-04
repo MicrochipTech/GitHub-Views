@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-module.export = {
+module.exports = {
   getUserRepos: user => {
     return axios({
       url: `https://api.github.com/users/${user.username}/repos`,

@@ -48,10 +48,12 @@ passport.use(
             newUser.token
           );
           const { views } = repoTrafficResponse.data;
+          const today = new Date();
+          today.setUTCHours(0, 0, 0, 0);
 
           if (
             new Date(views[views.length - 1].timestamp).getTime() >=
-            new Date().setUTCHours(0, 0, 0, 0).getTime()
+            today.getTime()
           ) {
             views.pop();
           }

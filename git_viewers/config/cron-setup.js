@@ -18,9 +18,12 @@ async function updateRepos() {
       const last = repoEntry.views[repoEntry.views.length - 1].timestamp;
       viewsToUpdate = viewsToUpdate.filter(info => {
         const timestampDate = new Date(info.timestamp);
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
         if (
           timestampDate.getTime() > last.getTime() &&
-          timestampDate.getTime() < new Date().setUTCHours(0, 0, 0, 0).getTime()
+          timestampDate.getTime() < today.getTime()
         ) {
           return true;
         }
@@ -50,10 +53,11 @@ async function checkForNewRepos() {
           user.token
         );
         const { views } = repoTrafficResponse.data;
-
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
         if (
           new Date(views[views.length - 1].timestamp).getTime() >=
-          new Date().setUTCHours(0, 0, 0, 0).getTime()
+          today.getTime()
         ) {
           views.pop();
         }
