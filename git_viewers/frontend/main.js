@@ -7,8 +7,6 @@ window.repoIdToShare = undefined;
 window.chartIndexToEdit = undefined;
 window.chartIdToEdit = undefined;
 
-console.log(data);
-
 if (data.userRepos) {
   data.userRepos.forEach(userRepo => {
     const repo = prepareRepo(userRepo);

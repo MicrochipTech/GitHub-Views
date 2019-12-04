@@ -56,8 +56,9 @@ async function checkForNewRepos() {
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
         if (
+          views.length !== 0 &&
           new Date(views[views.length - 1].timestamp).getTime() >=
-          today.getTime()
+            today.getTime()
         ) {
           views.pop();
         }
