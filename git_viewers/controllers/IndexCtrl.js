@@ -1,6 +1,6 @@
 const UserModel = require("../models/User");
 const RepoModel = require("../models/Repository");
-const AggregateChartModel= require("../models/AggregateChart");
+const AggregateChartModel = require("../models/AggregateChart");
 
 module.exports = {
   home: async (req, res) => {
@@ -10,7 +10,7 @@ module.exports = {
         "sharedRepos"
       );
       const aggregateCharts = await AggregateChartModel.find({
-        user: req.user._id 
+        user: req.user._id
       });
 
       const dataToPlot = {

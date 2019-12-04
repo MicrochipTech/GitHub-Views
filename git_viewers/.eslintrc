@@ -3,8 +3,11 @@
   "plugins": ["prettier"],
   "rules": {
     "prettier/prettier": ["error"],
-    "no-underscore-dangle": ["error", { 
-      "allow": ["_id", "_active"] 
+    "no-console": 0,
+    "no-underscore-dangle": [
+      "error",
+      {
+        "allow": ["_id", "_active"]
       }
     ]
   },

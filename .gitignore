@@ -1,2 +1,4 @@
 git_viewers/node_modules
+git_viewers/public/bundle.js
 Makefile
+.env

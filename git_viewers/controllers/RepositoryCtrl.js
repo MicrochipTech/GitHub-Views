@@ -1,26 +1,12 @@
-const RepositoryModel = require("../models/Repository.js");
-const userCtrl = require("../controllers/UserCtrl");
+const UserModel = require("../models/User");
 
 module.exports = {
-  getRepoByName: reponame => {
-    return RepositoryModel.findOne({ reponame });
-  },
-
-  getAllWithPopulate: str => {
-    return RepositoryModel.find().populate(str);
-  },
-
-  share: (req, res) => {
+  share: async (req, res) => {
     const { repoId, username } = req.body;
 
-    userCtrl.getUserByUsername(username).then(user => {
-      if (user) {
-        user.sharedRepos.push(repoId);
-        user.save();
-        res.send("Success sharing the repo!");
-      } else {
-        res.send("User not found!");
-      }
-    });
+    const user = await UserModel.findOne({ username });
+    user.sharedRepos.push(repoId);
+    await user.save();
+    res.send("Success sharing the repo!");
   }
 };
