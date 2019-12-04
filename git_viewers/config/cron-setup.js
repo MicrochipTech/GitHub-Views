@@ -112,18 +112,6 @@ function checkForNewRepos() {
   });
 }
 
-function deleteTraffic() {
-  console.log("Deleting traffic for last 7 days");
-
-  repositoryCtrl.getAllWithPopulate("user_id").then(repos => {
-    /* Iterate trough all repos in database */
-    for (let repoIndex = 0; repoIndex < repos.length; repoIndex += 1) {
-      const repoEntry = repos[repoIndex];
-      repoEntry.views.splice(-7, 7);
-    }
-  });
-}
-
 cron.schedule("00 07 * * *", () => {
   updateRepos();
   checkForNewRepos();

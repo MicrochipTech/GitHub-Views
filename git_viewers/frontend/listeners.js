@@ -15,12 +15,16 @@ async function chartDeleteListener(e) {
   /* Remove from aggregateChartArray */
 
   /* Remove from database */
-  await $.ajax({
-    url: `/aggCharts/delete`,
-    type: `GET`,
-    dataType: `application/json`,
-    data: { chartId }
-  });
+  try {
+    await $.ajax({
+      url: `/aggCharts/delete`,
+      type: `GET`,
+      dataType: `application/json`,
+      data: { chartId }
+    });
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 function addRepoListener(e) {

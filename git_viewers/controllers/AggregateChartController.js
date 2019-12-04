@@ -2,7 +2,6 @@ const AggregateChart = require("../models/AggregateChart");
 
 module.exports = {
   getAllForCurrentUser: async (req, res) => {
-    console.log("USER : " + req.user._id);
     const userAggCharts = AggregateChart.find({ user: req.user._id }).populate(
       "repo_list"
     );

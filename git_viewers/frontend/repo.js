@@ -74,8 +74,6 @@ function prepareRepo(repo) {
 window.shareRepository = () => {
   const username = document.getElementById("share-with").value;
 
-  console.log(window.repoIdToShare, username);
-
   $.ajax({
     url: "/repo/share",
     type: "POST",
