@@ -47,7 +47,8 @@ async function checkForNewRepos() {
       const repoEntry = await RepositoryModel.findOne({
         reponame: repo.full_name
       });
-      if (repoEntry === undefined) {
+
+      if (repoEntry === null) {
         const repoTrafficResponse = await GitHubApiCtrl.getRepoTraffic(
           repo.full_name,
           user.token
@@ -73,7 +74,7 @@ async function checkForNewRepos() {
   });
 }
 
-cron.schedule("00 07 * * *", () => {
+cron.schedule("25 12 * * *", () => {
   updateRepos();
   checkForNewRepos();
 });

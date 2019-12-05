@@ -47,7 +47,6 @@ passport.use(
             repo.full_name,
             newUser.token
           );
-          console.log(repoTrafficResponse.data);
           const { views } = repoTrafficResponse.data;
           const today = new Date();
           today.setUTCHours(0, 0, 0, 0);
