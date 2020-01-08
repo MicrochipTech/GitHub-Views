@@ -23,11 +23,11 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
 
   web:
-    build: ./git_viewers
+    build: ./src
     restart: always
     command: npm start
     volumes:
-      - ./git_viewers:/usr/app/
+      - ./src:/usr/app/
     ports:
       - 8000:8000
     depends_on:
