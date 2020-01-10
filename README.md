@@ -3,8 +3,8 @@
 ## :star: Features
 
 - [x] Login With GitHub
-- [x] View all time views and unique views for your repo
-- [x] Share your repo views data with other users
+- [x] View all time views and unique views charts for your repos
+- [x] Share your repos views data with other users
 - [x] Create aggregate line-charts of multiple repos
 - [ ] Email & Password authentication
 - [ ] Configurable time window for charts
@@ -13,14 +13,13 @@
 
 ## :rocket: Deployment
 
-Get the code using the following commands:
+Clone this repository.
 
 ```sh
 $ git clone
-$ cd
 ```
 
-Create a file called `.env`. This file is used to configure the variables used by Docker. There is an example file called [.example.env](./.example.env) in this repo.
+In the project folder create a file called `.env`. This file is used to configure the variables used by Docker. There is an example file called [.example.env](./.example.env) in this repo.
 
 The complete list of variables that have to be in your `.env` file is:
 
@@ -34,7 +33,7 @@ The complete list of variables that have to be in your `.env` file is:
 - TOKEN_ENC_KEY
 - TOKEN_SIG_KEY
 
-`MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_DATABASE`, `ME_CONFIG_BASICAUTH_USERNAME`, `ME_CONFIG_BASICAUTH_PASSWORD` are values you can chose freely.
+`MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_DATABASE`, `ME_CONFIG_BASICAUTH_USERNAME`, `ME_CONFIG_BASICAUTH_PASSWORD` values you can chose freely.
 
 Now [create a new GitHub OAuth application](https://developer.github.com/apps/building-github-apps/creating-a-github-app/). You will need the client id and the client secret associated with this GitHub OAuth application. These will be added in the `.env` file as the values of `GH_CLIENT_ID` and `GH_CLIENT_SECRET`.
 
@@ -45,14 +44,22 @@ $ openssl rand -base64 32
 $ openssl rand -base64 64
 ```
 
+Install the npm dependencies and start the application.
+
 ```sh
-$ cd
+$ cd src
 $ npm i
 $ cd ..
 $ docker-compose up
 ```
 
-## :thumbsup: Contributions are much appreciated
+Visit [http://loclahost:8000](http://loclahost:8000) and login with your GitHub account.
+
+The tool will start collecting views data for all the repos you have access to.
+
+## :thumbsup: Your contribution is awesome
+
+Feel free to add features and this project and submit a PR. We will add you to the contributors list below.
 
 [![m17336](https://github.com/m17336.png?size=40)](https://github.com/m17336)
 [![filipgeorge](https://github.com/filipgeorge.png?size=40)](https://github.com/filipgeorge)
