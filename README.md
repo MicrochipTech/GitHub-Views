@@ -16,7 +16,7 @@
 Clone this repository.
 
 ```sh
-$ git clone
+$ git clone https://github.com/MicrochipTech/GitHub-Views.git
 ```
 
 In the project folder create a file called `.env`. This file is used to configure the variables used by Docker. There is an example file called [.example.env](./.example.env) in this repo.
@@ -61,5 +61,5 @@ The tool will start collecting views data for all the repos you have access to.
 
 Feel free to add features and this project and submit a PR. We will add you to the contributors list below.
 
-[![m17336](https://github.com/m17336.png?size=40)](https://github.com/m17336)
-[![filipgeorge](https://github.com/filipgeorge.png?size=40)](https://github.com/filipgeorge)
+[<img alt="m17336" src="https://github.com/m17336.png?size=40" height="40">](https://github.com/m17336)
+[<img alt="filipgeorge" src="https://github.com/filipgeorge.png?size=40" height="40">](https://github.com/filipgeorge)
