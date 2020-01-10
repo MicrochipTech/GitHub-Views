@@ -1,0 +1,5 @@
+src/node_modules
+src/public/bundle.js
+Makefile
+.env
+backup

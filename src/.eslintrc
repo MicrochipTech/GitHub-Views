@@ -1,0 +1,22 @@
+{
+  "extends": ["airbnb-base", "prettier"],
+  "plugins": ["prettier"],
+  "rules": {
+    "prettier/prettier": ["error"],
+    "no-console": 0,
+    "no-underscore-dangle": [
+      "error",
+      {
+        "allow": ["_id", "_active"]
+      }
+    ]
+  },
+  "globals": {
+    "document": false,
+    "data": false,
+    "moment": false,
+    "window": false,
+    "$": false,
+    "Chart": false
+  }
+}

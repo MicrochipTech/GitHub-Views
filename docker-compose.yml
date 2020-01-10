@@ -1,0 +1,44 @@
+version: "3.1"
+
+services:
+  mongo:
+    image: mongo
+    restart: always
+    volumes:
+      - ./backup:/backup
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
+
+  web:
+    build: ./src
+    restart: always
+    command: npm start
+    volumes:
+      - ./src:/usr/app/
+    ports:
+      - 8000:8000
+    depends_on:
+      - mongo
+    environment:
+      PORT: 8000
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+      GH_CLIENT_ID: ${GH_CLIENT_ID}
+      GH_CLIENT_SECRET: ${GH_CLIENT_SECRET}
+      TOKEN_ENC_KEY: ${TOKEN_ENC_KEY}
+      TOKEN_SIG_KEY: ${TOKEN_SIG_KEY}
