@@ -1,4 +1,6 @@
-git_viewers/node_modules
+src/node_modules
+src/public/bundle.js
 Makefile
 backup
 .env
+backup
