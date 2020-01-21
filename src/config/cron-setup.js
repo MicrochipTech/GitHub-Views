@@ -45,7 +45,8 @@ async function checkForNewRepos() {
 
     response.data.forEach(async repo => {
       const repoEntry = await RepositoryModel.findOne({
-        reponame: repo.full_name
+        reponame: repo.full_name,
+        user_id: user._id
       });
 
       if (repoEntry === null) {

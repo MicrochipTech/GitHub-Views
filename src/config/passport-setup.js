@@ -1,4 +1,5 @@
 const passport = require("passport");
+const LocalStrategy = require("passport-local").Strategy;
 const GitHubStrategy = require("passport-github").Strategy;
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryModel = require("../models/Repository.js");
@@ -12,6 +13,32 @@ passport.deserializeUser(async (id, done) => {
   const user = await UserModel.findById(id);
   done(null, user);
 });
+
+passport.use(
+  new LocalStrategy(function(username, password, callback) {
+    UserModel.findOne({ username }, function(err, user) {
+      if (err) {
+        return callback(err);
+      }
+
+      if (!user) {
+        return callback(null, false, { message: "No user found." });
+        // return callback("No user found.");
+      }
+
+      user.verifyPassword(password, function(err, isMatch) {
+        if (err) {
+          return callback(err);
+        }
+        if (!isMatch) {
+          return callback(null, false, { message: "Invalid login." });
+          // return callback("Invalid login.");
+        }
+        return callback(null, user);
+      });
+    });
+  })
+);
 
 passport.use(
   new GitHubStrategy(

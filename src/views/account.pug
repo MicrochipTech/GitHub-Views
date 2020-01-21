@@ -13,7 +13,13 @@ block content
       div.col-md-2
         nav
           ul
-            li(id='myReposButton', onClick='divSwitcher(userRepositories)') My Repositories
+            if user.githubId
+                li(id='myReposButton', onClick='divSwitcher(userRepositories)') My Repositories
+            else 
+                script.
+                    setTimeout(() => {
+                        divSwitcher(sharedRepositories)
+                    }, 100)
             li(id='sharedRepositoriesButton', onClick='divSwitcher(sharedRepositories)') Shared Repositories
             li(id='aggregateChartsButton', onClick='divSwitcher(aggregateCharts)') Aggregate Charts
       div.col-md-10
