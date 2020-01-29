@@ -22,6 +22,10 @@ block content
                     }, 100)
             li(id='sharedRepositoriesButton', onClick='divSwitcher(sharedRepositories)') Shared Repositories
             li(id='aggregateChartsButton', onClick='divSwitcher(aggregateCharts)') Aggregate Charts
+          hr
+          ul
+            li(id='exportChartsButton', onClick='exportListener()') Export as CSV
+
       div.col-md-10
         div(id='userRepositories')
           each val in data.userRepos

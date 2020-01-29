@@ -7,33 +7,120 @@ window.repoIdToShare = undefined;
 window.chartIndexToEdit = undefined;
 window.chartIdToEdit = undefined;
 
+let maximumTimetamp = new Date();
+maximumTimetamp.setUTCHours(0, 0, 0, 0);
+maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
+
+let minimumTimetamp = new Date();
+minimumTimetamp.setUTCHours(0, 0, 0, 0);
+minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
+
 if (data.userRepos) {
   data.userRepos.forEach(userRepo => {
-    const repo = prepareRepo(userRepo);
-    addRepoInToggleList(repo);
-
-    const labels = repo.views.map(h =>
-      moment(h.timestamp).format("DD MMM YYYY")
-    );
-    const views = repo.views.map(h => h.count);
-    const uniques = repo.views.map(h => h.uniques);
-    const ctx = document.getElementById(repo._id).getContext("2d");
-    document.getElementById(repo._id).height = 100;
-
-    createChart(ctx, labels, views, uniques);
+      if(userRepo.views.length != 0) {
+      let firstRepoTimestamp = new Date(userRepo.views[0].timestamp);
+    
+      if (firstRepoTimestamp < minimumTimetamp) {
+        minimumTimetamp = firstRepoTimestamp;
+      }
+    }
   });
 }
 
 if (data.sharedRepos) {
   data.sharedRepos.forEach(sharedRepo => {
-    const repo = prepareRepo(sharedRepo);
+    if(sharedRepo.views.length != 0) {
+      let firstRepoTimestamp = new Date(sharedRepo.views[0].timestamp);
+    
+      if (firstRepoTimestamp < minimumTimetamp) {
+        minimumTimetamp = firstRepoTimestamp;
+      }
+    }
+  });
+}
+
+const tableHead = ["reponame", "type"];
+let timeIndex = new Date(minimumTimetamp.getTime());
+
+while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
+  
+  tableHead.push(moment(timeIndex).format("DD MMM YYYY"));
+
+  timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+}
+
+const rows = [tableHead];
+
+if (data.userRepos) {
+  data.userRepos.forEach(userRepo => {
+
+    const repo = prepareRepo(userRepo);
     addRepoInToggleList(repo);
+
+    let viewsCSV = [repo.reponame, "views"];
+    let uniquesCSV = [repo.reponame, "uniques"];
+
+    const limitTimestamp = new Date(repo.views[0].timestamp);
+    timeIndex = new Date(minimumTimetamp.getTime());
+
+    while (timeIndex.getTime() < limitTimestamp.getTime()) {
+
+      viewsCSV.push(0);
+      uniquesCSV.push(0);
+
+      timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+    }
 
     const labels = repo.views.map(h =>
       moment(h.timestamp).format("DD MMM YYYY")
     );
     const views = repo.views.map(h => h.count);
     const uniques = repo.views.map(h => h.uniques);
+
+    viewsCSV = viewsCSV.concat(views);
+    uniquesCSV = uniquesCSV.concat(uniques);
+    rows.push(viewsCSV);
+    rows.push(uniquesCSV);
+
+    const ctx = document.getElementById(repo._id).getContext("2d");
+    document.getElementById(repo._id).height = 100;
+      
+    createChart(ctx, labels, views, uniques);
+  });
+}
+
+if (data.sharedRepos) {
+
+  data.sharedRepos.forEach(sharedRepo => {
+
+    const repo = prepareRepo(sharedRepo);
+    addRepoInToggleList(repo);
+
+    let viewsCSV = [repo.reponame, "views"];
+    let uniquesCSV = [repo.reponame, "uniques"];
+
+    const limitTimestamp = new Date(repo.views[0].timestamp);
+    timeIndex = new Date(minimumTimetamp.getTime());
+
+    while (timeIndex.getTime() < limitTimestamp.getTime()) {
+
+      viewsCSV.push(0);
+      uniquesCSV.push(0);
+
+      timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+    }
+
+    const labels = repo.views.map(h =>
+      moment(h.timestamp).format("DD MMM YYYY")
+    );
+    const views = repo.views.map(h => h.count);
+    const uniques = repo.views.map(h => h.uniques);
+
+    viewsCSV = viewsCSV.concat(views);
+    uniquesCSV = uniquesCSV.concat(uniques);
+    rows.push(viewsCSV);
+    rows.push(uniquesCSV);
+
     const ctx = document.getElementById(repo._id).getContext("2d");
     document.getElementById(repo._id).height = 100;
 
@@ -65,6 +152,19 @@ if (data.aggregateCharts) {
 
     chartUpdate(window.aggregateChartArray.length - 1);
   });
+}
+
+window.exportListener = () => {
+  let csvContent = "data:text/csv;charset=utf-8," 
+    + rows.map(e => e.join(",")).join("\n");
+
+    var encodedUri = encodeURI(csvContent);
+    var link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "repoTraffic.csv");
+    document.body.appendChild(link);
+
+    link.click();
 }
 
 window.divSwitcher = e => {

@@ -1,5 +1,4 @@
 const passport = require("passport");
-const to = require("await-to-js").default;
 const UserModel = require("../models/User");
 
 module.exports = {
