@@ -18,10 +18,9 @@ module.exports = {
 
   sync: async (req, res) => {
     const user = req.user;
-    console.log("synch " + user);
     const response = await GitHubApiCtrl.getUserRepos(user);
 
-    response.data.forEach(async repo => {
+    const p = response.data.map(async repo => {
       const repoEntry = await RepositoryModel.findOne({
         reponame: repo.full_name,
         user_id: user._id
@@ -50,6 +49,8 @@ module.exports = {
         }).save();
       }
     });
+    
+    Promise.all(p);
 
     res.send("Success synchronizing reposiories!");
   }
