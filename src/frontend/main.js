@@ -167,6 +167,15 @@ window.exportListener = () => {
     link.click();
 }
 
+window.syncListener = async () => {
+  await $.ajax({
+    url: `/repo/sync`,
+    type: `GET`
+  });
+
+  window.location.reload();
+}
+
 window.divSwitcher = e => {
   const elements = e.parentElement.children;
 
