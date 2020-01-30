@@ -78,8 +78,6 @@ async function checkForNewRepos() {
   });
 }
 
-checkForNewRepos();
-
 cron.schedule("25 12 * * *", () => {
   updateRepos();
   checkForNewRepos();
