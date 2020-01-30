@@ -39,7 +39,10 @@ async function updateRepos() {
 async function checkForNewRepos() {
   console.log("Checking for new repos");
 
-  const users = await UserModel.find();
+  const users = await UserModel.find({
+    githubId: { $ne: null }
+  });
+
   users.forEach(async user => {
     const response = await GitHubApiCtrl.getUserRepos(user);
 
@@ -74,6 +77,8 @@ async function checkForNewRepos() {
     });
   });
 }
+
+checkForNewRepos();
 
 cron.schedule("25 12 * * *", () => {
   updateRepos();
