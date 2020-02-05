@@ -7,6 +7,10 @@ module.exports = {
     res.redirect("/");
   },
 
+  me: async (req, res) => {
+    res.send(req.user);
+  },
+
   github: passport.authenticate("github", {
     scope: ["user", "repo"]
   }),

@@ -14,5 +14,9 @@ module.exports = {
     const usersList = users.map(u => u.username);
     usersList.splice(usersList.indexOf(req.user.username), 1);
     res.send(usersList);
+  },
+
+  getData: async (req, res) => {
+    res.send("OK");
   }
 };
