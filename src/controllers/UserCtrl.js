@@ -1,4 +1,6 @@
 const UserModel = require("../models/User");
+const RepoModel = require("../models/Repository");
+const AggregateChartModel = require("../models/AggregateChart");
 
 module.exports = {
   getWhereUsernameStartsWith: async (req, res) => {
@@ -17,6 +19,24 @@ module.exports = {
   },
 
   getData: async (req, res) => {
-    res.send("OK");
+    if (req.isAuthenticated()) {
+      const userRepos = await RepoModel.find({ user_id: req.user._id });
+      const { sharedRepos, githubId } = await UserModel.findById(
+        req.user._id
+      ).populate("sharedRepos");
+      const aggregateCharts = await AggregateChartModel.find({
+        user: req.user._id
+      });
+      const dataToPlot = {
+        userRepos,
+        sharedRepos,
+        aggregateCharts,
+        githubId
+      };
+
+      res.json(dataToPlot);
+    } else {
+      res.status(404).send("not authenticated");
+    }
   }
 };

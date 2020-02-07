@@ -44,8 +44,8 @@ passport.use(
   new GitHubStrategy(
     {
       clientID: process.env.GH_CLIENT_ID,
-      clientSecret: process.env.GH_CLIENT_SECRET,
-      callbackURL: "/auth/github/redirect"
+      clientSecret: process.env.GH_CLIENT_SECRET
+      // callbackURL: "http://localhost:3000/api/auth/github/redirect"
     },
     async (accessToken, refreshToken, profile, done) => {
       const currentUser = await UserModel.findOne({ githubId: profile.id });

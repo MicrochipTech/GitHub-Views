@@ -8,7 +8,8 @@ module.exports = {
   },
 
   me: async (req, res) => {
-    res.send(req.user);
+    if (req.user != null) res.json(req.user);
+    else res.status(404).send("No user");
   },
 
   github: passport.authenticate("github", {

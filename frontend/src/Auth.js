@@ -11,7 +11,7 @@ const initialState = {
 };
 
 const reducer = (state, action) =>
-  produce(draft => {
+  produce(state, draft => {
     switch (action.type) {
       case "LOGIN_START":
         draft.resolving = true;
@@ -35,21 +35,80 @@ const reducer = (state, action) =>
 function AuthProvider({ children }) {
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
-  React.useEffect(_ => {
-    const checkAuth = async _ => {
-      const me = await axios.get("/api/auth/me");
-      console.log(me);
-    };
-    checkAuth();
-  }, []);
+  React.useEffect(
+    _ => {
+      const checkAuth = async _ => {
+        const me = await axios
+          .get("/api/auth/me", { withCredentials: true })
+          .catch(e => {
+            dispatch({
+              type: "LOGIN_FAIL",
+              payload: { error: "not authenticated" }
+            });
+          });
+        if (me != null) {
+          dispatch({
+            type: "LOGIN_SUCCESS",
+            payload: { user: me.data }
+          });
+        }
+      };
+      checkAuth();
+    },
+    [dispatch]
+  );
 
   return (
     <AuthContext.Provider
       value={{
         ...state,
-        login: (username, password) => {},
-        register: (username, password) => {},
-        logout: _ => {}
+        login: (username, password) => {
+          fetch("/api/auth/local/login", {
+            method: "post",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              username,
+              password
+            })
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data.info) {
+                alert(data.info.message);
+              } else {
+                // location.reload();
+              }
+            });
+        },
+        register: (username, password) => {
+          if (username === "" || password === "") {
+            alert("Complete both username and password");
+            return;
+          }
+          fetch("/api/auth/local/register", {
+            method: "post",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              username,
+              password
+            })
+          })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                alert("Account created! You can login.");
+              } else {
+                alert("This username is already taken.");
+              }
+            });
+        },
+        logout: _ => {
+          window.location.replace("/api/auth/logout");
+        }
       }}
     >
       {children}
