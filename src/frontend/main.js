@@ -7,7 +7,7 @@ window.repoIdToShare = undefined;
 window.chartIndexToEdit = undefined;
 window.chartIdToEdit = undefined;
 
-let maximumTimetamp = new Date();
+const maximumTimetamp = new Date();
 maximumTimetamp.setUTCHours(0, 0, 0, 0);
 maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
 
@@ -17,9 +17,9 @@ minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
 
 if (data.userRepos) {
   data.userRepos.forEach(userRepo => {
-      if(userRepo.views.length != 0) {
+    if (userRepo.views.length != 0) {
       let firstRepoTimestamp = new Date(userRepo.views[0].timestamp);
-    
+
       if (firstRepoTimestamp < minimumTimetamp) {
         minimumTimetamp = firstRepoTimestamp;
       }
@@ -29,9 +29,9 @@ if (data.userRepos) {
 
 if (data.sharedRepos) {
   data.sharedRepos.forEach(sharedRepo => {
-    if(sharedRepo.views.length != 0) {
+    if (sharedRepo.views.length != 0) {
       let firstRepoTimestamp = new Date(sharedRepo.views[0].timestamp);
-    
+
       if (firstRepoTimestamp < minimumTimetamp) {
         minimumTimetamp = firstRepoTimestamp;
       }
@@ -60,7 +60,6 @@ const rows = [tableHead];
 
 if (data.userRepos) {
   data.userRepos.forEach(userRepo => {
-
     const repo = prepareRepo(userRepo);
     addRepoInToggleList(repo);
 
@@ -71,7 +70,6 @@ if (data.userRepos) {
     timeIndex = new Date(minimumTimetamp.getTime());
 
     while (timeIndex.getTime() < limitTimestamp.getTime()) {
-
       viewsCSV.push(0);
       uniquesCSV.push(0);
 
@@ -91,15 +89,13 @@ if (data.userRepos) {
 
     const ctx = document.getElementById(repo._id).getContext("2d");
     document.getElementById(repo._id).height = 100;
-      
+
     createChart(ctx, labels, views, uniques);
   });
 }
 
 if (data.sharedRepos) {
-
   data.sharedRepos.forEach(sharedRepo => {
-
     const repo = prepareRepo(sharedRepo);
     addRepoInToggleList(repo);
 
@@ -110,7 +106,6 @@ if (data.sharedRepos) {
     timeIndex = new Date(minimumTimetamp.getTime());
 
     while (timeIndex.getTime() < limitTimestamp.getTime()) {
-
       viewsCSV.push(0);
       uniquesCSV.push(0);
 
@@ -273,7 +268,7 @@ window.syncListener = async () => {
   });
 
   window.location.reload();
-}
+};
 
 window.divSwitcher = e => {
   const elements = e.parentElement.children;
