@@ -24,7 +24,8 @@ block content
             li(id='aggregateChartsButton', onClick='divSwitcher(aggregateCharts)') Aggregate Charts
           hr
           ul
-            li(id='exportChartsButton', onClick='exportListener()') Export as CSV
+            li(id='dayExportChartsButton', onClick='dayExportListener()') Export Daily CSV
+            li(id='monthExportChartsButton', onClick='monthExportListener()') Export Monthly CSV
             li(id='syncButton', onClick='syncListener()') Sync Repositories
 
       div.col-md-10

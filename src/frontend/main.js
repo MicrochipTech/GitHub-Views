@@ -39,15 +39,22 @@ if (data.sharedRepos) {
   });
 }
 
-const tableHead = ["reponame", "type"];
+let tableHead = ["reponame", "type"];
 let timeIndex = new Date(minimumTimetamp.getTime());
+const dates = [];
 
 while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
-  
-  tableHead.push(moment(timeIndex).format("DD MMM YYYY"));
+
+  dates.push(moment(timeIndex).format("DD MMM YYYY"));
 
   timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
 }
+
+tableHead = tableHead.concat(dates);
+
+//dates.reduce()
+
+//console.log(dates);
 
 const rows = [tableHead];
 
@@ -154,18 +161,110 @@ if (data.aggregateCharts) {
   });
 }
 
-window.exportListener = () => {
+function compareDate(d1, d2) {
+  const date1 = new Date(d1);
+  const date2 = new Date(d2);
+
+  if(date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth()) {
+        return true;
+      }
+  
+  return false;
+}
+
+function searchDate(dateArr, d1) {
+  for(let index = 2; index < dateArr.length; ++index) {
+    if(compareDate(dateArr[index], d1))
+      return true;
+  }
+
+  return false;
+}
+
+function reducer(total, currentValue, currentIndex) {
+  if (currentIndex > 1) {
+    if(searchDate(total, currentValue) === false) {
+      total.push(currentValue);
+    }
+  }
+  return total;
+}
+
+const reducerHof = th => (total, currentValue, currentIndex) => {
+  if (currentIndex > 1) {
+    let acc = total.pop();
+
+    if(currentIndex == 2 || compareDate(th[currentIndex], th[currentIndex - 1]) === false) {
+      //console.log(th[currentIndex]);
+      total.push(acc);
+      acc = [th[currentIndex], 0];
+    }
+
+    acc[1] += currentValue;
+    total.push(acc);
+  }
+
+  return total;
+}
+
+let rowsMapReduced = rows.map((element, index) => {
+  if(index == 0) {
+    let months = element.reduce(reducer, [element[0], element[1]]);
+    months = months.map((innerE, innerI) => {
+      
+      if(innerI > 1) {
+        console.log(innerE);
+        return moment(innerE).format("MMM YYYY");
+      }
+      return innerE;
+    });
+    
+    return months;
+  } else {
+    let reducedCounts = element.reduce(reducerHof(rows[0]), [element[0], element[1]]);
+    
+    reducedCounts = reducedCounts.map((innerE, innerI) => {
+      if(innerI > 1) {
+        return innerE[1];
+      }
+
+      return innerE;
+    });
+    return reducedCounts;
+  }
+});
+
+console.log(rowsMapReduced);
+
+window.monthExportListener = () => {
+  console.log("ASD");
+  let csvContentt = "data:text/csv;charset=utf-8," 
+    + rowsMapReduced.map(e => e.join(",")).join("\n");
+
+  var encodedUri = encodeURI(csvContentt);
+  var link = document.createElement("b");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "monthlyRepoTraffic.csv");
+  document.body.appendChild(link);
+
+  link.click();
+}
+
+window.dayExportListener = () => {
   let csvContent = "data:text/csv;charset=utf-8," 
     + rows.map(e => e.join(",")).join("\n");
 
-    var encodedUri = encodeURI(csvContent);
-    var link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "repoTraffic.csv");
-    document.body.appendChild(link);
+  var encodedUri = encodeURI(csvContent);
+  var link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "dailyRepoTraffic.csv");
+  document.body.appendChild(link);
 
-    link.click();
+  link.click();
 }
+
+
 
 window.syncListener = async () => {
   await $.ajax({
