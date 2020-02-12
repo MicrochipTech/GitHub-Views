@@ -1,10 +1,8 @@
 import React from "react";
-import { Grid, Button, TextField } from "@material-ui/core";
-import ShareIcon from "@material-ui/icons/Share";
-import { Line } from "react-chartjs-2";
+import { Grid } from "@material-ui/core";
 import moment from "moment";
-import ModalButton from "./ModalButton";
 import Chart from "chart.js";
+import ShareButton from "./ShareButton";
 import "./LineWithLine";
 import "./LineChart.css";
 
@@ -60,7 +58,6 @@ function prepareRepo(repo) {
 }
 
 function LineChart({ data }) {
-  console.log(data);
   const chartRef = React.useRef();
 
   const repo = prepareRepo(data);
@@ -134,26 +131,7 @@ function LineChart({ data }) {
     <Grid container className="chartWrapper">
       <Grid container justify="space-between">
         <h1>{data.reponame}</h1>
-        <ModalButton
-          button={
-            <div className="icon">
-              <ShareIcon />
-            </div>
-          }
-        >
-          <div className="padding20">
-            <h2 id="transition-modal-title">Share this repository with:</h2>
-          </div>
-          <hr />
-          <div className="padding20">
-            <TextField fullWidth label="Username" variant="outlined" />
-          </div>
-          <hr />
-          <div className="padding20">
-            <Button>Close</Button>
-            <Button>Share</Button>
-          </div>
-        </ModalButton>
+        <ShareButton repoId={data._id} />
       </Grid>
       <canvas ref={chartRef} />
     </Grid>

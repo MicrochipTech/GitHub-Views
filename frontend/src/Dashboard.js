@@ -1,9 +1,9 @@
 import React from "react";
 import axios from "axios";
 import { AuthContext } from "./Auth";
-import { Grid, Button, Paper } from "@material-ui/core";
+import { Grid } from "@material-ui/core";
 import LineChart from "./LineChart";
-import Autocomplete from "./Autocomplete";
+import CircularProgress from "@material-ui/core/CircularProgress";
 
 import "./Dashboard.css";
 
@@ -15,7 +15,9 @@ const PAGES = [
 
 function Dashboard() {
   const { user, logout } = React.useContext(AuthContext);
-  const [page, setPage] = React.useState(PAGES[0]);
+
+  const [loadingData, setLoadingData] = React.useState(true);
+  const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
   const [data, setData] = React.useState({
     userRepos: [],
     sharedRepos: [],
@@ -26,10 +28,10 @@ function Dashboard() {
     _ => {
       const getData = async _ => {
         const res = await axios.get("/api/user/getData").catch(e => {});
-        console.log(res.data);
         if (res != null) {
           setData(res.data);
         }
+        setLoadingData(false);
       };
       getData();
     },
@@ -38,8 +40,13 @@ function Dashboard() {
 
   return (
     <Grid container className="dashboardWrapper">
-      <Autocomplete />
-      <Grid container justify="space-between" xs={12} className="headerWrapper">
+      <Grid
+        item
+        container
+        justify="space-between"
+        xs={12}
+        className="headerWrapper"
+      >
         <h1>GitHub Views</h1>
         <div className="userDetails">
           Logged in as <b>{user.username}</b>
@@ -53,7 +60,12 @@ function Dashboard() {
       <Grid item md={2}>
         <nav>
           <ul>
-            {PAGES.map(p => (
+            {PAGES.filter((p, idx) => {
+              if (idx === 0) {
+                return user.githubId != null;
+              }
+              return true;
+            }).map(p => (
               <li key={p.key} onClick={_ => setPage(p)}>
                 {p.title}
               </li>
@@ -68,9 +80,14 @@ function Dashboard() {
       <Grid item md={10}>
         <div>
           {data[page.key].map(d => (
-            <LineChart data={d} />
+            <LineChart key={d._id} data={d} />
           ))}
-          {data[page.key].length === 0 && (
+          {loadingData && (
+            <center className="padding20">
+              <CircularProgress />
+            </center>
+          )}
+          {!loadingData && data[page.key].length === 0 && (
             <div className="nothing">Nothig to show here...</div>
           )}
         </div>

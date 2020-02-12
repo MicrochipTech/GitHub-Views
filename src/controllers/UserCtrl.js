@@ -14,7 +14,9 @@ module.exports = {
       { username: 1, _id: 0 }
     );
     const usersList = users.map(u => u.username);
-    usersList.splice(usersList.indexOf(req.user.username), 1);
+    if (usersList.indexOf(req.user.username) !== -1) {
+      usersList.splice(usersList.indexOf(req.user.username), 1);
+    }
     res.send(usersList);
   },
 
