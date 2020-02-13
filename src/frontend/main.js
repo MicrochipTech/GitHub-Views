@@ -234,11 +234,11 @@ console.log(rowsMapReduced);
 
 window.monthExportListener = () => {
   console.log("ASD");
-  let csvContentt = "data:text/csv;charset=utf-8," 
+  let csvContent = "data:text/csv;charset=utf-8," 
     + rowsMapReduced.map(e => e.join(",")).join("\n");
 
-  var encodedUri = encodeURI(csvContentt);
-  var link = document.createElement("b");
+  var encodedUri = encodeURI(csvContent);
+  var link = document.createElement("a");
   link.setAttribute("href", encodedUri);
   link.setAttribute("download", "monthlyRepoTraffic.csv");
   document.body.appendChild(link);
