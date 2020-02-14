@@ -1,11 +1,63 @@
 import React from "react";
 import axios from "axios";
+import moment from "moment";
 import { AuthContext } from "./Auth";
-import { Grid } from "@material-ui/core";
+import { Grid, Button } from "@material-ui/core";
 import LineChart from "./LineChart";
 import CircularProgress from "@material-ui/core/CircularProgress";
 
 import "./Dashboard.css";
+
+function prepareRepo(repo) {
+  let firstTimestamp = new Date();
+  firstTimestamp.setUTCHours(0, 0, 0, 0);
+  firstTimestamp.setUTCDate(firstTimestamp.getUTCDate() - 14);
+
+  let lastTimestamp = new Date();
+  lastTimestamp.setUTCHours(0, 0, 0, 0);
+  lastTimestamp.setUTCDate(lastTimestamp.getUTCDate() - 1);
+
+  if (repo.views.length !== 0) {
+    const first = new Date(repo.views[0].timestamp);
+    const last = new Date(repo.views[repo.views.length - 1].timestamp);
+
+    if (first.getTime() < firstTimestamp.getTime()) {
+      firstTimestamp = first;
+    }
+
+    if (last.getTime() > lastTimestamp.getTime()) {
+      lastTimestamp = last;
+    }
+  }
+
+  let index = 0;
+  const timeIndex = firstTimestamp;
+
+  while (timeIndex.getTime() <= lastTimestamp.getTime()) {
+    if (repo.views[index] === undefined) {
+      repo.views.push({
+        timestamp: timeIndex.toISOString(),
+        count: 0,
+        uniques: 0
+      });
+    } else {
+      const currentTimestamp = new Date(repo.views[index].timestamp);
+
+      if (timeIndex.getTime() < currentTimestamp.getTime()) {
+        repo.views.splice(index, 0, {
+          timestamp: timeIndex.toISOString(),
+          count: 0,
+          uniques: 0
+        });
+      }
+    }
+
+    index += 1;
+    timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+  }
+
+  return repo;
+}
 
 const PAGES = [
   { title: "My Repositories", key: "userRepos" },
@@ -37,6 +89,8 @@ function Dashboard() {
     },
     [setData]
   );
+
+  console.log(data);
 
   return (
     <Grid container className="dashboardWrapper">
@@ -79,16 +133,47 @@ function Dashboard() {
 
       <Grid item md={10}>
         <div>
-          {data[page.key].map(d => (
-            <LineChart key={d._id} data={d} />
-          ))}
+          {data[page.key].map(d => {
+            let data = [];
+
+            if (page.key === "aggregateCharts") {
+              data = d.repo_list.map(r =>
+                [...d.userRepos, ...d.shareRepos].filter(m => r._id === r)
+              );
+              // TODO: align start date for repo
+            } else {
+              data.push(d);
+              const labels = d.views.map(h =>
+                moment(h.timestamp).format("DD MMM YYYY")
+              );
+            }
+
+            data.reduce((acc, e) => {
+              const repo = prepareRepo(data);
+              const views = repo.views.map(h => h.count);
+              const uniques = repo.views.map(h => h.uniques);
+              acc.push({ label: `views`, dataset: views });
+              acc.push({ lable: `unique`, dataset: uniques });
+              return acc;
+            }, []);
+
+            console.log(data);
+            return <p>dummy</p>;
+            // TODO: change lineChart to receive array like data
+            // return <LineChart key={d._id} data={data} />;
+          })}
           {loadingData && (
             <center className="padding20">
               <CircularProgress />
             </center>
           )}
           {!loadingData && data[page.key].length === 0 && (
-            <div className="nothing">Nothig to show here...</div>
+            <div className="nothing">
+              Nothig to show here...
+              {page.key === "aggregateCharts" && (
+                <Button>Create First Aggregate Chart</Button>
+              )}
+            </div>
           )}
         </div>
       </Grid>
