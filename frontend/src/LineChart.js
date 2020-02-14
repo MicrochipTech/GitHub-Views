@@ -57,13 +57,20 @@ function prepareRepo(repo) {
   return repo;
 }
 
+function generateRandomColour() {
+  return `#${(0x1000000 + Math.random() * 0xffffff).toString(16).substr(1, 6)}`;
+}
+
 function LineChart({ data }) {
   const chartRef = React.useRef();
 
-  const repo = prepareRepo(data);
-  const labels = repo.views.map(h => moment(h.timestamp).format("DD MMM YYYY"));
-  const views = repo.views.map(h => h.count);
-  const uniques = repo.views.map(h => h.uniques);
+  // const repo = prepareRepo(data);
+  // const labels = repo.views.map(h => moment(h.timestamp).format("DD MMM YYYY"));
+  // const views = repo.views.map(h => h.count);
+  // const uniques = repo.views.map(h => h.uniques);
+
+  const labels = data.timestamp;
+  
 
   React.useEffect(
     _ => {
@@ -74,22 +81,15 @@ function LineChart({ data }) {
         /* The data for our dataset */
         data: {
           labels,
-          datasets: [
-            {
-              label: "Views",
+          datasets: data.data.map (d => {
+            return {
+              label: d.label,
               fill: false,
-              backgroundColor: "#603A8B",
-              borderColor: "#603A8B",
-              data: views
-            },
-            {
-              label: "Unique Views",
-              fill: false,
-              backgroundColor: "#FDCB00",
-              borderColor: "#FDCB00",
-              data: uniques
+              backgroundColor: generateRandomColour(),
+              borderColor: generateRandomColour(),
+              data: d.dataset
             }
-          ]
+          })
         },
 
         /* Configuration options go here */
@@ -124,13 +124,13 @@ function LineChart({ data }) {
         }
       });
     },
-    [chartRef, labels, uniques, views]
+    [data]
   );
 
   return (
     <Grid container className="chartWrapper">
       <Grid container justify="space-between">
-        <h1>{data.reponame}</h1>
+        <h1>{data.chartname}</h1>
         <ShareButton repoId={data._id} />
       </Grid>
       <canvas ref={chartRef} />

@@ -81,6 +81,10 @@ function Dashboard() {
       const getData = async _ => {
         const res = await axios.get("/api/user/getData").catch(e => {});
         if (res != null) {
+          //console.log(res.data);
+          res.data.userRepos = res.data.userRepos.map(r => prepareRepo(r));
+          res.data.sharedRepos = res.data.sharedRepos.map(r => prepareRepo(r));
+          //console.log(res.data);
           setData(res.data);
         }
         setLoadingData(false);
@@ -89,8 +93,6 @@ function Dashboard() {
     },
     [setData]
   );
-
-  console.log(data);
 
   return (
     <Grid container className="dashboardWrapper">
@@ -134,33 +136,87 @@ function Dashboard() {
       <Grid item md={10}>
         <div>
           {data[page.key].map(d => {
-            let data = [];
+            let dataD = [];
+            let labels = [];
+            let plotData = null;
 
             if (page.key === "aggregateCharts") {
-              data = d.repo_list.map(r =>
-                [...d.userRepos, ...d.shareRepos].filter(m => r._id === r)
+              dataD = d.repo_list.map(r =>
+                data["userRepos"].concat(data["sharedRepos"]).filter(m => m._id === r)[0]
               );
-              // TODO: align start date for repo
+              
+              const maximumTimetamp = new Date();
+              maximumTimetamp.setUTCHours(0, 0, 0, 0);
+              maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
+
+              let minimumTimetamp = new Date();
+              minimumTimetamp.setUTCHours(0, 0, 0, 0);
+              minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
+
+              minimumTimetamp = dataD.reduce((acc, repo)=> {
+                const repoDate = new Date(repo.views[0].timestamp);
+
+                if (repoDate < acc) {
+                  acc = repoDate;
+                }
+                return acc;
+              }, minimumTimetamp);
+
+              let timeIndex = new Date(minimumTimetamp.getTime());
+
+              while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
+                labels.push(moment(timeIndex).format("DD MMM YYYY"));
+              
+                timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+              }
+
+              plotData = {
+                chartname: "chart",
+                timestamp: labels,
+                data: dataD.reduce((acc, e) => {
+                  const repo = e;
+                  let views = [];
+                  let uniques = [];
+
+                  const limitTimestamp = new Date(repo.views[0].timestamp);
+                  timeIndex = new Date(minimumTimetamp.getTime());
+
+                  while (timeIndex.getTime() < limitTimestamp.getTime()) {
+                    views.push(0);
+                    uniques.push(0);
+
+                    timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+                  }
+
+                  views = views.concat(repo.views.map(h => h.count));
+                  uniques = uniques.concat(repo.views.map(h => h.uniques));
+
+                  acc.push({ label: `${repo.reponame} - views`, dataset: views });
+                  acc.push({ label: `${repo.reponame} - unique`, dataset: uniques });
+                  return acc;
+                }, [])
+              }
             } else {
-              data.push(d);
-              const labels = d.views.map(h =>
-                moment(h.timestamp).format("DD MMM YYYY")
-              );
+              dataD.push(d);
+
+              plotData = {
+                chartname: d.reponame,
+                timestamp: d.views.map(h =>
+                  moment(h.timestamp).format("DD MMM YYYY")
+                ),
+                data: dataD.reduce((acc, e) => {
+                  const repo = e;
+                  const views = repo.views.map(h => h.count);
+                  const uniques = repo.views.map(h => h.uniques);
+                  acc.push({ label: `views`, dataset: views });
+                  acc.push({ label: `unique`, dataset: uniques });
+                  return acc;
+                }, [])
+              }
+
             }
 
-            data.reduce((acc, e) => {
-              const repo = prepareRepo(data);
-              const views = repo.views.map(h => h.count);
-              const uniques = repo.views.map(h => h.uniques);
-              acc.push({ label: `views`, dataset: views });
-              acc.push({ lable: `unique`, dataset: uniques });
-              return acc;
-            }, []);
-
-            console.log(data);
-            return <p>dummy</p>;
-            // TODO: change lineChart to receive array like data
-            // return <LineChart key={d._id} data={data} />;
+            return <LineChart key={d._id} data={plotData} />;
           })}
           {loadingData && (
             <center className="padding20">
