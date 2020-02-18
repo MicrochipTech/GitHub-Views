@@ -29,6 +29,7 @@ const reducer = (state, action) =>
         draft.error = error;
         break;
       default:
+        throw Error("Dispatch unknown auth action");
     }
   });
 

@@ -1,62 +1,16 @@
 import React from "react";
-import axios from "axios";
 import moment from "moment";
 import { AuthContext } from "./Auth";
+import { DataContext } from "./Data";
+import ChoseReposButton from "./ChoseReposButton";
 import { Grid, Button } from "@material-ui/core";
 import LineChart from "./LineChart";
 import CircularProgress from "@material-ui/core/CircularProgress";
-
+import AddIcon from "@material-ui/icons/Add";
 import "./Dashboard.css";
 
-function prepareRepo(repo) {
-  let firstTimestamp = new Date();
-  firstTimestamp.setUTCHours(0, 0, 0, 0);
-  firstTimestamp.setUTCDate(firstTimestamp.getUTCDate() - 14);
-
-  let lastTimestamp = new Date();
-  lastTimestamp.setUTCHours(0, 0, 0, 0);
-  lastTimestamp.setUTCDate(lastTimestamp.getUTCDate() - 1);
-
-  if (repo.views.length !== 0) {
-    const first = new Date(repo.views[0].timestamp);
-    const last = new Date(repo.views[repo.views.length - 1].timestamp);
-
-    if (first.getTime() < firstTimestamp.getTime()) {
-      firstTimestamp = first;
-    }
-
-    if (last.getTime() > lastTimestamp.getTime()) {
-      lastTimestamp = last;
-    }
-  }
-
-  let index = 0;
-  const timeIndex = firstTimestamp;
-
-  while (timeIndex.getTime() <= lastTimestamp.getTime()) {
-    if (repo.views[index] === undefined) {
-      repo.views.push({
-        timestamp: timeIndex.toISOString(),
-        count: 0,
-        uniques: 0
-      });
-    } else {
-      const currentTimestamp = new Date(repo.views[index].timestamp);
-
-      if (timeIndex.getTime() < currentTimestamp.getTime()) {
-        repo.views.splice(index, 0, {
-          timestamp: timeIndex.toISOString(),
-          count: 0,
-          uniques: 0
-        });
-      }
-    }
-
-    index += 1;
-    timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
-  }
-
-  return repo;
+function generateRandomColour(total, idx) {
+  return `#${(0x1000000 + Math.random() * 0xffffff).toString(16).substr(1, 6)}`;
 }
 
 const PAGES = [
@@ -67,32 +21,8 @@ const PAGES = [
 
 function Dashboard() {
   const { user, logout } = React.useContext(AuthContext);
-
-  const [loadingData, setLoadingData] = React.useState(true);
+  const { repos, loadingData } = React.useContext(DataContext);
   const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
-  const [data, setData] = React.useState({
-    userRepos: [],
-    sharedRepos: [],
-    aggregateCharts: []
-  });
-
-  React.useEffect(
-    _ => {
-      const getData = async _ => {
-        const res = await axios.get("/api/user/getData").catch(e => {});
-        if (res != null) {
-          //console.log(res.data);
-          res.data.userRepos = res.data.userRepos.map(r => prepareRepo(r));
-          res.data.sharedRepos = res.data.sharedRepos.map(r => prepareRepo(r));
-          //console.log(res.data);
-          setData(res.data);
-        }
-        setLoadingData(false);
-      };
-      getData();
-    },
-    [setData]
-  );
 
   return (
     <Grid container className="dashboardWrapper">
@@ -135,16 +65,18 @@ function Dashboard() {
 
       <Grid item md={10}>
         <div>
-          {data[page.key].map(d => {
+          {repos[page.key].map(d => {
             let dataD = [];
             let labels = [];
             let plotData = null;
-
             if (page.key === "aggregateCharts") {
-              dataD = d.repo_list.map(r =>
-                data["userRepos"].concat(data["sharedRepos"]).filter(m => m._id === r)[0]
+              dataD = d.repo_list.map(
+                r =>
+                  repos["userRepos"]
+                    .concat(repos["sharedRepos"])
+                    .filter(m => m._id === r)[0]
               );
-              
+
               const maximumTimetamp = new Date();
               maximumTimetamp.setUTCHours(0, 0, 0, 0);
               maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
@@ -153,7 +85,7 @@ function Dashboard() {
               minimumTimetamp.setUTCHours(0, 0, 0, 0);
               minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
 
-              minimumTimetamp = dataD.reduce((acc, repo)=> {
+              minimumTimetamp = dataD.reduce((acc, repo) => {
                 const repoDate = new Date(repo.views[0].timestamp);
 
                 if (repoDate < acc) {
@@ -166,14 +98,14 @@ function Dashboard() {
 
               while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
                 labels.push(moment(timeIndex).format("DD MMM YYYY"));
-              
+
                 timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
               }
 
               plotData = {
                 chartname: "chart",
                 timestamp: labels,
-                data: dataD.reduce((acc, e) => {
+                data: dataD.reduce((acc, e, idx) => {
                   const repo = e;
                   let views = [];
                   let uniques = [];
@@ -191,11 +123,21 @@ function Dashboard() {
                   views = views.concat(repo.views.map(h => h.count));
                   uniques = uniques.concat(repo.views.map(h => h.uniques));
 
-                  acc.push({ label: `${repo.reponame} - views`, dataset: views });
-                  acc.push({ label: `${repo.reponame} - unique`, dataset: uniques });
+                  acc.push({
+                    label: `${repo.reponame} - Views`,
+                    dataset: views,
+                    color: generateRandomColour(),
+                    _id: e._id
+                  });
+                  acc.push({
+                    label: `${repo.reponame} - Unique Views`,
+                    dataset: uniques,
+                    _id: e._id,
+                    color: generateRandomColour()
+                  });
                   return acc;
                 }, [])
-              }
+              };
             } else {
               dataD.push(d);
 
@@ -208,28 +150,52 @@ function Dashboard() {
                   const repo = e;
                   const views = repo.views.map(h => h.count);
                   const uniques = repo.views.map(h => h.uniques);
-                  acc.push({ label: `views`, dataset: views });
-                  acc.push({ label: `unique`, dataset: uniques });
+                  acc.push({
+                    label: `Views`,
+                    dataset: views,
+                    color: "#603A8B"
+                  });
+                  acc.push({
+                    label: `Unique Views`,
+                    dataset: uniques,
+                    color: "#FDCB00"
+                  });
                   return acc;
                 }, [])
-              }
-
+              };
             }
 
-            return <LineChart key={d._id} data={plotData} />;
+            return <LineChart key={d._id} data={plotData} type={page.key} />;
           })}
           {loadingData && (
             <center className="padding20">
               <CircularProgress />
             </center>
           )}
-          {!loadingData && data[page.key].length === 0 && (
+          {!loadingData && repos[page.key].length === 0 && (
             <div className="nothing">
               Nothig to show here...
               {page.key === "aggregateCharts" && (
-                <Button>Create First Aggregate Chart</Button>
+                <div>
+                  <br />
+                  <Button>Create First Aggregate Chart</Button>
+                </div>
               )}
             </div>
+          )}
+
+          {!loadingData && repos[page.key].length > 0 && (
+            <center>
+              <ChoseReposButton
+                icon={
+                  <Button>
+                    <AddIcon />
+                    Create New Aggregate Chart
+                  </Button>
+                }
+                allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
+              />
+            </center>
           )}
         </div>
       </Grid>
