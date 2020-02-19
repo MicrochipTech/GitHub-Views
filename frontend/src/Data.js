@@ -62,6 +62,17 @@ const reducer = (state, action) =>
         draft.repos = action.payload;
         draft.loadingData = false;
         return draft;
+      case "UPDATE_CHART":
+        const repoToEdit = draft.repos.aggregateCharts.filter(r =>r._id === action.payload.id)[0];
+      
+        if(action.payload.state === true) {
+          repoToEdit.repo_list.push(action.payload.idToUpdate);
+        } else {
+          const idx = repoToEdit.repo_list.indexOf(action.payload.idToUpdate);
+          repoToEdit.repo_list.splice(idx, 1);
+        }
+
+        return draft;
       default:
         throw Error("Dispatch unknown data action");
     }
@@ -98,7 +109,11 @@ function DataProvider({ children }) {
     [dispatch]
   );
 
-  return <DataContext.Provider value={data}>{children}</DataContext.Provider>;
+  const updateAggregateChart = async (id, idToUpdate, state) => {
+    dispatch({type: "UPDATE_CHART", payload: {id, idToUpdate, state}});
+  };
+
+  return <DataContext.Provider value={{...data, updateAggregateChart}}>{children}</DataContext.Provider>;
 }
 
 export { DataContext, DataProvider };

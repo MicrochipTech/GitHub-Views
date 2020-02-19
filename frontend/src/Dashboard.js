@@ -128,7 +128,6 @@ function Dashboard() {
                     label: `${repo.reponame} - Views`,
                     dataset: views,
                     color: generateRandomColour(),
-                    _id: e._id
                   });
                   acc.push({
                     label: `${repo.reponame} - Unique Views`,
@@ -166,7 +165,7 @@ function Dashboard() {
               };
             }
 
-            return <LineChart key={d._id} data={plotData} type={page.key} />;
+            return <LineChart key={d._id} aggregateId={d._id} data={plotData} type={page.key} />;
           })}
           {loadingData && (
             <center className="padding20">

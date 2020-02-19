@@ -9,9 +9,9 @@ import DeleteIcon from "@material-ui/icons/Delete";
 import ShareButton from "./ShareButton";
 import ChoseReposButton from "./ChoseReposButton";
 
-function LineChart({ data, type }) {
+function LineChart({ aggregateId, data, type }) {
   const chartRef = React.useRef();
-  const { repos } = React.useContext(DataContext);
+  const { repos, updateAggregateChart } = React.useContext(DataContext);
 
   const labels = data.timestamp;
 
@@ -75,8 +75,34 @@ function LineChart({ data, type }) {
         {type === "aggregateCharts" ? (
           <div style={{ display: "flex" }}>
             <ChoseReposButton
+              chartToEdit = {aggregateId}
               allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
               selectedRepos={data.data.map(r => r._id)}
+              onChange = {(id, state) => {
+                updateAggregateChart(aggregateId, id, state);
+              }}
+              onDone = {(repo_list) => {
+
+                const dataJSON = {
+                  chartId: aggregateId,
+                  repoList: repo_list
+                };
+              
+                // await $.ajax({
+                //   url: `/aggCharts/update`,
+                //   type: `GET`,
+                //   dataType: `application/json`,
+                //   data: dataJSON
+                // });
+
+                fetch("/api/aggCharts/update", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify(dataJSON)
+                });
+              }}
             />
             &nbsp;
             <div className="icon">
