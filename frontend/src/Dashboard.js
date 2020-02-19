@@ -4,6 +4,7 @@ import { AuthContext } from "./Auth";
 import { DataContext } from "./Data";
 import ChoseReposButton from "./ChoseReposButton";
 import { Grid, Button } from "@material-ui/core";
+import DownloadButton from "./DownloadButton";
 import LineChart from "./LineChart";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import AddIcon from "@material-ui/icons/Add";
@@ -21,7 +22,7 @@ const PAGES = [
 
 function Dashboard() {
   const { user, logout } = React.useContext(AuthContext);
-  const { repos, loadingData } = React.useContext(DataContext);
+  const { repos, loadingData, syncRepos } = React.useContext(DataContext);
   const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
 
   return (
@@ -57,8 +58,8 @@ function Dashboard() {
               </li>
             ))}
             <hr />
-            <li>Export as CSV</li>
-            <li>Sync Repositories</li>
+            <DownloadButton />
+            <li onClick={syncRepos}>Sync Repositories</li>
           </ul>
         </nav>
       </Grid>
@@ -173,14 +174,27 @@ function Dashboard() {
             </center>
           )}
           {!loadingData && repos[page.key].length === 0 && (
-            <div className="nothing">
-              Nothig to show here...
-              {page.key === "aggregateCharts" && (
-                <div>
-                  <br />
-                  <Button>Create First Aggregate Chart</Button>
-                </div>
-              )}
+            <div>
+              <br />
+              <div className="nothing">
+                Nothig to show here...
+                {page.key === "aggregateCharts" && (
+                  <div>
+                    <ChoseReposButton
+                      icon={
+                        <Button>
+                          <AddIcon />
+                          Create First Aggregate Chart
+                        </Button>
+                      }
+                      allRepos={[
+                        ...repos["userRepos"],
+                        ...repos["sharedRepos"]
+                      ]}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

@@ -11,14 +11,26 @@ function Login() {
   const { login, register } = React.useContext(AuthContext);
   const [username, setUsername] = React.useState();
   const [password, setPassword] = React.useState();
-
+  const styles = {
+    smallIcon: {
+      width: 60,
+      height: 60
+    },
+    small: {
+      marginTop: "50px",
+      width: 120,
+      height: 120,
+      padding: 16
+    }
+  };
   return (
     <Grid container justify="center">
       <center>
-        <GitHubIcon />
+        <GitHubIcon iconStyle={styles.smallIcon} style={styles.small} />
         <br />
-        <h2 className="first-page-title">GitHub Views</h2>
+        <h1 className="first-page-title">GitHub Views</h1>
         <Button
+          className="loginBtn"
           color="primary"
           onClick={_ => window.location.replace("/api/auth/github")}
         >
@@ -36,34 +48,32 @@ function Login() {
           Login with username and password and you will still be able to view
           repos that other users share with you in this app
         </p>
-        <Paper>
-          <div className="localLoginWrapper">
-            <div>
-              <TextField
-                label="Username"
-                variant="outlined"
-                style={{ width: "100%" }}
-                onChange={e => setUsername(e.target.value)}
-              />
-            </div>
-            <br />
-            <div>
-              <TextField
-                label="Password"
-                type="password"
-                variant="outlined"
-                style={{ width: "100%" }}
-                onChange={e => setPassword(e.target.value)}
-              />
-            </div>
-            <Button color="primary" onClick={_ => login(username, password)}>
-              Login
-            </Button>
-            <Button color="primary" onClick={_ => register(username, password)}>
-              Register
-            </Button>
+        <div className="localLoginWrapper">
+          <div>
+            <TextField
+              label="Username"
+              variant="outlined"
+              style={{ width: "100%" }}
+              onChange={e => setUsername(e.target.value)}
+            />
           </div>
-        </Paper>
+          <br />
+          <div>
+            <TextField
+              label="Password"
+              type="password"
+              variant="outlined"
+              style={{ width: "100%" }}
+              onChange={e => setPassword(e.target.value)}
+            />
+          </div>
+          <Button color="primary" onClick={_ => login(username, password)}>
+            Login
+          </Button>
+          <Button color="primary" onClick={_ => register(username, password)}>
+            Register
+          </Button>
+        </div>
       </center>
     </Grid>
   );
