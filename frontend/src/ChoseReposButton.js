@@ -23,6 +23,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 function ChoseRepoButton({
+  chartToEdit,
   allRepos,
   icon,
   onDone,
@@ -39,6 +40,7 @@ function ChoseRepoButton({
   };
 
   const handleClose = () => {
+    onDone();
     setOpen(false);
   };
 
