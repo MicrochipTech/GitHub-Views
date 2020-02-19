@@ -19,7 +19,7 @@ module.exports = {
   },
 
   sync: async (req, res) => {
-    const user = { req };
+    const { user } = req;
     const response = await GitHubApiCtrl.getUserRepos(user);
     let anyNewRepo = false;
 
@@ -54,7 +54,7 @@ module.exports = {
       }
     });
 
-    Promise.all(p);
+    await Promise.all(p);
 
     if (anyNewRepo) {
       UserCtrl.getData(req, {
@@ -65,7 +65,5 @@ module.exports = {
     } else {
       res.json({ status: "ok" });
     }
-
-    res.send("Success synchronizing reposiories!");
   }
 };

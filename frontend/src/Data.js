@@ -58,14 +58,22 @@ function prepareRepo(repo) {
 const reducer = (state, action) =>
   produce(state, draft => {
     switch (action.type) {
+      case "START_LOADING":
+        draft.loadingData = true;
+        return draft;
+      case "STOP_LOADING":
+        draft.loadingData = false;
+        return draft;
       case "DATA_READY":
         draft.repos = action.payload;
         draft.loadingData = false;
         return draft;
       case "UPDATE_CHART":
-        const repoToEdit = draft.repos.aggregateCharts.filter(r =>r._id === action.payload.id)[0];
-      
-        if(action.payload.state === true) {
+        const repoToEdit = draft.repos.aggregateCharts.filter(
+          r => r._id === action.payload.id
+        )[0];
+
+        if (action.payload.state === true) {
           repoToEdit.repo_list.push(action.payload.idToUpdate);
         } else {
           const idx = repoToEdit.repo_list.indexOf(action.payload.idToUpdate);
@@ -109,11 +117,29 @@ function DataProvider({ children }) {
     [dispatch]
   );
 
-  const updateAggregateChart = async (id, idToUpdate, state) => {
-    dispatch({type: "UPDATE_CHART", payload: {id, idToUpdate, state}});
+  const syncRepos = async _ => {
+    dispatch({ type: "START_LOADING" });
+    const res = await fetch("/api/repo/sync");
+    const json = await res.json();
+    console.log(json);
+    if (json.data) {
+      json.data.userRepos = json.data.userRepos.map(r => prepareRepo(r));
+      json.data.sharedRepos = json.data.sharedRepos.map(r => prepareRepo(r));
+      dispatch({ type: "DATA_READY", payload: json.data });
+    } else {
+      dispatch({ type: "STOP_LOADING" });
+    }
   };
 
-  return <DataContext.Provider value={{...data, updateAggregateChart}}>{children}</DataContext.Provider>;
+  const updateAggregateChart = (id, idToUpdate, state) => {
+    dispatch({ type: "UPDATE_CHART", payload: { id, idToUpdate, state } });
+  };
+
+  return (
+    <DataContext.Provider value={{ ...data, updateAggregateChart, syncRepos }}>
+      {children}
+    </DataContext.Provider>
+  );
 }
 
 export { DataContext, DataProvider };

@@ -66,107 +66,115 @@ function Dashboard() {
 
       <Grid item md={10}>
         <div>
-          {repos[page.key].map(d => {
-            let dataD = [];
-            let labels = [];
-            let plotData = null;
-            if (page.key === "aggregateCharts") {
-              dataD = d.repo_list.map(
-                r =>
-                  repos["userRepos"]
-                    .concat(repos["sharedRepos"])
-                    .filter(m => m._id === r)[0]
-              );
+          {!loadingData &&
+            repos[page.key].map(d => {
+              let dataD = [];
+              let labels = [];
+              let plotData = null;
+              if (page.key === "aggregateCharts") {
+                dataD = d.repo_list.map(
+                  r =>
+                    repos["userRepos"]
+                      .concat(repos["sharedRepos"])
+                      .filter(m => m._id === r)[0]
+                );
 
-              const maximumTimetamp = new Date();
-              maximumTimetamp.setUTCHours(0, 0, 0, 0);
-              maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
+                const maximumTimetamp = new Date();
+                maximumTimetamp.setUTCHours(0, 0, 0, 0);
+                maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
 
-              let minimumTimetamp = new Date();
-              minimumTimetamp.setUTCHours(0, 0, 0, 0);
-              minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
+                let minimumTimetamp = new Date();
+                minimumTimetamp.setUTCHours(0, 0, 0, 0);
+                minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
 
-              minimumTimetamp = dataD.reduce((acc, repo) => {
-                const repoDate = new Date(repo.views[0].timestamp);
+                minimumTimetamp = dataD.reduce((acc, repo) => {
+                  const repoDate = new Date(repo.views[0].timestamp);
 
-                if (repoDate < acc) {
-                  acc = repoDate;
+                  if (repoDate < acc) {
+                    acc = repoDate;
+                  }
+                  return acc;
+                }, minimumTimetamp);
+
+                let timeIndex = new Date(minimumTimetamp.getTime());
+
+                while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
+                  labels.push(moment(timeIndex).format("DD MMM YYYY"));
+
+                  timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
                 }
-                return acc;
-              }, minimumTimetamp);
 
-              let timeIndex = new Date(minimumTimetamp.getTime());
+                plotData = {
+                  chartname: "chart",
+                  timestamp: labels,
+                  data: dataD.reduce((acc, e, idx) => {
+                    const repo = e;
+                    let views = [];
+                    let uniques = [];
 
-              while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
-                labels.push(moment(timeIndex).format("DD MMM YYYY"));
+                    const limitTimestamp = new Date(repo.views[0].timestamp);
+                    timeIndex = new Date(minimumTimetamp.getTime());
 
-                timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+                    while (timeIndex.getTime() < limitTimestamp.getTime()) {
+                      views.push(0);
+                      uniques.push(0);
+
+                      timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+                    }
+
+                    views = views.concat(repo.views.map(h => h.count));
+                    uniques = uniques.concat(repo.views.map(h => h.uniques));
+
+                    acc.push({
+                      label: `${repo.reponame} - Views`,
+                      dataset: views,
+                      color: generateRandomColour()
+                    });
+                    acc.push({
+                      label: `${repo.reponame} - Unique Views`,
+                      dataset: uniques,
+                      _id: e._id,
+                      color: generateRandomColour()
+                    });
+                    return acc;
+                  }, [])
+                };
+              } else {
+                dataD.push(d);
+
+                plotData = {
+                  chartname: d.reponame,
+                  timestamp: d.views.map(h =>
+                    moment(h.timestamp).format("DD MMM YYYY")
+                  ),
+                  data: dataD.reduce((acc, e) => {
+                    const repo = e;
+                    const views = repo.views.map(h => h.count);
+                    const uniques = repo.views.map(h => h.uniques);
+                    acc.push({
+                      label: `Views`,
+                      dataset: views,
+                      color: "#603A8B"
+                    });
+                    acc.push({
+                      label: `Unique Views`,
+                      dataset: uniques,
+                      color: "#FDCB00"
+                    });
+                    return acc;
+                  }, [])
+                };
               }
 
-              plotData = {
-                chartname: "chart",
-                timestamp: labels,
-                data: dataD.reduce((acc, e, idx) => {
-                  const repo = e;
-                  let views = [];
-                  let uniques = [];
-
-                  const limitTimestamp = new Date(repo.views[0].timestamp);
-                  timeIndex = new Date(minimumTimetamp.getTime());
-
-                  while (timeIndex.getTime() < limitTimestamp.getTime()) {
-                    views.push(0);
-                    uniques.push(0);
-
-                    timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
-                  }
-
-                  views = views.concat(repo.views.map(h => h.count));
-                  uniques = uniques.concat(repo.views.map(h => h.uniques));
-
-                  acc.push({
-                    label: `${repo.reponame} - Views`,
-                    dataset: views,
-                    color: generateRandomColour(),
-                  });
-                  acc.push({
-                    label: `${repo.reponame} - Unique Views`,
-                    dataset: uniques,
-                    _id: e._id,
-                    color: generateRandomColour()
-                  });
-                  return acc;
-                }, [])
-              };
-            } else {
-              dataD.push(d);
-
-              plotData = {
-                chartname: d.reponame,
-                timestamp: d.views.map(h =>
-                  moment(h.timestamp).format("DD MMM YYYY")
-                ),
-                data: dataD.reduce((acc, e) => {
-                  const repo = e;
-                  const views = repo.views.map(h => h.count);
-                  const uniques = repo.views.map(h => h.uniques);
-                  acc.push({
-                    label: `Views`,
-                    dataset: views,
-                    color: "#603A8B"
-                  });
-                  acc.push({
-                    label: `Unique Views`,
-                    dataset: uniques,
-                    color: "#FDCB00"
-                  });
-                  return acc;
-                }, [])
-              };
-            }
-
-            return <LineChart key={d._id} aggregateId={d._id} data={plotData} type={page.key} />;
-          })}
+              return (
+                <LineChart
+                  key={d._id}
+                  aggregateId={d._id}
+                  data={plotData}
+                  type={page.key}
+                />
+              );
+            })}
           {loadingData && (
             <center className="padding20">
               <CircularProgress />
@@ -197,19 +205,21 @@ function Dashboard() {
             </div>
           )}
 
-          {!loadingData && repos[page.key].length > 0 && (
-            <center>
-              <ChoseReposButton
-                icon={
-                  <Button>
-                    <AddIcon />
-                    Create New Aggregate Chart
-                  </Button>
-                }
-                allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
-              />
-            </center>
-          )}
+          {!loadingData &&
+            page.key === "aggregateCharts" &&
+            repos[page.key].length > 0 && (
+              <center>
+                <ChoseReposButton
+                  icon={
+                    <Button>
+                      <AddIcon />
+                      Create New Aggregate Chart
+                    </Button>
+                  }
+                  allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
+                />
+              </center>
+            )}
         </div>
       </Grid>
     </Grid>
