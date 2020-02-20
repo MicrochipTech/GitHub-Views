@@ -63,14 +63,32 @@ const reducer = (state, action) =>
         draft.loadingData = false;
         return draft;
       case "UPDATE_CHART":
-        const repoToEdit = draft.repos.aggregateCharts.filter(r =>r._id === action.payload.id)[0];
-      
-        if(action.payload.state === true) {
-          repoToEdit.repo_list.push(action.payload.idToUpdate);
-        } else {
-          const idx = repoToEdit.repo_list.indexOf(action.payload.idToUpdate);
-          repoToEdit.repo_list.splice(idx, 1);
+        for(let i = 0; i < draft.repos.aggregateCharts.length; i += 1) {
+          if(draft.repos.aggregateCharts[i]._id === action.payload.id) {
+            if(action.payload.state === true) {
+              draft.repos.aggregateCharts[i].repo_list.push(action.payload.idToUpdate);
+            } else {
+              const idx = draft.repos.aggregateCharts[i].repo_list.indexOf(action.payload.idToUpdate);
+              draft.repos.aggregateCharts[i].repo_list.splice(idx, 1);
+            }
+          }
         }
+
+        return draft;
+
+      case "ADD_CHART":
+        draft.repos.aggregateCharts.push(action.payload.aggChart);
+        return draft;
+        
+      case "DELETE_CHART":
+        let indexToRemove;
+        for(indexToRemove = 0; indexToRemove < draft.repos.aggregateCharts.length; indexToRemove += 1) {
+          if(draft.repos.aggregateCharts[indexToRemove]._id === action.payload.id) {
+            break;
+          }
+        }
+
+        draft.repos.aggregateCharts.splice(indexToRemove, 1);
 
         return draft;
       default:
@@ -95,10 +113,10 @@ function DataProvider({ children }) {
       const getData = async _ => {
         const res = await axios.get("/api/user/getData").catch(e => {});
         if (res != null) {
-          //console.log(res.data);
+          
           res.data.userRepos = res.data.userRepos.map(r => prepareRepo(r));
           res.data.sharedRepos = res.data.sharedRepos.map(r => prepareRepo(r));
-          //console.log(res.data);
+          
           dispatch({ type: "DATA_READY", payload: res.data });
         } else {
           dispatch({ type: "DATA_READY", payload: reposInit });
@@ -113,7 +131,15 @@ function DataProvider({ children }) {
     dispatch({type: "UPDATE_CHART", payload: {id, idToUpdate, state}});
   };
 
-  return <DataContext.Provider value={{...data, updateAggregateChart}}>{children}</DataContext.Provider>;
+  const addAggregateChart = async (aggChart) => {
+    dispatch({type: "ADD_CHART", payload: {aggChart}});
+  };
+
+  const deleteAggregateChart = async (id) => {
+    dispatch({type: "DELETE_CHART", payload: {id}});
+  };
+
+  return <DataContext.Provider value={{...data, updateAggregateChart, addAggregateChart, deleteAggregateChart}}>{children}</DataContext.Provider>;
 }
 
 export { DataContext, DataProvider };

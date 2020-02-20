@@ -21,8 +21,9 @@ const PAGES = [
 
 function Dashboard() {
   const { user, logout } = React.useContext(AuthContext);
-  const { repos, loadingData } = React.useContext(DataContext);
+  const { repos, loadingData, addAggregateChart } = React.useContext(DataContext);
   const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
+  const [newChartRepos, setNewChartRepos] = React.useState([]);
 
   return (
     <Grid container className="dashboardWrapper">
@@ -127,6 +128,7 @@ function Dashboard() {
                     label: `${repo.reponame} - Views`,
                     dataset: views,
                     color: generateRandomColour(),
+                    _id: e._id
                   });
                   acc.push({
                     label: `${repo.reponame} - Unique Views`,
@@ -177,7 +179,48 @@ function Dashboard() {
               {page.key === "aggregateCharts" && (
                 <div>
                   <br />
-                  <Button>Create First Aggregate Chart</Button>
+                  <ChoseReposButton
+                    icon={
+                      <Button>
+                        <AddIcon />
+                        Create First Aggregate Chart
+                      </Button>
+                    }
+                    allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
+                    onChange={
+                      (id, state) => {
+                        const aux = [...newChartRepos];
+                        if(state) {
+                          aux.push(id);
+                        } else {
+                          const idx = aux.indexOf(id);
+                          aux.splice(idx, 1);
+                          
+                        }
+                        setNewChartRepos(aux);
+                      }
+                    }
+                    onDone={
+                      async () =>  {
+                        const dataJSON = {
+                          repo_list: newChartRepos
+                        };
+                        setNewChartRepos([]);
+                        const res = await fetch("/api/aggCharts/create", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json"
+                          },
+                          body: JSON.stringify(dataJSON)
+                        });
+
+                        const body = await res.json();
+                        addAggregateChart(body.aggChart);
+                        
+                      }
+                    }
+                    selectedRepos={newChartRepos}
+                  />
                 </div>
               )}
             </div>
@@ -186,14 +229,47 @@ function Dashboard() {
           {!loadingData && repos[page.key].length > 0 && (
             <center>
               <ChoseReposButton
-                icon={
-                  <Button>
-                    <AddIcon />
-                    Create New Aggregate Chart
-                  </Button>
-                }
-                allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
-              />
+                    icon={
+                      <Button>
+                        <AddIcon />
+                        Create New Aggregate Chart
+                      </Button>
+                    }
+                    allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
+                    onChange={
+                      (id, state) => {
+                        const aux = [...newChartRepos];
+                        if(state) {
+                          aux.push(id);
+                        } else {
+                          const idx = aux.indexOf(id);
+                          aux.splice(idx, 1);
+                          
+                        }
+                        setNewChartRepos(aux);
+                      }
+                    }
+                    onDone={
+                      async () =>  {
+                        const dataJSON = {
+                          repo_list: newChartRepos
+                        };
+                        setNewChartRepos([]);
+                        const res = await fetch("/api/aggCharts/create", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json"
+                          },
+                          body: JSON.stringify(dataJSON)
+                        });
+
+                        const body = await res.json();
+                        addAggregateChart(body.aggChart);
+                        
+                      }
+                    }
+                    selectedRepos={newChartRepos}
+                  />
             </center>
           )}
         </div>

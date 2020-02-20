@@ -1,4 +1,5 @@
 import React from "react";
+import _ from "lodash";
 import { DataContext } from "./Data";
 import { Grid } from "@material-ui/core";
 import Chart from "chart.js";
@@ -11,13 +12,13 @@ import ChoseReposButton from "./ChoseReposButton";
 
 function LineChart({ aggregateId, data, type }) {
   const chartRef = React.useRef();
-  const { repos, updateAggregateChart } = React.useContext(DataContext);
-
+  const { repos, updateAggregateChart, deleteAggregateChart } = React.useContext(DataContext);
+  const[chart, setChart] = React.useState();
   const labels = data.timestamp;
 
   React.useEffect(
     _ => {
-      new Chart(chartRef.current, {
+      setChart(new Chart(chartRef.current, {
         /* The type of chart we want to create */
         type: "LineWithLine",
 
@@ -63,10 +64,26 @@ function LineChart({ aggregateId, data, type }) {
             }
           }
         }
-      });
+      }));
     },
-    [data, labels]
+    []
   );
+
+  React.useEffect(() => {
+    if(chart) {
+    chart.data =  {
+      labels,
+      datasets: data.data.map(d => ({
+        label: d.label,
+        fill: false,
+        backgroundColor: d.color,
+        borderColor: d.color,
+        data: d.dataset
+      }))
+    };
+    chart.update();
+    setChart(chart);}
+  }, [data, labels]);
 
   return (
     <Grid container className="chartWrapper">
@@ -78,23 +95,15 @@ function LineChart({ aggregateId, data, type }) {
               chartToEdit = {aggregateId}
               allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
               selectedRepos={data.data.map(r => r._id)}
-              onChange = {(id, state) => {
+              onChange={(id, state) => {
                 updateAggregateChart(aggregateId, id, state);
               }}
-              onDone = {(repo_list) => {
+              onClose={(repo_list) => {
 
                 const dataJSON = {
                   chartId: aggregateId,
-                  repoList: repo_list
+                  repoList: _.uniq(repo_list)
                 };
-              
-                // await $.ajax({
-                //   url: `/aggCharts/update`,
-                //   type: `GET`,
-                //   dataType: `application/json`,
-                //   data: dataJSON
-                // });
-
                 fetch("/api/aggCharts/update", {
                   method: "POST",
                   headers: {
@@ -105,7 +114,22 @@ function LineChart({ aggregateId, data, type }) {
               }}
             />
             &nbsp;
-            <div className="icon">
+            <div className="icon" 
+                  onClick={()=> {
+                    deleteAggregateChart(aggregateId);
+
+                    const dataJSON = {
+                      chartId: aggregateId
+                    };
+
+                    fetch("/api/aggCharts/delete", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json"
+                      },
+                      body: JSON.stringify(dataJSON)
+                    });
+            }}>
               <DeleteIcon />
             </div>
           </div>
@@ -120,4 +144,4 @@ function LineChart({ aggregateId, data, type }) {
   );
 }
 
-export default LineChart;
+export default React.memo(LineChart);

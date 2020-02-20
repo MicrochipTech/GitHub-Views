@@ -28,6 +28,7 @@ function ChoseRepoButton({
   icon,
   onDone,
   onChange,
+  onClose,
   selectedRepos = []
 }) {
   const classes = useStyles();
@@ -40,7 +41,10 @@ function ChoseRepoButton({
   };
 
   const handleClose = () => {
-    onDone();
+    if(onClose) {
+      onClose(selectedRepos);
+    }
+    
     setOpen(false);
   };
 
