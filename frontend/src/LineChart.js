@@ -154,23 +154,14 @@ function LineChart({ aggregateId, data, type }) {
         ) : (
           <div>
             <DateRangePicker
-              onChange={([minTime, maxTime]) => {
-                if(maxTime < minLimit) {
-                  minTime = minLimit;
-                  maxTime.setFullYear(minTime.getFullYear());
-                  maxTime.setMonth(minTime.getMonth());
-                  maxTime.setDate(minTime.getDate());
-                } else if(minTime > maxLimit) {
-                  minTime = maxLimit;
-                  maxTime.setFullYear(minTime.getFullYear());
-                  maxTime.setMonth(minTime.getMonth());
-                  maxTime.setDate(minTime.getDate());
+              minDate={minLimit}
+              maxDate={maxLimit}
+              onChange={(interval) => {
+                if(interval) {
+                  setTime(interval);
                 } else {
-                  minTime = minTime < minLimit ? minLimit : minTime;
-                  maxTime = maxTime > maxLimit ? maxLimit : maxTime;
+                  setTime([minLimit, maxLimit]);
                 }
-                
-                setTime([minTime, maxTime]);
               }}
               value={[...time]}
             />
