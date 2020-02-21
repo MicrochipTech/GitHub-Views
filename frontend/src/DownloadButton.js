@@ -3,8 +3,29 @@ import { DataContext } from "./Data";
 import { Select, MenuItem } from "@material-ui/core";
 import moment from "moment";
 
-function downlaodDaily({ userRepos, sharedRepos }) {
-  const concatRepos = [...userRepos, ...sharedRepos];
+function compareDate(d1, d2) {
+  const date1 = new Date(d1);
+  const date2 = new Date(d2);
+
+  if (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth()
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function searchDate(dateArr, d1) {
+  for (let index = 2; index < dateArr.length; ++index) {
+    if (compareDate(dateArr[index], d1)) return true;
+  }
+
+  return false;
+}
+
+function createDailyCsv(concatRepos) {
   let minimumTimetamp = new Date();
   minimumTimetamp.setUTCHours(0, 0, 0, 0);
   minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
@@ -50,7 +71,10 @@ function downlaodDaily({ userRepos, sharedRepos }) {
     rows.push(viewsCSV);
     rows.push(uniquesCSV);
   }
+  return rows;
+}
 
+function downloadCsvFile(rows) {
   let csvContent =
     "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
 
@@ -63,7 +87,78 @@ function downlaodDaily({ userRepos, sharedRepos }) {
   link.click();
 }
 
-function downlaodMonthly({ userRepos, shareRepos }) {}
+function downlaodDaily({ userRepos, sharedRepos }) {
+  const concatRepos = [...userRepos, ...sharedRepos];
+  const rows = createDailyCsv(concatRepos);
+
+  downloadCsvFile(rows);
+}
+
+function downlaodMonthly({ userRepos, sharedRepos }) {
+  const concatRepos = [...userRepos, ...sharedRepos];
+  const rows = createDailyCsv(concatRepos);
+
+  function reducer(total, currentValue, currentIndex) {
+    if (currentIndex > 1) {
+      if (searchDate(total, currentValue) === false) {
+        total.push(currentValue);
+      }
+    }
+    return total;
+  }
+
+  const reducerHof = th => (total, currentValue, currentIndex) => {
+    if (currentIndex > 1) {
+      let acc = total.pop();
+
+      if (
+        currentIndex === 2 ||
+        compareDate(th[currentIndex], th[currentIndex - 1]) === false
+      ) {
+        //console.log(th[currentIndex]);
+        total.push(acc);
+        acc = [th[currentIndex], 0];
+      }
+
+      acc[1] += currentValue;
+      total.push(acc);
+    }
+
+    return total;
+  };
+
+  let rowsMapReduced = rows.map((element, index) => {
+    if (index === 0) {
+      let months = element.reduce(reducer, [element[0], element[1]]);
+      months = months.map((innerE, innerI) => {
+        if (innerI > 1) {
+          console.log(innerE);
+          return moment(innerE).format("MMM YYYY");
+        }
+        return innerE;
+      });
+
+      return months;
+    } else {
+      let reducedCounts = element.reduce(reducerHof(rows[0]), [
+        element[0],
+        element[1]
+      ]);
+
+      reducedCounts = reducedCounts.map((innerE, innerI) => {
+        if (innerI > 1) {
+          return innerE[1];
+        }
+
+        return innerE;
+      });
+      return reducedCounts;
+    }
+  });
+
+  downloadCsvFile(rowsMapReduced);
+  console.log(rowsMapReduced);
+}
 
 function DownloadButton() {
   const [downloadSelectOpen, setDownloadSelectOpen] = React.useState(false);

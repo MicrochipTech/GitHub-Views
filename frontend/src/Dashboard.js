@@ -8,6 +8,7 @@ import DownloadButton from "./DownloadButton";
 import LineChart from "./LineChart";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import AddIcon from "@material-ui/icons/Add";
+import DateRangePicker from "./DateRangePicker";
 import "./Dashboard.css";
 
 function generateRandomColour(total, idx) {
@@ -27,6 +28,7 @@ function Dashboard() {
 
   return (
     <Grid container className="dashboardWrapper">
+      <DateRangePicker />
       <Grid
         item
         container
