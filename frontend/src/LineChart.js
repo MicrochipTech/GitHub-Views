@@ -6,15 +6,26 @@ import Chart from "chart.js";
 import "./LineWithLine";
 import "./LineChart.css";
 
+import DateRangePicker from '@wojtekmaj/react-daterange-picker';
 import DeleteIcon from "@material-ui/icons/Delete";
 import ShareButton from "./ShareButton";
 import ChoseReposButton from "./ChoseReposButton";
 
+function daysBetwwed2Dates(date1, date2) {
+  const timeDiff = date2.getTime() - date1.getTime();
+  return Math.round(timeDiff / (1000 * 3600 * 24));
+}
+
 function LineChart({ aggregateId, data, type }) {
   const chartRef = React.useRef();
   const { repos, updateAggregateChart, deleteAggregateChart } = React.useContext(DataContext);
-  const[chart, setChart] = React.useState();
+  const [chart, setChart] = React.useState();
   const labels = data.timestamp;
+
+  const minLimit = new Date(labels[0]);
+  const maxLimit = new Date(labels[labels.length - 1]);
+
+  const [time, setTime] = React.useState([minLimit, maxLimit]);
 
   React.useEffect(
     _ => {
@@ -71,19 +82,26 @@ function LineChart({ aggregateId, data, type }) {
 
   React.useEffect(() => {
     if(chart) {
-    chart.data =  {
-      labels,
-      datasets: data.data.map(d => ({
-        label: d.label,
-        fill: false,
-        backgroundColor: d.color,
-        borderColor: d.color,
-        data: d.dataset
-      }))
-    };
-    chart.update();
-    setChart(chart);}
-  }, [data, labels]);
+      const [minTime, maxTime] = time;
+      
+      const lowerIndex = daysBetwwed2Dates(minLimit, minTime);
+      const upperIndex = daysBetwwed2Dates(minLimit, maxTime);
+
+      chart.data =  {
+        labels: labels.slice(lowerIndex, upperIndex),
+        datasets: data.data.map(d => ({
+          label: d.label,
+          fill: false,
+          backgroundColor: d.color,
+          borderColor: d.color,
+          data: d.dataset.slice(lowerIndex, upperIndex)
+        }))
+      };
+      
+      chart.update();
+      setChart(chart);
+    }
+  }, [data, labels, time]);
 
   return (
     <Grid container className="chartWrapper">
@@ -135,6 +153,27 @@ function LineChart({ aggregateId, data, type }) {
           </div>
         ) : (
           <div>
+            <DateRangePicker
+              onChange={([minTime, maxTime]) => {
+                if(maxTime < minLimit) {
+                  minTime = minLimit;
+                  maxTime.setFullYear(minTime.getFullYear());
+                  maxTime.setMonth(minTime.getMonth());
+                  maxTime.setDate(minTime.getDate());
+                } else if(minTime > maxLimit) {
+                  minTime = maxLimit;
+                  maxTime.setFullYear(minTime.getFullYear());
+                  maxTime.setMonth(minTime.getMonth());
+                  maxTime.setDate(minTime.getDate());
+                } else {
+                  minTime = minTime < minLimit ? minLimit : minTime;
+                  maxTime = maxTime > maxLimit ? maxLimit : maxTime;
+                }
+                
+                setTime([minTime, maxTime]);
+              }}
+              value={[...time]}
+            />
             <ShareButton repoId={data._id} />
           </div>
         )}

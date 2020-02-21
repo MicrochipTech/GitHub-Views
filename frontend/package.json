@@ -9,6 +9,7 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.4.0",
     "@testing-library/user-event": "^7.2.1",
+    "@wojtekmaj/react-daterange-picker": "^2.5.0",
     "axios": "^0.19.2",
     "chart.js": "^2.9.3",
     "hsv-rgb": "^1.0.0",
