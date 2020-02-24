@@ -117,7 +117,6 @@ function LineChart({ aggregateId, data, type }) {
                 updateAggregateChart(aggregateId, id, state);
               }}
               onClose={(repo_list) => {
-
                 const dataJSON = {
                   chartId: aggregateId,
                   repoList: _.uniq(repo_list)

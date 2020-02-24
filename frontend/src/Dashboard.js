@@ -7,6 +7,7 @@ import { Grid, Button } from "@material-ui/core";
 import LineChart from "./LineChart";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import AddIcon from "@material-ui/icons/Add";
+import TextField from "@material-ui/core/TextField";
 import "./Dashboard.css";
 
 function generateRandomColour(total, idx) {
@@ -24,7 +25,8 @@ function Dashboard() {
   const { repos, loadingData, addAggregateChart } = React.useContext(DataContext);
   const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
   const [newChartRepos, setNewChartRepos] = React.useState([]);
-
+  const [searchRegex, setSearchRegex] = React.useState(new RegExp(`.*`, 'i'));
+  console.log(searchRegex);
   return (
     <Grid container className="dashboardWrapper">
       <Grid
@@ -35,6 +37,19 @@ function Dashboard() {
         className="headerWrapper"
       >
         <h1>GitHub Views</h1>
+        <TextField
+          onChange={(e) => {
+            if(e.target.value) {
+              setSearchRegex(new RegExp(`${e.target.value}`, 'i'));
+            } else {
+              setSearchRegex(new RegExp(`.*`, 'i'));
+            }
+          }}
+          id="outlined-size-small"
+          label="Search Repositories"
+          variant="outlined"
+          size="small"
+        />
         <div className="userDetails">
           Logged in as <b>{user.username}</b>
           <br />
@@ -66,7 +81,19 @@ function Dashboard() {
 
       <Grid item md={10}>
         <div>
-          {repos[page.key].map(d => {
+          {repos[page.key]
+            .filter(d => {
+              if(page.key === "aggregateCharts") {
+                return true;
+              }
+
+              if(d.reponame.match(searchRegex)) {
+                return true;
+              }
+              
+              return false;
+            })
+            .map(d => {
             let dataD = [];
             let labels = [];
             let plotData = null;
