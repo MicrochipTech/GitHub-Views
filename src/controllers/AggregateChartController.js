@@ -9,17 +9,19 @@ module.exports = {
   },
 
   create: async (req, res) => {
+    const { repo_list } = req.body;
     const aggChart = await new AggregateChart({
-      user: req.user._id
+      user: req.user._id,
+      repo_list
     }).save();
 
     res.send({
-      _id: aggChart._id
+      aggChart
     });
   },
 
   delete: async (req, res) => {
-    const { chartId } = req.query;
+    const { chartId } = req.body;
     await AggregateChart.deleteOne({ _id: chartId });
 
     res.send({
@@ -28,7 +30,7 @@ module.exports = {
   },
 
   updateRepoList: async (req, res) => {
-    const { chartId, repoList } = req.query;
+    const { chartId, repoList } = req.body;
 
     await AggregateChart.update(
       {

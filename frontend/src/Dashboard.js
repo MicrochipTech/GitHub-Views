@@ -23,8 +23,11 @@ const PAGES = [
 
 function Dashboard() {
   const { user, logout } = React.useContext(AuthContext);
-  const { repos, loadingData, syncRepos } = React.useContext(DataContext);
+  const { repos, loadingData, addAggregateChart, syncRepos } = React.useContext(
+    DataContext
+  );
   const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
+  const [newChartRepos, setNewChartRepos] = React.useState([]);
 
   return (
     <Grid container className="dashboardWrapper">
