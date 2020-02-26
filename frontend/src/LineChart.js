@@ -9,7 +9,7 @@ import "./LineChart.css";
 import DateRangePicker from "@wojtekmaj/react-daterange-picker";
 import DeleteIcon from "@material-ui/icons/Delete";
 import ShareButton from "./ShareButton";
-import ChoseReposButton from "./ChoseReposButton";
+import ChoseReposModal from "./ChoseReposModal";
 
 function daysBetwwed2Dates(date1, date2) {
   const timeDiff = date2.getTime() - date1.getTime();
@@ -51,6 +51,7 @@ function LineChart({ aggregateId, data, type }) {
 
         /* Configuration options go here */
         options: {
+          animation: false,
           tooltips: {
             intersect: false,
             mode: "label",
@@ -112,7 +113,7 @@ function LineChart({ aggregateId, data, type }) {
         <h1>{data.chartname}</h1>
         {type === "aggregateCharts" ? (
           <div style={{ display: "flex" }}>
-            <ChoseReposButton
+            <ChoseReposModal
               chartToEdit={aggregateId}
               allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
               selectedRepos={data.data.map(r => r._id)}
@@ -178,4 +179,4 @@ function LineChart({ aggregateId, data, type }) {
   );
 }
 
-export default React.memo(LineChart);
+export default LineChart;

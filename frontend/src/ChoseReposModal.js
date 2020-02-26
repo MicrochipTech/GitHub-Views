@@ -22,7 +22,7 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-function ChoseRepoButton({
+function ChoseReposModal({
   chartToEdit,
   allRepos,
   icon,
@@ -41,10 +41,10 @@ function ChoseRepoButton({
   };
 
   const handleClose = () => {
-    if(onClose) {
+    if (onClose) {
       onClose(selectedRepos);
     }
-    
+
     setOpen(false);
   };
 
@@ -110,4 +110,4 @@ function ChoseRepoButton({
   );
 }
 
-export default ChoseRepoButton;
+export default ChoseReposModal;

@@ -1,11 +1,9 @@
 {
-  "name": "src",
+  "name": "backend",
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "npm-run-all --parallel watch:server watch:frontend",
-    "watch:server": "nodemon -L ./bin/www --ignore public/ --ignore frontend/",
-    "watch:frontend": "webpack"
+    "start": "nodemon -L ./bin/www --ignore public/"
   },
   "dependencies": {
     "axios": "^0.19.0",
@@ -21,13 +19,9 @@
     "morgan": "~1.9.0",
     "node-cron": "^2.0.3",
     "nodemon": "^1.19.1",
-    "npm-run-all": "^4.1.5",
     "passport": "^0.4.0",
     "passport-github": "^1.1.0",
-    "passport-local": "^1.0.0",
-    "pug": "2.0.0-beta11",
-    "webpack": "^4.41.2",
-    "webpack-cli": "^3.3.10"
+    "passport-local": "^1.0.0"
   },
   "devDependencies": {
     "eslint": "^6.6.0",
