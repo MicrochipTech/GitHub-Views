@@ -28,7 +28,6 @@ function Dashboard() {
 
   return (
     <Grid container className="dashboardWrapper">
-      <DateRangePicker />
       <Grid
         item
         container
