@@ -1,0 +1,40 @@
+.dashboardWrapper {
+  max-width: 1400px;
+  margin: auto;
+  margin-top: 30px;
+}
+
+.headerWrapper {
+  border-bottom: 1px solid #dfdfdf;
+  margin-bottom: 30px;
+}
+
+.userDetails {
+  margin-top: 20px;
+  text-align: right;
+}
+
+nav ul {
+  padding: 10px;
+  margin: 0px;
+}
+
+nav ul li {
+  list-style-type: none;
+  padding: 10px;
+  cursor: pointer;
+}
+
+nav ul li:hover {
+  background-color: #dfdfdf;
+}
+
+.nothing {
+  text-align: center;
+  font-size: 32px;
+  font-family: "Fjalla One", sans-serif;
+  color: gray;
+  background-color: #dfdfdf;
+  padding: 100px;
+  border-radius: 5px;
+}
