@@ -4,16 +4,18 @@ body {
   background-color: #efefef;
 }
 
-h1, h2, h3 {
-  font-family: 'Fjalla One', sans-serif;
+h1,
+h2,
+h3 {
+  font-family: "Fjalla One", sans-serif;
 }
 
 * {
-  font-family: 'Noto Sans', sans-serif;
+  font-family: "Noto Sans", sans-serif;
 }
 
 a {
-  color: #00B7FF;
+  color: #00b7ff;
 }
 
 h2.first-page-title {
@@ -39,7 +41,7 @@ nav ul li:hover {
   padding-right: 15px;
 }
 
-.share:hover{
+.share:hover {
   cursor: pointer;
   color: gray;
 }
@@ -48,20 +50,20 @@ nav ul li:hover {
   padding-right: 15px;
 }
 
-.padding-15{
+.padding-15 {
   padding-right: 15px;
 }
 
-.margin-8{
+.margin-8 {
   margin-right: 8px;
 }
 
-.add:hover{
+.add:hover {
   cursor: pointer;
   color: gray;
 }
 
-.repo-title{
+.repo-title {
   word-break: break-all;
   margin-top: auto;
   margin-bottom: auto;
@@ -81,4 +83,13 @@ div.container {
 
 #sharedRepositories {
   display: none;
+}
+
+div.localLoginWrapper {
+  width: 300px;
+}
+
+div.localLoginWrapper input,
+div.localLoginWrapper button {
+  margin: 5px;
 }

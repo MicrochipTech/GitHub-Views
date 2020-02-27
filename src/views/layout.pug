@@ -24,6 +24,54 @@ html
               url: '/user/startsWith'
           }
       });
+      document.getElementById("loginBtn").addEventListener("click", () => {
+          const username = document.getElementById("username").value;
+          const password = document.getElementById("password").value;
+          fetch("/auth/local/login", {
+              method: 'post',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  username,
+                  password,
+              })
+          })
+          .then(res => res.json())
+          .then(data => {
+              if(data.info) {
+                  alert(data.info.message);
+              } else {
+                  location.reload();
+              }
+          });
+      })
+      document.getElementById("registerBtn").addEventListener("click", () => {
+          const username = document.getElementById("username").value;
+          const password = document.getElementById("password").value;
+          if(username === "" || password === "") {
+              alert("Complete both username and password");
+              return;
+          }
+          fetch("/auth/local/register", {
+              method: 'post',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  username,
+                  password,
+              })
+          })
+          .then(response => response.json())
+          .then(data => {
+              if(data.success) {
+                  alert("Account created! You can login.")
+              } else {
+                  alert("This username is already taken.")
+              }
+          })
+      })
     script(src="/moment.min.js")
     script(src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0")
     script(src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js")

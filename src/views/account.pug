@@ -13,9 +13,20 @@ block content
       div.col-md-2
         nav
           ul
-            li(id='myReposButton', onClick='divSwitcher(userRepositories)') My Repositories
+            if user.githubId
+                li(id='myReposButton', onClick='divSwitcher(userRepositories)') My Repositories
+            else 
+                script.
+                    setTimeout(() => {
+                        divSwitcher(sharedRepositories)
+                    }, 100)
             li(id='sharedRepositoriesButton', onClick='divSwitcher(sharedRepositories)') Shared Repositories
             li(id='aggregateChartsButton', onClick='divSwitcher(aggregateCharts)') Aggregate Charts
+          hr
+          ul
+            li(id='exportChartsButton', onClick='exportListener()') Export as CSV
+            li(id='syncButton', onClick='syncListener()') Sync Repositories
+
       div.col-md-10
         div(id='userRepositories')
           each val in data.userRepos

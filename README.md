@@ -6,10 +6,10 @@
 - [x] View all time views and unique views charts for your repos
 - [x] Share your repos views data with other users
 - [x] Create aggregate line-charts of multiple repos
-- [ ] Email & Password authentication
+- [x] Email & Password authentication
+- [x] Export data as CSV
 - [ ] Configurable time window for charts
 - [ ] Create aggregate bar-charts of multiple repos
-- [ ] Export data as CSV
 
 ## :rocket: Deployment
 

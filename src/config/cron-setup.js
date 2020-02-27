@@ -39,13 +39,17 @@ async function updateRepos() {
 async function checkForNewRepos() {
   console.log("Checking for new repos");
 
-  const users = await UserModel.find();
+  const users = await UserModel.find({
+    githubId: { $ne: null }
+  });
+
   users.forEach(async user => {
     const response = await GitHubApiCtrl.getUserRepos(user);
 
     response.data.forEach(async repo => {
       const repoEntry = await RepositoryModel.findOne({
-        reponame: repo.full_name
+        reponame: repo.full_name,
+        user_id: user._id
       });
 
       if (repoEntry === null) {

@@ -69,7 +69,7 @@ function createChartElements(createdChartId) {
   deleteButton.addEventListener("click", chartDeleteListener);
 
   const canv = document.createElement("canvas");
-  canv.height = 100;
+  canv.height = 200;
 
   rawDiv.appendChild(h3);
 

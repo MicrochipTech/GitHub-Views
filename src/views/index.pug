@@ -2,8 +2,7 @@ extends layout
 
 block content
   center
-    //- img(src="/github-icon.png" height=200)
-    //- br
+    
     <i class="fab fa-github fa-10x"></i>
     br
     h2.first-page-title GitHub Views
@@ -12,3 +11,10 @@ block content
     br
     p This tool will automatically collect views data for all the repositories you have access to.
     p It will not be shared with anyone unless you give access to.
+    hr
+    p Login with username and password and you will still be able to view repos that other users share with you in this app
+    div.localLoginWrapper
+        input.form-control#username(type='text' placeholder="Username")
+        input.form-control#password(type='password' placeholder="Password")
+        button.btn.btn-outline-secondary#loginBtn Login
+        button.btn.btn-outline-secondary#registerBtn Register
