@@ -31,16 +31,16 @@ services:
     ports:
       - 3000:3000
     environment:
-      API_HOST: http://web:8000/
+      API_HOST: http://backend:8000/
     depends_on:
-      - web
+      - backend
 
-  web:
-    build: ./src
+  backend:
+    build: ./backend
     restart: always
     command: npm start
     volumes:
-      - ./src:/usr/app/
+      - ./backend:/usr/app/
     ports:
       - 8000:8000
     depends_on:

@@ -1,5 +1,5 @@
 div.localLoginWrapper {
-  width: 200px !important;
+  width: 300px !important;
   padding: 30px;
   text-align: left;
 }
@@ -11,4 +11,9 @@ div.localLoginWrapper div {
 div.localLoginWrapper button {
   margin-top: 15px;
   margin-right: 15px;
+}
+
+.loginBtn {
+  background-color: #000;
+  color: #fff;
 }

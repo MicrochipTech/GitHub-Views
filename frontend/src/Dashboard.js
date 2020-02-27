@@ -2,11 +2,12 @@ import React from "react";
 import moment from "moment";
 import { AuthContext } from "./Auth";
 import { DataContext } from "./Data";
-import ChoseReposButton from "./ChoseReposButton";
-import { Grid, Button } from "@material-ui/core";
+import { Grid } from "@material-ui/core";
+import DownloadButton from "./DownloadButton";
 import LineChart from "./LineChart";
 import CircularProgress from "@material-ui/core/CircularProgress";
-import AddIcon from "@material-ui/icons/Add";
+import TextField from "@material-ui/core/TextField";
+import NewAggregateChartButton from "./NewAggregateChartButton";
 import "./Dashboard.css";
 
 function generateRandomColour(total, idx) {
@@ -21,9 +22,9 @@ const PAGES = [
 
 function Dashboard() {
   const { user, logout } = React.useContext(AuthContext);
-  const { repos, loadingData, addAggregateChart } = React.useContext(DataContext);
+  const { repos, loadingData, syncRepos } = React.useContext(DataContext);
   const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
-  const [newChartRepos, setNewChartRepos] = React.useState([]);
+  const [searchRegex, setSearchRegex] = React.useState(new RegExp(`.*`, "i"));
 
   return (
     <Grid container className="dashboardWrapper">
@@ -58,220 +59,169 @@ function Dashboard() {
               </li>
             ))}
             <hr />
-            <li>Export as CSV</li>
-            <li>Sync Repositories</li>
+            <DownloadButton />
+            <li onClick={syncRepos}>Sync Repositories</li>
           </ul>
         </nav>
       </Grid>
 
       <Grid item md={10}>
-        <div>
-          {repos[page.key].map(d => {
-            let dataD = [];
-            let labels = [];
-            let plotData = null;
-            if (page.key === "aggregateCharts") {
-              dataD = d.repo_list.map(
-                r =>
-                  repos["userRepos"]
-                    .concat(repos["sharedRepos"])
-                    .filter(m => m._id === r)[0]
-              );
-
-              const maximumTimetamp = new Date();
-              maximumTimetamp.setUTCHours(0, 0, 0, 0);
-              maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
-
-              let minimumTimetamp = new Date();
-              minimumTimetamp.setUTCHours(0, 0, 0, 0);
-              minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
-
-              minimumTimetamp = dataD.reduce((acc, repo) => {
-                const repoDate = new Date(repo.views[0].timestamp);
-
-                if (repoDate < acc) {
-                  acc = repoDate;
-                }
-                return acc;
-              }, minimumTimetamp);
-
-              let timeIndex = new Date(minimumTimetamp.getTime());
-
-              while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
-                labels.push(moment(timeIndex).format("DD MMM YYYY"));
-
-                timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+        {!loadingData && page.key !== "aggregateCharts" && (
+          <TextField
+            fullWidth
+            style={{ marginTop: "20px", marginBottom: "10px" }}
+            onChange={e => {
+              if (e.target.value) {
+                setSearchRegex(new RegExp(`${e.target.value.trim()}`, "i"));
+              } else {
+                setSearchRegex(new RegExp(`.*`, "i"));
               }
+            }}
+            id="outlined-size-small"
+            label="Search Repositories"
+            variant="outlined"
+            size="small"
+          />
+        )}
+        <div>
+          {!loadingData &&
+            repos[page.key]
+              .filter(d => !d.reponame || d.reponame.match(searchRegex))
+              .map(d => {
+                let dataD = [];
+                let labels = [];
+                let plotData = null;
+                if (page.key === "aggregateCharts") {
+                  dataD = d.repo_list.map(
+                    r =>
+                      repos["userRepos"]
+                        .concat(repos["sharedRepos"])
+                        .filter(m => m._id === r)[0]
+                  );
 
-              plotData = {
-                chartname: "chart",
-                timestamp: labels,
-                data: dataD.reduce((acc, e, idx) => {
-                  const repo = e;
-                  let views = [];
-                  let uniques = [];
+                  const maximumTimetamp = new Date();
+                  maximumTimetamp.setUTCHours(0, 0, 0, 0);
+                  maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
 
-                  const limitTimestamp = new Date(repo.views[0].timestamp);
-                  timeIndex = new Date(minimumTimetamp.getTime());
+                  let minimumTimetamp = new Date();
+                  minimumTimetamp.setUTCHours(0, 0, 0, 0);
+                  minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
 
-                  while (timeIndex.getTime() < limitTimestamp.getTime()) {
-                    views.push(0);
-                    uniques.push(0);
+                  minimumTimetamp = dataD.reduce((acc, repo) => {
+                    const repoDate = new Date(repo.views[0].timestamp);
+
+                    if (repoDate < acc) {
+                      acc = repoDate;
+                    }
+                    return acc;
+                  }, minimumTimetamp);
+
+                  let timeIndex = new Date(minimumTimetamp.getTime());
+
+                  while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
+                    labels.push(moment(timeIndex).format("DD MMM YYYY"));
 
                     timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
                   }
 
-                  views = views.concat(repo.views.map(h => h.count));
-                  uniques = uniques.concat(repo.views.map(h => h.uniques));
+                  plotData = {
+                    chartname: "chart",
+                    timestamp: labels,
+                    data: dataD.reduce((acc, e, idx) => {
+                      const repo = e;
+                      let views = [];
+                      let uniques = [];
 
-                  acc.push({
-                    label: `${repo.reponame} - Views`,
-                    dataset: views,
-                    color: generateRandomColour(),
-                    _id: e._id
-                  });
-                  acc.push({
-                    label: `${repo.reponame} - Unique Views`,
-                    dataset: uniques,
-                    _id: e._id,
-                    color: generateRandomColour()
-                  });
-                  return acc;
-                }, [])
-              };
-            } else {
-              dataD.push(d);
+                      const limitTimestamp = new Date(repo.views[0].timestamp);
+                      timeIndex = new Date(minimumTimetamp.getTime());
 
-              plotData = {
-                chartname: d.reponame,
-                timestamp: d.views.map(h =>
-                  moment(h.timestamp).format("DD MMM YYYY")
-                ),
-                data: dataD.reduce((acc, e) => {
-                  const repo = e;
-                  const views = repo.views.map(h => h.count);
-                  const uniques = repo.views.map(h => h.uniques);
-                  acc.push({
-                    label: `Views`,
-                    dataset: views,
-                    color: "#603A8B"
-                  });
-                  acc.push({
-                    label: `Unique Views`,
-                    dataset: uniques,
-                    color: "#FDCB00"
-                  });
-                  return acc;
-                }, [])
-              };
-            }
+                      while (timeIndex.getTime() < limitTimestamp.getTime()) {
+                        views.push(0);
+                        uniques.push(0);
 
-            return <LineChart key={d._id} aggregateId={d._id} data={plotData} type={page.key} />;
-          })}
+                        timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+                      }
+
+                      views = views.concat(repo.views.map(h => h.count));
+                      uniques = uniques.concat(repo.views.map(h => h.uniques));
+
+                      acc.push({
+                        label: `${repo.reponame} - Views`,
+                        dataset: views,
+                        color: generateRandomColour(),
+                        _id: e._id
+                      });
+                      acc.push({
+                        label: `${repo.reponame} - Unique Views`,
+                        dataset: uniques,
+                        _id: e._id,
+                        color: generateRandomColour()
+                      });
+                      return acc;
+                    }, [])
+                  };
+                } else {
+                  dataD.push(d);
+
+                  plotData = {
+                    chartname: d.reponame,
+                    timestamp: d.views.map(h =>
+                      moment(h.timestamp).format("DD MMM YYYY")
+                    ),
+                    data: dataD.reduce((acc, e) => {
+                      const repo = e;
+                      const views = repo.views.map(h => h.count);
+                      const uniques = repo.views.map(h => h.uniques);
+                      acc.push({
+                        label: `Views`,
+                        dataset: views,
+                        color: "#603A8B"
+                      });
+                      acc.push({
+                        label: `Unique Views`,
+                        dataset: uniques,
+                        color: "#FDCB00"
+                      });
+                      return acc;
+                    }, [])
+                  };
+                }
+
+                return (
+                  <LineChart
+                    key={d._id}
+                    aggregateId={d._id}
+                    data={plotData}
+                    type={page.key}
+                  />
+                );
+              })}
           {loadingData && (
             <center className="padding20">
               <CircularProgress />
             </center>
           )}
           {!loadingData && repos[page.key].length === 0 && (
-            <div className="nothing">
-              Nothing to show here.
-              {page.key === "aggregateCharts" && (
-                <div>
-                  <br />
-                  <ChoseReposButton
-                    icon={
-                      <Button>
-                        <AddIcon />
-                        Create First Aggregate Chart
-                      </Button>
-                    }
-                    allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
-                    onChange={
-                      (id, state) => {
-                        const aux = [...newChartRepos];
-                        if(state) {
-                          aux.push(id);
-                        } else {
-                          const idx = aux.indexOf(id);
-                          aux.splice(idx, 1);
-                          
-                        }
-                        setNewChartRepos(aux);
-                      }
-                    }
-                    onDone={
-                      async () =>  {
-                        const dataJSON = {
-                          repo_list: newChartRepos
-                        };
-                        setNewChartRepos([]);
-                        const res = await fetch("/api/aggCharts/create", {
-                          method: "POST",
-                          headers: {
-                            "Content-Type": "application/json"
-                          },
-                          body: JSON.stringify(dataJSON)
-                        });
-
-                        const body = await res.json();
-                        addAggregateChart(body.aggChart);
-                        
-                      }
-                    }
-                    selectedRepos={newChartRepos}
-                  />
-                </div>
-              )}
+            <div>
+              <br />
+              <div className="nothing">
+                Nothing to show here.
+                {page.key === "aggregateCharts" && (
+                  <div>
+                    <NewAggregateChartButton text="Create First Aggregate Chart" />
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {!loadingData && repos[page.key].length > 0 && (
-            <center>
-              <ChoseReposButton
-                    icon={
-                      <Button>
-                        <AddIcon />
-                        Create New Aggregate Chart
-                      </Button>
-                    }
-                    allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
-                    onChange={
-                      (id, state) => {
-                        const aux = [...newChartRepos];
-                        if(state) {
-                          aux.push(id);
-                        } else {
-                          const idx = aux.indexOf(id);
-                          aux.splice(idx, 1);
-                          
-                        }
-                        setNewChartRepos(aux);
-                      }
-                    }
-                    onDone={
-                      async () =>  {
-                        const dataJSON = {
-                          repo_list: newChartRepos
-                        };
-                        setNewChartRepos([]);
-                        const res = await fetch("/api/aggCharts/create", {
-                          method: "POST",
-                          headers: {
-                            "Content-Type": "application/json"
-                          },
-                          body: JSON.stringify(dataJSON)
-                        });
-
-                        const body = await res.json();
-                        addAggregateChart(body.aggChart);
-                        
-                      }
-                    }
-                    selectedRepos={newChartRepos}
-                  />
-            </center>
-          )}
+          {!loadingData &&
+            page.key === "aggregateCharts" &&
+            repos[page.key].length > 0 && (
+              <center>
+                <NewAggregateChartButton text="Create New Aggregate Chart" />
+              </center>
+            )}
         </div>
       </Grid>
     </Grid>

@@ -2,6 +2,8 @@ const UserModel = require("../models/User");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryModel = require("../models/Repository");
 
+const UserCtrl = require("./UserCtrl");
+
 module.exports = {
   share: async (req, res) => {
     const { repoId, username } = req.body;
@@ -17,8 +19,9 @@ module.exports = {
   },
 
   sync: async (req, res) => {
-    const user = req.user;
+    const { user } = req;
     const response = await GitHubApiCtrl.getUserRepos(user);
+    let anyNewRepo = false;
 
     const p = response.data.map(async repo => {
       const repoEntry = await RepositoryModel.findOne({
@@ -27,6 +30,7 @@ module.exports = {
       });
 
       if (repoEntry === null) {
+        anyNewRepo = true;
         const repoTrafficResponse = await GitHubApiCtrl.getRepoTraffic(
           repo.full_name,
           user.token
@@ -49,9 +53,17 @@ module.exports = {
         }).save();
       }
     });
-    
-    Promise.all(p);
 
-    res.send("Success synchronizing reposiories!");
+    await Promise.all(p);
+
+    if (anyNewRepo) {
+      UserCtrl.getData(req, {
+        json: data => {
+          res.json({ status: "ok", data });
+        }
+      });
+    } else {
+      res.json({ status: "ok" });
+    }
   }
 };
