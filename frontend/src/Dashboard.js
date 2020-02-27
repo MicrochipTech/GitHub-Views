@@ -175,7 +175,7 @@ function Dashboard() {
           )}
           {!loadingData && repos[page.key].length === 0 && (
             <div className="nothing">
-              Nothig to show here...
+              Nothing to show here.
               {page.key === "aggregateCharts" && (
                 <div>
                   <br />
