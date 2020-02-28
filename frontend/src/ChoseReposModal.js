@@ -72,7 +72,8 @@ function ChoseReposModal({
             </div>
             <hr />
             <div className="padding20">
-              {allRepos.map((r, idx) => (
+              {allRepos.length !== 0 && 
+               allRepos.map((r, idx) => (
                 <div key={r._id} style={{ disaply: "flex" }}>
                   <Switch
                     checked={values[idx]}
@@ -88,6 +89,13 @@ function ChoseReposModal({
                   <span style={{ wordBreak: "break-all" }}>{r.reponame}</span>
                 </div>
               ))}
+              {
+                allRepos.length === 0 && (
+                  <div>
+                    <h3>You don't have any repositories.</h3>
+                  </div>
+                )
+              }
             </div>
             <hr />
             <div className="padding20">

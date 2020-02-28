@@ -2,7 +2,7 @@ import React from "react";
 import _ from "lodash";
 import moment from "moment";
 import { DataContext } from "./Data";
-import { Grid } from "@material-ui/core";
+import { Grid, Button } from "@material-ui/core";
 import Chart from "chart.js";
 import "./LineWithLine";
 import "./LineChart.css";
@@ -163,6 +163,7 @@ function LineChart({ aggregateId, data, type }) {
           </div>
         )}
       </Grid>
+
       <DateRangePicker
         minDate={minLimit}
         maxDate={maxLimit}
@@ -175,6 +176,43 @@ function LineChart({ aggregateId, data, type }) {
         }}
         value={[...time]}
       />
+
+      <div className="timewinbtnsWrapper">
+        <Button
+          className="timewinbtn"
+          onClick={_ =>
+            setTime([
+              moment()
+                .subtract(1, "months")
+                .toDate(),
+              moment().toDate()
+            ])
+          }
+          disabled={moment()
+            .subtract(1, "months")
+            .isBefore(labels[0])}
+        >
+          Last Month
+        </Button>
+
+        <Button
+          className="timewinbtn"
+          onClick={_ =>
+            setTime([
+              moment()
+                .subtract(6, "months")
+                .toDate(),
+              moment().toDate()
+            ])
+          }
+          disabled={moment()
+            .subtract(6, "months")
+            .isBefore(labels[0])}
+        >
+          Last 6 Months
+        </Button>
+      </div>
+
       <canvas ref={chartRef} />
     </Grid>
   );
