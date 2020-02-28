@@ -1,5 +1,6 @@
 import React from "react";
 import _ from "lodash";
+import moment from "moment";
 import { DataContext } from "./Data";
 import { Grid } from "@material-ui/core";
 import Chart from "chart.js";
@@ -13,7 +14,7 @@ import ChoseReposModal from "./ChoseReposModal";
 
 function daysBetwwed2Dates(date1, date2) {
   const timeDiff = date2.getTime() - date1.getTime();
-  return Math.round(timeDiff / (1000 * 3600 * 24));
+  return Math.round(timeDiff / (1000 * 3600 * 24)) + 1;
 }
 
 function LineChart({ aggregateId, data, type }) {
@@ -27,11 +28,7 @@ function LineChart({ aggregateId, data, type }) {
   const labels = data.timestamp;
 
   const minLimit = new Date(labels[0]);
-  labels[labels.length - 1] = new Date(labels[labels.length - 1]).setHours(
-    23,
-    59,
-    59
-  );
+
   const maxLimit = new Date(labels[labels.length - 1]);
   const [time, setTime] = React.useState([minLimit, maxLimit]);
 
