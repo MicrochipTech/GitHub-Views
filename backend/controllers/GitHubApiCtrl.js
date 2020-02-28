@@ -22,9 +22,7 @@ module.exports = {
         headers: { Authorization: `token ${user.token}` },
         params: { type, per_page, page }
       });
-      console.log(res.data);
     }
-    console.log(user.username, userRepos.length, page);
     return userRepos;
   },
 

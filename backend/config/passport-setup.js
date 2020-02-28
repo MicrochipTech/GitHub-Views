@@ -67,9 +67,9 @@ passport.use(
           token: accessToken
         }).save();
 
-        const response = await GitHubApiCtrl.getUserRepos(newUser);
+        const repos = await GitHubApiCtrl.getUserRepos(newUser);
 
-        const promises = response.data.map(async repo => {
+        const promises = repos.map(async repo => {
           const repoTrafficResponse = await GitHubApiCtrl.getRepoTraffic(
             repo.full_name,
             newUser.token
