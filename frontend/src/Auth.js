@@ -79,7 +79,7 @@ function AuthProvider({ children }) {
               if (data.info) {
                 alert(data.info.message);
               } else {
-                // location.reload();
+                window.location.reload();
               }
             });
         },

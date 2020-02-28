@@ -26,6 +26,8 @@ function Dashboard() {
   const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
   const [searchRegex, setSearchRegex] = React.useState(new RegExp(`.*`, "i"));
 
+const visibleRepos = repos[page.key].filter(d => !d.reponame || d.reponame.match(searchRegex));
+
   return (
     <Grid container className="dashboardWrapper">
       <Grid
@@ -60,7 +62,7 @@ function Dashboard() {
             ))}
             <hr />
             <DownloadButton />
-            <li onClick={syncRepos}>Sync Repositories</li>
+            {user.githubId && <li onClick={syncRepos}>Sync Repositories</li>}
           </ul>
         </nav>
       </Grid>
@@ -71,11 +73,7 @@ function Dashboard() {
             fullWidth
             style={{ marginTop: "20px", marginBottom: "10px" }}
             onChange={e => {
-              if (e.target.value) {
-                setSearchRegex(new RegExp(`${e.target.value.trim()}`, "i"));
-              } else {
-                setSearchRegex(new RegExp(`.*`, "i"));
-              }
+              setSearchRegex(new RegExp(`${e.target.value.trim()}`, "i"));
             }}
             id="outlined-size-small"
             label="Search Repositories"
@@ -85,8 +83,8 @@ function Dashboard() {
         )}
         <div>
           {!loadingData &&
-            repos[page.key]
-              .filter(d => !d.reponame || d.reponame.match(searchRegex))
+              visibleRepos.length != 0 && 
+              visibleRepos  
               .map(d => {
                 let dataD = [];
                 let labels = [];
@@ -201,7 +199,7 @@ function Dashboard() {
               <CircularProgress />
             </center>
           )}
-          {!loadingData && repos[page.key].length === 0 && (
+          {!loadingData && (repos[page.key].length === 0 || visibleRepos.length === 0) && (
             <div>
               <br />
               <div className="nothing">
