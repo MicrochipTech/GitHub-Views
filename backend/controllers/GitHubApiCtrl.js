@@ -5,7 +5,7 @@ module.exports = {
     return axios({
       url: `https://api.github.com/users/${user.username}/repos`,
       headers: { Authorization: `token ${user.token}` },
-      params: { type: "all" }
+      params: { type: "all", per_page: 100 }
     });
   },
 
