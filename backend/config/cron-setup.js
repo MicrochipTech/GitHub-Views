@@ -44,9 +44,9 @@ async function checkForNewRepos() {
   });
 
   users.forEach(async user => {
-    const response = await GitHubApiCtrl.getUserRepos(user);
+    const repos = await GitHubApiCtrl.getUserRepos(user);
 
-    response.data.forEach(async repo => {
+    repos.forEach(async repo => {
       const repoEntry = await RepositoryModel.findOne({
         reponame: repo.full_name,
         user_id: user._id

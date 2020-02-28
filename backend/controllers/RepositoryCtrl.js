@@ -20,10 +20,10 @@ module.exports = {
 
   sync: async (req, res) => {
     const { user } = req;
-    const response = await GitHubApiCtrl.getUserRepos(user);
+    const repos = await GitHubApiCtrl.getUserRepos(user);
     let anyNewRepo = false;
 
-    const p = response.data.map(async repo => {
+    const p = repos.map(async repo => {
       const repoEntry = await RepositoryModel.findOne({
         reponame: repo.full_name,
         user_id: user._id
