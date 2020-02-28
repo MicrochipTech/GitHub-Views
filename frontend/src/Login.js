@@ -2,7 +2,7 @@ import React from "react";
 
 import { AuthContext } from "./Auth";
 
-import { Grid, Button, TextField, Paper } from "@material-ui/core";
+import { Grid, Button, TextField } from "@material-ui/core";
 import GitHubIcon from "@material-ui/icons/GitHub";
 
 import "./Login.css";

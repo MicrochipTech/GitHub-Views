@@ -19,3 +19,11 @@
 h2 {
   margin-bottom: 0px;
 }
+
+.timewinbtnsWrapper {
+  margin-left: 10px;
+}
+
+.timewinbtn {
+  margin-right: 10px !important;
+}

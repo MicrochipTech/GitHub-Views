@@ -164,28 +164,6 @@ function LineChart({ aggregateId, data, type }) {
         )}
       </Grid>
 
-      <Button 
-        onClick={_ => 
-          setTime([moment().subtract(1, 'months').toDate(), moment().toDate()])
-        }
-        disabled={
-          moment().subtract(1, 'months').isBefore(labels[0])
-          }
-        >
-          Last Month
-      </Button>
-
-      <Button 
-        onClick={_ => 
-          setTime([moment().subtract(6, 'months').toDate(), moment().toDate()])
-        }
-        disabled={
-          moment().subtract(6, 'months').isBefore(labels[0])
-          }
-        >
-          Last 6 Months
-      </Button>
-
       <DateRangePicker
         minDate={minLimit}
         maxDate={maxLimit}
@@ -198,6 +176,43 @@ function LineChart({ aggregateId, data, type }) {
         }}
         value={[...time]}
       />
+
+      <div className="timewinbtnsWrapper">
+        <Button
+          className="timewinbtn"
+          onClick={_ =>
+            setTime([
+              moment()
+                .subtract(1, "months")
+                .toDate(),
+              moment().toDate()
+            ])
+          }
+          disabled={moment()
+            .subtract(1, "months")
+            .isBefore(labels[0])}
+        >
+          Last Month
+        </Button>
+
+        <Button
+          className="timewinbtn"
+          onClick={_ =>
+            setTime([
+              moment()
+                .subtract(6, "months")
+                .toDate(),
+              moment().toDate()
+            ])
+          }
+          disabled={moment()
+            .subtract(6, "months")
+            .isBefore(labels[0])}
+        >
+          Last 6 Months
+        </Button>
+      </div>
+
       <canvas ref={chartRef} />
     </Grid>
   );
