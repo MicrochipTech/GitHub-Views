@@ -86,7 +86,7 @@ function Dashboard() {
         <div>
           {!loadingData &&
             repos[page.key]
-              .filter(d => d.reponame.match(searchRegex))
+              .filter(d => !d.reponame || d.reponame.match(searchRegex))
               .map(d => {
                 let dataD = [];
                 let labels = [];
@@ -205,7 +205,7 @@ function Dashboard() {
             <div>
               <br />
               <div className="nothing">
-                Nothig to show here...
+                Nothing to show here.
                 {page.key === "aggregateCharts" && (
                   <div>
                     <NewAggregateChartButton text="Create First Aggregate Chart" />

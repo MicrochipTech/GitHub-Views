@@ -27,8 +27,12 @@ function LineChart({ aggregateId, data, type }) {
   const labels = data.timestamp;
 
   const minLimit = new Date(labels[0]);
+  labels[labels.length - 1] = new Date(labels[labels.length - 1]).setHours(
+    23,
+    59,
+    59
+  );
   const maxLimit = new Date(labels[labels.length - 1]);
-
   const [time, setTime] = React.useState([minLimit, maxLimit]);
 
   React.useEffect(_ => {
@@ -105,7 +109,7 @@ function LineChart({ aggregateId, data, type }) {
       chart.update();
       setChart(chart);
     }
-  }, [data, labels, time]);
+  }, [data, labels, time, chart, minLimit]);
 
   return (
     <Grid container className="chartWrapper">
