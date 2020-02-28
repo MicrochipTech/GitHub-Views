@@ -6,7 +6,6 @@ import { Grid, Button } from "@material-ui/core";
 import Chart from "chart.js";
 import "./LineWithLine";
 import "./LineChart.css";
-import moment from "moment";
 
 import DateRangePicker from "@wojtekmaj/react-daterange-picker";
 import DeleteIcon from "@material-ui/icons/Delete";
