@@ -58,7 +58,8 @@ function Dashboard() {
               }
               return true;
             }).map(p => (
-              <li key={p.key} onClick={_ => setPage(p)}>
+              <li key={p.key} 
+                onClick={_ => setPage(p)}>
                 {p.title}
               </li>
             ))}

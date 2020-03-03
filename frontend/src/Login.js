@@ -55,6 +55,11 @@ function Login() {
               variant="outlined"
               style={{ width: "100%" }}
               onChange={e => setUsername(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  login(username, password);
+                }
+              }}
             />
           </div>
           <br />
@@ -65,6 +70,11 @@ function Login() {
               variant="outlined"
               style={{ width: "100%" }}
               onChange={e => setPassword(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  login(username, password);
+                }
+              }}
             />
           </div>
           <Button color="primary" onClick={_ => login(username, password)}>
