@@ -24,11 +24,15 @@ function Dashboard() {
   const { user, logout } = React.useContext(AuthContext);
   const { repos, loadingData, syncRepos } = React.useContext(DataContext);
   const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
-  const [searchRegex, setSearchRegex] = React.useState(new RegExp(`.*`, "i"));
+  const [searchValue, setSearchValue] = React.useState("");
 
   const visibleRepos = repos[page.key].filter(
-    d => !d.reponame || d.reponame.match(searchRegex)
+    d => !d.reponame || d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
   );
+
+  React.useEffect(() => {
+    setSearchValue("");
+  },[page]);
 
   return (
     <Grid container className="dashboardWrapper">
@@ -76,12 +80,13 @@ function Dashboard() {
             fullWidth
             style={{ marginTop: "20px", marginBottom: "10px" }}
             onChange={e => {
-              setSearchRegex(new RegExp(`${e.target.value.trim()}`, "i"));
+              setSearchValue(e.target.value);
             }}
             id="outlined-size-small"
             label="Search Repositories"
             variant="outlined"
             size="small"
+            value={searchValue}
           />
         )}
         <div>
