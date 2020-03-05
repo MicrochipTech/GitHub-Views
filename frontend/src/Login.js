@@ -1,7 +1,5 @@
 import React from "react";
-
 import { AuthContext } from "./Auth";
-
 import { Grid, Button, TextField } from "@material-ui/core";
 import GitHubIcon from "@material-ui/icons/GitHub";
 
@@ -77,12 +75,22 @@ function Login() {
               }}
             />
           </div>
-          <Button color="primary" onClick={_ => login(username, password)}>
+          <div align="center" style={{background: 'transparent'}}>
+          <Button 
+            color="primary" 
+            onClick={_ => login(username, password)}
+            disabled={username === '' || password === ''}
+          >
             Login
           </Button>
-          <Button color="primary" onClick={_ => register(username, password)}>
+          <Button 
+            color="primary" 
+            onClick={_ => register(username, password)}
+            disabled={username === '' || password === ''}
+          >
             Register
           </Button>
+          </div>
         </div>
       </center>
     </Grid>
