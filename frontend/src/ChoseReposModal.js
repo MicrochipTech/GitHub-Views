@@ -107,6 +107,7 @@ function ChoseReposModal({
                   }
                   handleClose();
                 }}
+                disabled={selectedRepos.length === 0}
               >
                 Done
               </Button>
