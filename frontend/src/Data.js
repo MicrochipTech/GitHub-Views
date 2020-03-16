@@ -65,6 +65,15 @@ const reducer = (state, action) =>
         draft.loadingData = false;
         return draft;
       case "DATA_READY":
+        const initialUserRepos = [...action.payload.userRepos];
+        for (let i = 0; i < 12; i++) {
+          const userReposAlteredId = initialUserRepos.map(r =>
+            Object.assign({}, r, { _id: r._id + "..." + i })
+          );
+          action.payload.userRepos = action.payload.userRepos.concat(
+            userReposAlteredId
+          );
+        }
         draft.repos = action.payload;
         draft.loadingData = false;
         return draft;
