@@ -6,8 +6,8 @@ import { Grid } from "@material-ui/core";
 import DownloadButton from "./DownloadButton";
 import LineChart from "./LineChart";
 import CircularProgress from "@material-ui/core/CircularProgress";
-import TextField from "@material-ui/core/TextField";
 import NewAggregateChartButton from "./NewAggregateChartButton";
+import SearchBar from "./SearchBar";
 import "./Dashboard.css";
 
 function generateRandomColour(total, idx) {
@@ -26,13 +26,18 @@ function Dashboard() {
   const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
   const [searchValue, setSearchValue] = React.useState("");
 
-  const visibleRepos = repos[page.key].filter(
-    d => !d.reponame || d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
-  );
+  let visibleRepos = repos[page.key];
+  if (searchValue) {
+    visibleRepos = repos[page.key].filter(
+      d =>
+        !d.reponame ||
+        d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
+    );
+  }
 
   React.useEffect(() => {
     setSearchValue("");
-  },[page]);
+  }, [page]);
 
   return (
     <Grid container className="dashboardWrapper">
@@ -62,8 +67,7 @@ function Dashboard() {
               }
               return true;
             }).map(p => (
-              <li key={p.key} 
-                onClick={_ => setPage(p)}>
+              <li key={p.key} onClick={_ => setPage(p)}>
                 {p.title}
               </li>
             ))}
@@ -75,20 +79,13 @@ function Dashboard() {
       </Grid>
 
       <Grid item md={10}>
-        {!loadingData && page.key !== "aggregateCharts" && (
-          <TextField
-            fullWidth
-            style={{ marginTop: "20px", marginBottom: "10px" }}
-            onChange={e => {
-              setSearchValue(e.target.value);
-            }}
-            id="outlined-size-small"
-            label="Search Repositories"
-            variant="outlined"
-            size="small"
-            value={searchValue}
-          />
-        )}
+        <SearchBar
+          show={!loadingData && page.key !== "aggregateCharts"}
+          onSearch={q => {
+            setSearchValue(q);
+          }}
+        />
+
         <div>
           {!loadingData &&
             visibleRepos.length !== 0 &&

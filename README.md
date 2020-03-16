@@ -8,7 +8,7 @@
 - [x] Create aggregate line-charts of multiple repos
 - [x] Email & Password authentication
 - [x] Export data as CSV
-- [ ] Configurable time window for charts
+- [x] Configurable time window for charts
 - [ ] Create aggregate bar-charts of multiple repos
 
 ## :rocket: Deployment
