@@ -1,0 +1,29 @@
+.chartWrapper {
+  margin-bottom: 20px;
+}
+
+.chartWrapper h1 {
+  max-width: 80%;
+  word-break: break-all;
+}
+
+.chartWrapper .icon {
+  margin-top: 13px;
+  cursor: pointer;
+  border: 1px solid black;
+  padding: 8px;
+  height: 24px;
+  border-radius: 3px;
+}
+
+h2 {
+  margin-bottom: 0px;
+}
+
+.timewinbtnsWrapper {
+  margin-left: 10px;
+}
+
+.timewinbtn {
+  margin-right: 10px !important;
+}
