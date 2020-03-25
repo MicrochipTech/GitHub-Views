@@ -1,21 +1,19 @@
 # base image
 FROM node:12.2.0-alpine
+LABEL maintainer="MCU8Apps Team"
 
-# set working directory
-WORKDIR /app
-
-# add `/app/node_modules/.bin` to $PATH
 ENV PATH /app/node_modules/.bin:$PATH
 
-RUN apk update && apk upgrade && \
-    apk add --no-cache bash git openssh
+WORKDIR /app
 
-# install and cache app dependencies
 COPY package.json /app/package.json
-RUN npm install
-RUN npm install react-scripts@3.0.1 -g
+RUN npm install /app
 
 COPY . /app
 
-# start app
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+EXPOSE 3000
+ENTRYPOINT ["entrypoint.sh"]
 CMD ["npm", "start"]

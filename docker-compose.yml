@@ -1,4 +1,4 @@
-version: "3.1"
+version: "3.7"
 
 services:
   mongo:
@@ -23,11 +23,7 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
 
   frontend:
-    build: ./frontend
-    command: npm start
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+    image: artifacts.microchip.com:7999/mcu8apps/github-views/frontend
     ports:
       - 8000:3000
     environment:
@@ -36,11 +32,8 @@ services:
       - backend
 
   backend:
-    build: ./backend
+    image: artifacts.microchip.com:7999/mcu8apps/github-views/backend
     restart: unless-stopped
-    command: npm start
-    volumes:
-      - ./backend:/usr/app/
     ports:
       - 3000:8000
     depends_on:
