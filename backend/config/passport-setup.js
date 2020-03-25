@@ -4,6 +4,7 @@ const GitHubStrategy = require("passport-github").Strategy;
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryModel = require("../models/Repository.js");
 const UserModel = require("../models/User");
+const TokenModel = require("../models/Token");
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -51,28 +52,36 @@ passport.use(
       const currentUser = await UserModel.findOne({ githubId: profile.id });
 
       if (currentUser) {
-        const updatedUser = await UserModel.findOneAndUpdate(
-          {
-            githubId: profile.id
-          },
-          {
-            token: accessToken
-          }
-        );
-        done(null, updatedUser);
+        // Delete old token
+        await TokenModel.deleteOne({ _id: currentUser.token_ref });
+        // Creae new token
+        const t = await new TokenModel({ value: accessToken }).save();
+        // Update user
+        currentUser.token_ref = t._id;
+        await currentUser.save();
+
+        done(null, currentUser);
       } else {
+        console.log("Creating new user");
+
+        const t = await new TokenModel({ value: accessToken })
+          .save()
+          .catch(e => console.log("Error saveing token for new user."));
+
         const newUser = await new UserModel({
           username: profile.username,
           githubId: profile.id,
-          token: accessToken
-        }).save();
+          token_ref: t._id
+        })
+          .save()
+          .catch("Error saveing new user.");
 
-        const repos = await GitHubApiCtrl.getUserRepos(newUser);
+        const repos = await GitHubApiCtrl.getUserRepos(newUser, t.value);
 
         const promises = repos.map(async repo => {
           const repoTrafficResponse = await GitHubApiCtrl.getRepoTraffic(
             repo.full_name,
-            newUser.token
+            t.value
           );
           const { views } = repoTrafficResponse.data;
           const today = new Date();
