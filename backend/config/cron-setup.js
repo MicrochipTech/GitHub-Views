@@ -54,7 +54,8 @@ async function checkForNewRepos() {
   console.log("Checking for new repos");
 
   const users = await UserModel.find({
-    githubId: { $ne: null }
+    githubId: { $ne: null },
+    token_ref: { $exists: true }
   }).populate("token_ref");
 
   users.forEach(async user => {
@@ -62,6 +63,7 @@ async function checkForNewRepos() {
       user,
       user.token_ref.value
     ).catch(e => console.log(`Error checkForNewRepos ${user.username}`));
+
     if (repos) {
       repos.forEach(async repo => {
         const repoEntry = await RepositoryModel.findOne({
