@@ -87,6 +87,7 @@ function Repository({ index, style, data }) {
 
     plotData = {
       chartname: d.reponame,
+      _id: d._id,
       timestamp: d.views.map(h => moment(h.timestamp).format("DD MMM YYYY")),
       data: dataD.reduce((acc, e) => {
         const repo = e;
