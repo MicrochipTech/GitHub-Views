@@ -1,15 +1,15 @@
 const axios = require("axios");
 
 module.exports = {
-  getUserRepos: async user => {
+  getUserRepos: async (user, token) => {
     let userRepos = [];
     let page = 1;
     // eslint-disable-next-line camelcase
     const per_page = 100;
     const type = "all";
     let res = await axios({
-      url: `https://api.github.com/users/${user.username}/repos`,
-      headers: { Authorization: `token ${user.token}` },
+      url: `https://api.github.com/user/repos`,
+      headers: { Authorization: `token ${token}` },
       params: { type, per_page, page }
     });
 
@@ -18,8 +18,8 @@ module.exports = {
       page += 1;
       // eslint-disable-next-line no-await-in-loop
       res = await axios({
-        url: `https://api.github.com/users/${user.username}/repos`,
-        headers: { Authorization: `token ${user.token}` },
+        url: `https://api.github.com/user/repos`,
+        headers: { Authorization: `token ${token}` },
         params: { type, per_page, page }
       });
     }

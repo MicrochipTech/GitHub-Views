@@ -1,9 +1,5 @@
 const mongoose = require("mongoose");
-const encrypt = require("mongoose-encryption");
 const bcrypt = require("bcrypt-nodejs");
-
-const encKey = process.env.TOKEN_ENC_KEY;
-const sigKey = process.env.TOKEN_SIG_KEY;
 
 const userSchema = new mongoose.Schema({
   username: { type: String, unique: true },
@@ -11,12 +7,8 @@ const userSchema = new mongoose.Schema({
 
   githubId: String,
   token: String,
+  token_ref: { type: mongoose.Schema.Types.ObjectId, ref: "Token" },
   sharedRepos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Repository" }]
-});
-userSchema.plugin(encrypt, {
-  encryptionKey: encKey,
-  signingKey: sigKey,
-  encryptedFields: ["token"]
 });
 
 userSchema.pre("save", function(callback) {

@@ -1,6 +1,7 @@
 const UserModel = require("../models/User");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryModel = require("../models/Repository");
+const TokenModel = require("../models/Token");
 
 const UserCtrl = require("./UserCtrl");
 
@@ -20,7 +21,8 @@ module.exports = {
 
   sync: async (req, res) => {
     const { user } = req;
-    const repos = await GitHubApiCtrl.getUserRepos(user);
+    const t = await TokenModel.findOne({ _id: user.token_ref });
+    const repos = await GitHubApiCtrl.getUserRepos(user, t.value);
     let anyNewRepo = false;
 
     const p = repos.map(async repo => {
@@ -33,7 +35,7 @@ module.exports = {
         anyNewRepo = true;
         const repoTrafficResponse = await GitHubApiCtrl.getRepoTraffic(
           repo.full_name,
-          user.token
+          t.value
         );
         const { views } = repoTrafficResponse.data;
         const today = new Date();
