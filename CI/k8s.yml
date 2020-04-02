@@ -1,7 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: docker-building-release
+  name: docker-builder
+  labels:
+    ci.microchip.com/bu: mcu8apps
 spec:
   containers:
     - name: setup
@@ -15,7 +17,7 @@ spec:
           memory: 250Mi
         limits:
           cpu: 250m
-          memory: 500Gi
+          memory: 500Mi
     - name: kaniko
       image: gcr.io/kaniko-project/executor:debug
       imagePullPolicy: Always
@@ -24,14 +26,8 @@ spec:
       tty: true
       resources:
         requests:
-          cpu: 1
+          cpu: 500m
           memory: 1Gi
         limits:
-          cpu: 1500m
-          memory: 2000Mi
-    - name: semantic-release
-      image: node
-      imagePullPolicy: Always
-      command:
-      - cat
-      tty: true
+          cpu: 2
+          memory: 3000Mi
