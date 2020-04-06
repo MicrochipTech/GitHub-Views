@@ -5,6 +5,7 @@ import Backdrop from "@material-ui/core/Backdrop";
 import Fade from "@material-ui/core/Fade";
 import EditIcon from "@material-ui/icons/Edit";
 import { Button, Switch } from "@material-ui/core";
+import TextField from "@material-ui/core/TextField";
 
 const useStyles = makeStyles(theme => ({
   modal: {
@@ -47,6 +48,11 @@ function ChoseReposModal({
 
     setOpen(false);
   };
+  const [searchAggFilter, setSearchAggFilter] = React.useState("");
+  const reposMatchingSearch = allRepos.map((i,idx) => ({...i,originalIdx:idx})).filter(
+    d =>
+      !d.reponame || d.reponame.match(new RegExp(`${searchAggFilter.trim()}`, "i"))
+  );
 
   return (
     <div>
@@ -70,16 +76,28 @@ function ChoseReposModal({
             <div className="padding20">
               <h2 id="transition-modal-title">Select repositories:</h2>
             </div>
+            <div>
+              <TextField
+                label="Search"
+                variant="outlined"
+                style={{ width: "100%" }}
+                value={searchAggFilter}
+                onChange={e => {
+                  setSearchAggFilter(e.target.value);
+                }}
+              />
+            </div>
             <hr />
-            <div className="padding20">
-              {allRepos.length !== 0 && 
-               allRepos.map((r, idx) => (
+            <div className="spadding20">
+              {reposMatchingSearch.length !== 0 && 
+               reposMatchingSearch.map((r, idx) => (
                 <div key={r._id} style={{ disaply: "flex" }}>
                   <Switch
-                    checked={values[idx]}
+                    checked={values[r.originalIdx]}
                     onChange={e => {
                       const newValues = [...values];
-                      newValues[idx] = e.target.checked;
+                      newValues[r.originalIdx] = e.target.checked;
+                      console.log(r.originalIdx);
                       setValues(newValues);
                       if (onChange) {
                         onChange(r._id, e.target.checked);
