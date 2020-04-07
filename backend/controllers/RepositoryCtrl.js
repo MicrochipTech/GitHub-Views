@@ -35,7 +35,7 @@ module.exports = {
         anyNewRepo = true;
         const repoTrafficResponse = await GitHubApiCtrl.getRepoTraffic(
           repo.full_name,
-          user.token
+          t.value
         );
         const { views } = repoTrafficResponse.data;
         const today = new Date();

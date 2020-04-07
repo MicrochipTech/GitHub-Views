@@ -9,6 +9,8 @@
 - [x] Email & Password authentication
 - [x] Export data as CSV
 - [x] Configurable time window for charts
+- [ ] Display commits as vertical markers (lines) on the repo chart
+- [ ] Cumulative charts summing the views of multiple repos into one line chart
 - [ ] Create aggregate bar-charts of multiple repos
 
 ## :rocket: Deployment
@@ -63,3 +65,4 @@ Feel free to add features and this project and submit a PR. We will add you to t
 
 [<img alt="m17336" src="https://github.com/m17336.png?size=40" height="40">](https://github.com/m17336)
 [<img alt="filipgeorge" src="https://github.com/filipgeorge.png?size=40" height="40">](https://github.com/filipgeorge)
+[<img alt="CristianSabiuta" src="https://github.com/CristianSabiuta.png?size=40" height="40">](https://github.com/CristianSabiuta)
