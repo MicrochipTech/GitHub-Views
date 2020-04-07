@@ -35,3 +35,8 @@ hr {
 .padding20 {
   padding: 20px;
 }
+
+.selectReposWrapper {
+  height: 300px;
+  overflow-y: scroll;
+}
