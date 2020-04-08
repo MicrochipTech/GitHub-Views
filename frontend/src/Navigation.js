@@ -6,7 +6,8 @@ import DownloadButton from "./DownloadButton";
 const PAGES = [
   { title: "My Repositories", key: "userRepos" },
   { title: "Shared Repositories", key: "sharedRepos" },
-  { title: "Aggregate Charts", key: "aggregateCharts" }
+  { title: "Aggregate Charts", key: "aggregateCharts" },
+  { title: "Zombie Repositories", key: "zombies" }
 ];
 
 function Navigation({ setPage }) {
