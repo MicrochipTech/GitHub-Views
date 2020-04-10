@@ -4,6 +4,10 @@ const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 const TokenModel = require("../models/Token");
 const chalk = require("chalk");
+const axios = require("axios");
+
+// to be deleted
+updateRepos()
 
 async function updateRepos() {
   console.log("Updating repositories...");
@@ -12,8 +16,53 @@ async function updateRepos() {
     path: "user_id",
     populate: { path: "token_ref" }
   });
+
+  /* BEGIN - update repoid and not_found */
+  console.log("Updating repoid and not_found...");
+
   repos.forEach(async repoEntry => {
     if (repoEntry.user_id.token_ref) {
+      const repoDetails = await axios({
+        url: `https://api.github.com/repos/${repoEntry.reponame}`,
+        headers: { Authorization: `token ${repoEntry.user_id.token_ref.value}` }
+      });
+
+      if(repoDetails){
+        switch(repoDetails.data.message) {
+          case "Not Found":
+            /* Mark the repository as not found */
+            repoEntry.not_found = true;
+
+            break;
+
+          case "Moved Permanently":
+            /* The repository was renamed */
+            const redirectDetails = await axios({
+              url: repoDetails.data.url,
+              headers: { Authorization: `token ${repoEntry.user_id.token_ref.value}` }
+            });
+  
+            if(redirectDetails){
+              repoEntry.github_repo_id = redirectDetails.data.id;
+            } else {
+              console.log(`Error trying to update id for ${repoEntry.reponame}`)
+            }
+
+            break;
+
+          default:
+            /* The repository exists and will be updated */
+            repoEntry.not_found = false;
+            repoEntry.github_repo_id = repoDetails.data.id;
+        }
+      }
+    }
+  });
+
+  /* END - update repoid and not_found */
+
+  repos.forEach(async repoEntry => {
+    if (!repoEntry.not_found && repoEntry.user_id.token_ref) {
       const response = await GitHubApiCtrl.getRepoTraffic(
         repoEntry.reponame,
         repoEntry.user_id.token_ref.value
@@ -24,26 +73,63 @@ async function updateRepos() {
           )
         )
       );
-      if (response) {
-        let viewsToUpdate = response.data.views;
-        if (repoEntry.views.length !== 0) {
-          const last = repoEntry.views[repoEntry.views.length - 1].timestamp;
-          viewsToUpdate = viewsToUpdate.filter(info => {
-            const timestampDate = new Date(info.timestamp);
-            const today = new Date();
-            today.setUTCHours(0, 0, 0, 0);
 
-            if (
-              timestampDate.getTime() > last.getTime() &&
-              timestampDate.getTime() < today.getTime()
-            ) {
-              return true;
+      if (response) {
+        switch(response.data.message) {
+          case "Not Found":
+            /* The repository was not found*/
+            repoEntry.not_found = true;
+
+            break;
+
+          case "Moved Permanently":
+            /* The repository was renamed */
+            const redirectDetails = await axios({
+              url: `https://api.github.com/repositories/${repoEntry.github_repo_id}`,
+              headers: { Authorization: `token ${repoEntry.user_id.token_ref.value}` }
+            });
+  
+            if(redirectDetails){
+              repoEntry.reponame = redirectDetails.data.full_name;
+            } else {
+              console.log(`Error trying to rename ${repoEntry.reponame}`)
             }
 
-            return false;
-          });
+            response = await axios({
+              url: response.data.url,
+              headers: { Authorization: `token ${repoEntry.user_id.token_ref.value}` }
+            });
+
+            if(!response) {
+              console.log(`Error trying update repo ${repoEntry.reponame} after rename`)
+            }
+
+            /* Not breaking - the repository traffic will be updated */
+
+          default:
+            /* The repository exists and will be updated */
+
+            let viewsToUpdate = response.data.views;
+            if (repoEntry.views.length !== 0) {
+              const last = repoEntry.views[repoEntry.views.length - 1].timestamp;
+              viewsToUpdate = viewsToUpdate.filter(info => {
+                const timestampDate = new Date(info.timestamp);
+                const today = new Date();
+                today.setUTCHours(0, 0, 0, 0);
+
+                if (
+                  timestampDate.getTime() > last.getTime() &&
+                  timestampDate.getTime() < today.getTime()
+                ) {
+                  return true;
+                }
+
+                return false;
+              });
+            }
+
+            repoEntry.views.push(...viewsToUpdate);
         }
-        repoEntry.views.push(...viewsToUpdate);
         repoEntry.save();
       }
     }

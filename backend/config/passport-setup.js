@@ -46,7 +46,6 @@ passport.use(
     {
       clientID: process.env.GH_CLIENT_ID,
       clientSecret: process.env.GH_CLIENT_SECRET
-      // callbackURL: "http://localhost:3000/api/auth/github/redirect"
     },
     async (accessToken, refreshToken, profile, done) => {
       const currentUser = await UserModel.findOne({ githubId: profile.id });
@@ -97,8 +96,10 @@ passport.use(
 
           await new RepositoryModel({
             user_id: newUser._id,
+            github_repo_id: repo.id,
             reponame: repo.full_name,
-            views
+            views,
+            not_found: false
           }).save();
         });
         await Promise.all(promises);
