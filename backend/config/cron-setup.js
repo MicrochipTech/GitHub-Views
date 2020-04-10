@@ -9,6 +9,7 @@ const fetch = require("node-fetch");
 
 updateRepos()
 
+
 async function updateRepos() {
   console.log("Updating repositories...");
 
@@ -53,6 +54,7 @@ async function updateRepos() {
             const redirectDetails = await redirectDetailsResponse.json();
 
             if(redirectDetails){
+              repoEntry.not_found = false;
               repoEntry.github_repo_id = redirectDetails.id;
             } else {
               console.log(`Error trying to update id for ${repoEntry.reponame}`)
