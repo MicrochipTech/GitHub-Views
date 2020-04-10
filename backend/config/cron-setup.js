@@ -54,6 +54,7 @@ async function updateRepos() {
             repoEntry.not_found = false;
             repoEntry.github_repo_id = repoDetails.data.id;
         }
+        repoEntry.save();
       }
     }
   });
@@ -129,7 +130,7 @@ async function updateRepos() {
 
             repoEntry.views.push(...viewsToUpdate);
         }
-        await repoEntry.save();
+        repoEntry.save();
       }
     }
   });
