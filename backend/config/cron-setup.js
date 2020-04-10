@@ -6,7 +6,6 @@ const TokenModel = require("../models/Token");
 const chalk = require("chalk");
 const axios = require("axios");
 
-// to be deleted
 updateRepos()
 
 async function updateRepos() {
@@ -130,7 +129,7 @@ async function updateRepos() {
 
             repoEntry.views.push(...viewsToUpdate);
         }
-        repoEntry.save();
+        await repoEntry.save();
       }
     }
   });
