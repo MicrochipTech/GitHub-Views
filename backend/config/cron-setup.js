@@ -5,6 +5,7 @@ const UserModel = require("../models/User");
 const TokenModel = require("../models/Token");
 const chalk = require("chalk");
 const axios = require("axios");
+const fetch = require("node-fetch");
 
 updateRepos()
 
@@ -21,13 +22,18 @@ async function updateRepos() {
 
   const idUpdatePromises = repos.map(async repoEntry => {
     if (repoEntry.user_id.token_ref) {
-      const repoDetails = await axios({
-        url: `https://api.github.com/repos/${repoEntry.reponame}`,
-        headers: { Authorization: `token ${repoEntry.user_id.token_ref.value}` }
+
+      const repoDetailsResponse = await fetch(`https://api.github.com/repos/${repoEntry.reponame}`, {
+        method: "get",
+        redirect: 'manual',
+        headers: {
+          Authorization: `token ${repoEntry.user_id.token_ref.value}`
+        }
       });
+      const repoDetails = await repoDetailsResponse.json();
 
       if(repoDetails){
-        switch(repoDetails.data.message) {
+        switch(repoDetails.message) {
           case "Not Found":
             /* Mark the repository as not found */
             repoEntry.not_found = true;
@@ -36,13 +42,18 @@ async function updateRepos() {
 
           case "Moved Permanently":
             /* The repository was renamed */
-            const redirectDetails = await axios({
-              url: repoDetails.data.url,
-              headers: { Authorization: `token ${repoEntry.user_id.token_ref.value}` }
+
+            const redirectDetailsResponse = await fetch(repoDetails.url, {
+              method: "get",
+              redirect: 'manual',
+              headers: {
+                Authorization: `token ${repoEntry.user_id.token_ref.value}`
+              }
             });
-  
+            const redirectDetails = await redirectDetailsResponse.json();
+
             if(redirectDetails){
-              repoEntry.github_repo_id = redirectDetails.data.id;
+              repoEntry.github_repo_id = redirectDetails.id;
             } else {
               console.log(`Error trying to update id for ${repoEntry.reponame}`)
             }
@@ -52,31 +63,30 @@ async function updateRepos() {
           default:
             /* The repository exists and will be updated */
             repoEntry.not_found = false;
-            repoEntry.github_repo_id = repoDetails.data.id;
+            repoEntry.github_repo_id = repoDetails.id;
         }
         await repoEntry.save();
       }
     }
   });
   await Promise.all(idUpdatePromises)
-
+  console.log("Successfull update repoid and not_found...");
   /* END - update repoid and not_found */
 
   const repoUpdatePromises = repos.map(async repoEntry => {
     if (!repoEntry.not_found && repoEntry.user_id.token_ref) {
-      const response = await GitHubApiCtrl.getRepoTraffic(
-        repoEntry.reponame,
-        repoEntry.user_id.token_ref.value
-      ).catch(e =>
-        console.log(
-          chalk.bgRed(
-            `Error updading repo ${repoEntry.reponame} of user ${repoEntry.user_id.username}`
-          )
-        )
-      );
+
+      var trafficResponse = await fetch(`https://api.github.com/repos/${repoEntry.reponame}/traffic/views`, {
+        method: "get",
+        redirect: 'manual',
+        headers: {
+          Authorization: `token ${repoEntry.user_id.token_ref.value}`
+        }
+      });
+      var response = await trafficResponse.json();
 
       if (response) {
-        switch(response.data.message) {
+        switch(response.message) {
           case "Not Found":
             /* The repository was not found*/
             repoEntry.not_found = true;
@@ -85,21 +95,29 @@ async function updateRepos() {
 
           case "Moved Permanently":
             /* The repository was renamed */
-            const redirectDetails = await axios({
-              url: `https://api.github.com/repositories/${repoEntry.github_repo_id}`,
-              headers: { Authorization: `token ${repoEntry.user_id.token_ref.value}` }
+            const repoDetailsResponse = await fetch(`https://api.github.com/repositories/${repoEntry.github_repo_id}`, {
+              method: "get",
+              redirect: 'manual',
+              headers: {
+                Authorization: `token ${repoEntry.user_id.token_ref.value}`
+              }
             });
-  
-            if(redirectDetails){
-              repoEntry.reponame = redirectDetails.data.full_name;
+            const repoDetails = await repoDetailsResponse.json();
+            
+            if(repoDetails){
+              repoEntry.reponame = repoDetails.full_name;
             } else {
               console.log(`Error trying to rename ${repoEntry.reponame}`)
             }
 
-            response = await axios({
-              url: response.data.url,
-              headers: { Authorization: `token ${repoEntry.user_id.token_ref.value}` }
+            trafficResponse = await fetch(response.url, {
+              method: "get",
+              redirect: 'manual',
+              headers: {
+                Authorization: `token ${repoEntry.user_id.token_ref.value}`
+              }
             });
+            response = await trafficResponse.json();
 
             if(!response) {
               console.log(`Error trying update repo ${repoEntry.reponame} after rename`)
@@ -110,7 +128,7 @@ async function updateRepos() {
           default:
             /* The repository exists and will be updated */
 
-            let viewsToUpdate = response.data.views;
+            let viewsToUpdate = response.views;
             if (repoEntry.views.length !== 0) {
               const last = repoEntry.views[repoEntry.views.length - 1].timestamp;
               viewsToUpdate = viewsToUpdate.filter(info => {
