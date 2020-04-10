@@ -19,7 +19,7 @@ async function updateRepos() {
   /* BEGIN - update repoid and not_found */
   console.log("Updating repoid and not_found...");
 
-  repos.forEach(async repoEntry => {
+  const idUpdatePromises = repos.map(async repoEntry => {
     if (repoEntry.user_id.token_ref) {
       const repoDetails = await axios({
         url: `https://api.github.com/repos/${repoEntry.reponame}`,
@@ -54,14 +54,16 @@ async function updateRepos() {
             repoEntry.not_found = false;
             repoEntry.github_repo_id = repoDetails.data.id;
         }
-        repoEntry.save();
+        await repoEntry.save();
       }
     }
   });
 
+  await Promise.all(idUpdatePromises)
+
   /* END - update repoid and not_found */
 
-  repos.forEach(async repoEntry => {
+  const repoUpdatePromises = repos.map(async repoEntry => {
     if (!repoEntry.not_found && repoEntry.user_id.token_ref) {
       const response = await GitHubApiCtrl.getRepoTraffic(
         repoEntry.reponame,
@@ -130,10 +132,11 @@ async function updateRepos() {
 
             repoEntry.views.push(...viewsToUpdate);
         }
-        repoEntry.save();
+        await repoEntry.save();
       }
     }
   });
+  Promise.all(repoUpdatePromises);
 }
 
 async function checkForNewRepos() {
@@ -174,9 +177,11 @@ async function checkForNewRepos() {
           }
 
           await new RepositoryModel({
-            user_id: user._id,
+            user_id: newUser._id,
+            github_repo_id: repo.id,
             reponame: repo.full_name,
-            views
+            views,
+            not_found: false
           }).save();
         }
       });
