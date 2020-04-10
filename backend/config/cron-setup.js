@@ -58,7 +58,6 @@ async function updateRepos() {
       }
     }
   });
-
   await Promise.all(idUpdatePromises)
 
   /* END - update repoid and not_found */
