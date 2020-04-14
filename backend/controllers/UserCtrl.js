@@ -4,7 +4,7 @@ const AggregateChartModel = require("../models/AggregateChart");
 const RepositoryModel = require("../models/Repository");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 
-function updateTraffic(repo, views) {
+function updateRepoTraffic(repo, views) {
   let viewsToUpdate = views;
   if (repo.views.length !== 0) {
     const last = repo.views[repo.views.length - 1].timestamp;
@@ -128,14 +128,14 @@ module.exports = {
                   success = false;
                 }
     
-                updateTraffic(repoEntry, redirectTraffic.views);
+                updateRepoTraffic(repoEntry, redirectTraffic.views);
               }
               break;
   
             case 200:
               /* The repository exists and will be updated */
               if(updateTraffic){
-                updateTraffic(repoEntry, traffic.views);
+                updateRepoTraffic(repoEntry, traffic.views);
               }
               break;
 

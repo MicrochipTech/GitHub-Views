@@ -8,6 +8,8 @@ const chalk = require("chalk");
 const axios = require("axios");
 const fetch = require("node-fetch");
 
+updatingRepositories();
+
 async function updatingRepositories() {
   console.log("Updating repositories for all users");
 
@@ -70,7 +72,6 @@ async function updatingRepositories() {
     }
   });
   await Promise.all(idUpdatePromises)
-  console.log("Successfull update repoid and not_found fields");
   /* END - update repoid and not_found */
 
   const users = await UserModel.find({
