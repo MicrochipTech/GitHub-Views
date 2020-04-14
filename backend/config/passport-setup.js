@@ -78,29 +78,8 @@ passport.use(
         const repos = await GitHubApiCtrl.getUserRepos(newUser, t.value);
 
         const promises = repos.map(async repo => {
-          const repoTrafficResponse = await GitHubApiCtrl.getRepoTraffic(
-            repo.full_name,
-            t.value
-          );
-          const { views } = repoTrafficResponse.data;
-          const today = new Date();
-          today.setUTCHours(0, 0, 0, 0);
-
-          if (
-            views.length !== 0 &&
-            new Date(views[views.length - 1].timestamp).getTime() >=
-              today.getTime()
-          ) {
-            views.pop();
-          }
-
-          await new RepositoryModel({
-            user_id: newUser._id,
-            github_repo_id: repo.id,
-            reponame: repo.full_name,
-            views,
-            not_found: false
-          }).save();
+          await GitHubApiCtrl.createNewUpdatedRepo(repo, newUser._id, t.value)
+          .catch(e => console.log(`Fail creating repository ${repo.reponame}`));
         });
         await Promise.all(promises);
 
