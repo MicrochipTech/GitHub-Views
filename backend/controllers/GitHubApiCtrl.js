@@ -28,34 +28,40 @@ async function getUserRepos(user, token) {
 }
 
 async function getRepoDetailsById(repoid, token) {
-  const response = await fetch(`https://api.github.com/repositories/${repoid}`, {
-    method: "get",
-    redirect: 'manual',
-    headers: {
-      Authorization: `token ${token}`
+  const response = await fetch(
+    `https://api.github.com/repositories/${repoid}`,
+    {
+      method: "get",
+      redirect: "manual",
+      headers: {
+        Authorization: `token ${token}`
+      }
     }
-  }).catch(e => console.log(`getRpoDetailsById ${repoid}: error`));
-  const response_json = await response.json();
+  ).catch(() => console.log(`getRpoDetailsById ${repoid}: error`));
+  const responseJson = await response.json();
 
-  return { response, response_json }
+  return { response, responseJson };
 }
 
 async function getRepoTraffic(reponame, token) {
-  response = await fetch(`https://api.github.com/repos/${reponame}/traffic/views`, {
-    method: "get",
-    redirect: 'manual',
-    headers: {
-      Authorization: `token ${token}`
+  const response = await fetch(
+    `https://api.github.com/repos/${reponame}/traffic/views`,
+    {
+      method: "get",
+      redirect: "manual",
+      headers: {
+        Authorization: `token ${token}`
+      }
     }
-  }).catch(e => console.log(`getRepoTraffic ${reponame}: error`));
+  ).catch(() => console.log(`getRepoTraffic ${reponame}: error`));
 
-  response_json = await response.json();
+  const responseJson = await response.json();
 
-  return { response, response_json }
+  return { response, responseJson };
 }
 
-async function createNewUpdatedRepo(repoDetails, user_id, token) {
-  const { response_json: repoTrafficResponse } = await getRepoTraffic(
+async function createNewUpdatedRepo(repoDetails, userId, token) {
+  const { responseJson: repoTrafficResponse } = await getRepoTraffic(
     repoDetails.full_name,
     token
   );
@@ -66,14 +72,13 @@ async function createNewUpdatedRepo(repoDetails, user_id, token) {
 
   if (
     views.length !== 0 &&
-    new Date(views[views.length - 1].timestamp).getTime() >=
-      today.getTime()
+    new Date(views[views.length - 1].timestamp).getTime() >= today.getTime()
   ) {
     views.pop();
   }
 
   return new RepositoryModel({
-    user_id: user_id,
+    user_id: userId,
     github_repo_id: repoDetails.id,
     reponame: repoDetails.full_name,
     views,

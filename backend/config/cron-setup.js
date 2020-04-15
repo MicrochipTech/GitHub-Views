@@ -1,14 +1,9 @@
 const cron = require("node-cron");
+const fetch = require("node-fetch");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const UserCtrl = require("../controllers/UserCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
-const TokenModel = require("../models/Token");
-const chalk = require("chalk");
-const axios = require("axios");
-const fetch = require("node-fetch");
-
-updatingRepositories();
 
 async function updatingRepositories() {
   console.log("Updating repositories for all users");
@@ -23,40 +18,53 @@ async function updatingRepositories() {
 
   const idUpdatePromises = repos.map(async repoEntry => {
     if (repoEntry.user_id.token_ref) {
-      const { response: repoDetailsResponse, response_json: repoDetails } = await GitHubApiCtrl.getRepoTraffic(
+      const {
+        response: repoDetailsResponse,
+        responseJson: repoDetails
+      } = await GitHubApiCtrl.getRepoTraffic(
         repoEntry.reponame,
         repoEntry.user_id.token_ref.value
-      ).catch(e => console.log("Updating repoid and not_found fields: Error getting repo traffic"));
+      ).catch(() =>
+        console.log(
+          "Updating repoid and not_found fields: Error getting repo traffic"
+        )
+      );
 
-      if(repoDetails){
-        switch(repoDetailsResponse.status) {
+      if (repoDetails) {
+        switch (repoDetailsResponse.status) {
           case 404:
             /* Mark the repository as not found */
             repoEntry.not_found = true;
 
             break;
 
-          case 301:
+          case 301: {
             /* The repository was renamed */
 
             const redirectDetailsResponse = await fetch(repoDetails.url, {
               method: "get",
-              redirect: 'manual',
+              redirect: "manual",
               headers: {
                 Authorization: `token ${repoEntry.user_id.token_ref.value}`
               }
-            }).catch(e => console.log("Updating repoid and not_found fields: Error after redirect"));
+            }).catch(() =>
+              console.log(
+                "Updating repoid and not_found fields: Error after redirect"
+              )
+            );
             const redirectDetails = await redirectDetailsResponse.json();
 
-            if(redirectDetails){
+            if (redirectDetails) {
               repoEntry.not_found = false;
               repoEntry.github_repo_id = redirectDetails.id;
             } else {
-              console.log(`Error trying to update github_id and not_found fields for ${repoEntry.reponame}`)
+              console.log(
+                `Error trying to update github_id and not_found fields for ${repoEntry.reponame}`
+              );
             }
 
             break;
-
+          }
           case 200:
             /* The repository exists and will be updated */
             repoEntry.not_found = false;
@@ -65,13 +73,13 @@ async function updatingRepositories() {
             break;
 
           default:
-            console.log("Error updateing repoid and not_found fields")
+            console.log("Error updateing repoid and not_found fields");
         }
         await repoEntry.save();
       }
     }
   });
-  await Promise.all(idUpdatePromises)
+  await Promise.all(idUpdatePromises);
   /* END - update repoid and not_found */
 
   const users = await UserModel.find({
@@ -84,6 +92,8 @@ async function updatingRepositories() {
   });
   Promise.all(userPromises);
 }
+
+updatingRepositories();
 
 cron.schedule("25 12 * * *", async () => {
   await updatingRepositories();

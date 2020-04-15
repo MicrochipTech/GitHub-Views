@@ -67,74 +67,91 @@ module.exports = {
     }
   },
 
-  syncRepos: async (user, token, updateTraffic=true) => {
-    const success = true;
+  syncRepos: async (user, tokenNulable, updateTraffic = true) => {
+    let success = true;
+    let token;
 
-    if ( token === undefined ) {
-      token = user.token_ref.value
+    if (tokenNulable === undefined) {
+      token = user.token_ref.value;
+    } else {
+      token = tokenNulable;
     }
 
     /* Check for renamed and deleted repositories */
-    const localRepos = await RepositoryModel
-      .find({ user_id: user._id })
-      .catch(e => {
+    const localRepos = await RepositoryModel.find({ user_id: user._id }).catch(
+      () => {
         console.log(`syncRepos ${user}: Error getting repos`);
         success = false;
-      });
+      }
+    );
 
     const localReposPromises = localRepos.map(async repoEntry => {
       if (!repoEntry.not_found && token) {
-  
-        const { response: trafficResponse, response_json: traffic } = await GitHubApiCtrl.getRepoTraffic(
-          repoEntry.reponame,
-          token
-        ).catch(e => {
-          console.log(`syncRepos ${user}: Error getting repo traffic for ${repoEntry.reponame}`);
-          success = false;
-        });
-  
+        const {
+          response: trafficResponse,
+          responseJson: traffic
+        } = await GitHubApiCtrl.getRepoTraffic(repoEntry.reponame, token).catch(
+          () => {
+            console.log(
+              `syncRepos ${user}: Error getting repo traffic for ${repoEntry.reponame}`
+            );
+            success = false;
+          }
+        );
+
         if (traffic) {
-          switch(trafficResponse.status) {
+          switch (trafficResponse.status) {
             case 404:
               /* The repository was not found */
               repoEntry.not_found = true;
               break;
-  
+
             case 301:
               /* The repository was renamed */
-              const { response_json: repoDetails } = await GitHubApiCtrl.getRepoDetailsById(
+              const {
+                response_json: repoDetails
+              } = await GitHubApiCtrl.getRepoDetailsById(
                 repoEntry.github_repo_id,
                 token
               ).catch(e => {
-                console.log(`syncRepos ${user}: Error getting repository details for repo ${repoEntry.github_repo_id}`);
+                console.log(
+                  `syncRepos ${user}: Error getting repository details for repo ${repoEntry.github_repo_id}`
+                );
                 success = false;
               });
-              
-              if(repoDetails){
+
+              if (repoDetails) {
                 repoEntry.reponame = repoDetails.full_name;
               } else {
-                console.log(`syncRepos ${user}: Error trying to rename ${repoEntry.reponame}`);
+                console.log(
+                  `syncRepos ${user}: Error trying to rename ${repoEntry.reponame}`
+                );
                 success = false;
               }
-  
-              if(updateTraffic){
-                const { response: redirectResponse, response_json: redirectTraffic } = await GitHubApiCtrl.getRepoTraffic(
+
+              if (updateTraffic) {
+                const {
+                  response: redirectResponse,
+                  responseJson: redirectTraffic
+                } = await GitHubApiCtrl.getRepoTraffic(
                   repoEntry.reponame,
                   token
                 );
-    
-                if(redirectResponse.status != 200 || !redirectTraffic) {
-                  console.log(`syncRepos ${user}: Error trying to update repository ${repoEntry.reponame}`);
+
+                if (redirectResponse.status !== 200 || !redirectTraffic) {
+                  console.log(
+                    `syncRepos ${user}: Error trying to update repository ${repoEntry.reponame}`
+                  );
                   success = false;
                 }
-    
+
                 updateRepoTraffic(repoEntry, redirectTraffic.views);
               }
               break;
-  
+
             case 200:
               /* The repository exists and will be updated */
-              if(updateTraffic){
+              if (updateTraffic) {
                 updateRepoTraffic(repoEntry, traffic.views);
               }
               break;
@@ -149,33 +166,32 @@ module.exports = {
     Promise.all(localReposPromises);
 
     /* Checking for new repositories on GitHub */
-    const githubRepos = await GitHubApiCtrl.getUserRepos(
-      user,
-      token
-    ).catch(e => {
-      console.log(`syncRepos ${user}: error getting user repos`);
-      success = false;
-    });
+    const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(
+      () => {
+        console.log(`syncRepos ${user}: error getting user repos`);
+        success = false;
+      }
+    );
 
     if (githubRepos) {
-      githubReposPromises = githubRepos.map(async repo => {
+      const githubReposPromises = githubRepos.map(async repo => {
         const repoEntry = await RepositoryModel.findOne({
           reponame: repo.full_name,
           user_id: user._id
-        }).catch(e => {
-          console.log(`syncRepos ${user}: error getting repo ${repo.full_name}`);
+        }).catch(() => {
+          console.log(
+            `syncRepos ${user}: error getting repo ${repo.full_name}`
+          );
           success = false;
         });
 
         if (repoEntry === null) {
-          await GitHubApiCtrl.createNewUpdatedRepo(
-            repo,
-            user._id,
-            token
-          ).catch(e => {
-            console.log(`syncRepos ${user}: error creating a new repo`);
-            success = false;
-          });
+          await GitHubApiCtrl.createNewUpdatedRepo(repo, user._id, token).catch(
+            () => {
+              console.log(`syncRepos ${user}: error creating a new repo`);
+              success = false;
+            }
+          );
         }
       });
       Promise.all(githubReposPromises);

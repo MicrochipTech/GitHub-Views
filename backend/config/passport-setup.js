@@ -65,7 +65,7 @@ passport.use(
 
         const t = await new TokenModel({ value: accessToken })
           .save()
-          .catch(e => console.log("Error saveing token for new user."));
+          .catch(() => console.log("Error saveing token for new user."));
 
         const newUser = await new UserModel({
           username: profile.username,
@@ -78,8 +78,13 @@ passport.use(
         const repos = await GitHubApiCtrl.getUserRepos(newUser, t.value);
 
         const promises = repos.map(async repo => {
-          await GitHubApiCtrl.createNewUpdatedRepo(repo, newUser._id, t.value)
-          .catch(e => console.log(`Fail creating repository ${repo.reponame}`));
+          await GitHubApiCtrl.createNewUpdatedRepo(
+            repo,
+            newUser._id,
+            t.value
+          ).catch(() =>
+            console.log(`Fail creating repository ${repo.reponame}`)
+          );
         });
         await Promise.all(promises);
 
