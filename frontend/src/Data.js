@@ -115,7 +115,8 @@ const reducer = (state, action) =>
 const reposInit = {
   userRepos: [],
   sharedRepos: [],
-  aggregateCharts: []
+  aggregateCharts: [],
+  zombieRepos: []
 };
 
 function DataProvider({ children }) {
@@ -129,7 +130,14 @@ function DataProvider({ children }) {
       const getData = async _ => {
         const res = await axios.get("/api/user/getData").catch(e => {});
         if (res != null) {
-          res.data.userRepos = res.data.userRepos.map(r => prepareRepo(r));
+          res.data.zombieRepos = res.data.userRepos
+            .filter(r => r.not_found)
+            .map(r => prepareRepo(r));
+
+          res.data.userRepos = res.data.userRepos
+            .filter(r => !r.not_found)
+            .map(r => prepareRepo(r));
+
           res.data.sharedRepos = res.data.sharedRepos.map(r => prepareRepo(r));
 
           dispatch({ type: "DATA_READY", payload: res.data });

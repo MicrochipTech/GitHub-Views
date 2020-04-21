@@ -5,7 +5,7 @@ const UserCtrl = require("../controllers/UserCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 
-async function updatingRepositories() {
+async function updateRepositories() {
   console.log("Updating repositories for all users");
 
   /* BEGIN - update repoid and not_found */
@@ -93,8 +93,8 @@ async function updatingRepositories() {
   Promise.all(userPromises);
 }
 
-updatingRepositories();
+updateRepositories();
 
 cron.schedule("25 12 * * *", async () => {
-  await updatingRepositories();
+  await updateRepositories();
 });

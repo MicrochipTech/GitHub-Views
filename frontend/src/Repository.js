@@ -13,7 +13,7 @@ function Repository({ index, style, data }) {
   let dataD = [];
   let labels = [];
   let plotData = null;
-  if (page.key === "aggregateCharts") {
+  if (page === "aggregateCharts") {
     dataD = d.repo_list.map(
       r =>
         repos["userRepos"]
@@ -109,12 +109,7 @@ function Repository({ index, style, data }) {
   }
 
   return (
-    <LineChart
-      key={d._id}
-      aggregateId={d._id}
-      data={plotData}
-      type={page.key}
-    />
+    <LineChart key={d._id} aggregateId={d._id} data={plotData} type={page} />
   );
 }
 
