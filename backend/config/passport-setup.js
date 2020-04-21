@@ -46,7 +46,6 @@ passport.use(
     {
       clientID: process.env.GH_CLIENT_ID,
       clientSecret: process.env.GH_CLIENT_SECRET
-      // callbackURL: "http://localhost:3000/api/auth/github/redirect"
     },
     async (accessToken, refreshToken, profile, done) => {
       const currentUser = await UserModel.findOne({ githubId: profile.id });
@@ -66,7 +65,7 @@ passport.use(
 
         const t = await new TokenModel({ value: accessToken })
           .save()
-          .catch(e => console.log("Error saveing token for new user."));
+          .catch(() => console.log("Error saveing token for new user."));
 
         const newUser = await new UserModel({
           username: profile.username,
@@ -79,27 +78,13 @@ passport.use(
         const repos = await GitHubApiCtrl.getUserRepos(newUser, t.value);
 
         const promises = repos.map(async repo => {
-          const repoTrafficResponse = await GitHubApiCtrl.getRepoTraffic(
-            repo.full_name,
+          await GitHubApiCtrl.createNewUpdatedRepo(
+            repo,
+            newUser._id,
             t.value
+          ).catch(() =>
+            console.log(`Fail creating repository ${repo.reponame}`)
           );
-          const { views } = repoTrafficResponse.data;
-          const today = new Date();
-          today.setUTCHours(0, 0, 0, 0);
-
-          if (
-            views.length !== 0 &&
-            new Date(views[views.length - 1].timestamp).getTime() >=
-              today.getTime()
-          ) {
-            views.pop();
-          }
-
-          await new RepositoryModel({
-            user_id: newUser._id,
-            reponame: repo.full_name,
-            views
-          }).save();
         });
         await Promise.all(promises);
 

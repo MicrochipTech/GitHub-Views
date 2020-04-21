@@ -1,11 +1,13 @@
 import React from "react";
+import { useHistory } from "react-router-dom";
 import { AuthContext } from "./Auth";
 import { Grid, Button, TextField } from "@material-ui/core";
 import GitHubIcon from "@material-ui/icons/GitHub";
 
 import "./Login.css";
 
-function Login() {
+function Login({ authenticated }) {
+  const history = useHistory();
   const { login, register } = React.useContext(AuthContext);
   const [username, setUsername] = React.useState();
   const [password, setPassword] = React.useState();
@@ -21,6 +23,11 @@ function Login() {
       padding: 16
     }
   };
+
+  if (authenticated) {
+    history.push("/");
+  }
+
   return (
     <Grid container justify="center">
       <center>
@@ -53,8 +60,8 @@ function Login() {
               variant="outlined"
               style={{ width: "100%" }}
               onChange={e => setUsername(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
+              onKeyPress={e => {
+                if (e.key === "Enter") {
                   login(username, password);
                 }
               }}
@@ -68,28 +75,28 @@ function Login() {
               variant="outlined"
               style={{ width: "100%" }}
               onChange={e => setPassword(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
+              onKeyPress={e => {
+                if (e.key === "Enter") {
                   login(username, password);
                 }
               }}
             />
           </div>
-          <div align="center" style={{background: 'transparent'}}>
-          <Button 
-            color="primary" 
-            onClick={_ => login(username, password)}
-            disabled={username === '' || password === ''}
-          >
-            Login
-          </Button>
-          <Button 
-            color="primary" 
-            onClick={_ => register(username, password)}
-            disabled={username === '' || password === ''}
-          >
-            Register
-          </Button>
+          <div align="center" style={{ background: "transparent" }}>
+            <Button
+              color="primary"
+              onClick={_ => login(username, password)}
+              disabled={username === "" || password === ""}
+            >
+              Login
+            </Button>
+            <Button
+              color="primary"
+              onClick={_ => register(username, password)}
+              disabled={username === "" || password === ""}
+            >
+              Register
+            </Button>
           </div>
         </div>
       </center>
