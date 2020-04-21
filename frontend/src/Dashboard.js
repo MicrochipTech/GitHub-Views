@@ -1,4 +1,5 @@
 import React from "react";
+import { useParams } from "react-router-dom";
 import { AuthContext } from "./Auth";
 import { DataContext } from "./Data";
 import { Grid } from "@material-ui/core";
@@ -14,13 +15,15 @@ import "./Dashboard.css";
 const ITEMS_PER_PAGE = 15;
 
 function Dashboard() {
+  const { page } = useParams();
   const { repos, loadingData } = React.useContext(DataContext);
   const { user } = React.useContext(AuthContext);
   const [searchValue, setSearchValue] = React.useState("");
   const [activePage, setActivePage] = React.useState(1);
-  const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
+  // const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
 
-  const reposMatchingSerach = repos[page.key].filter(
+  console.log(repos, page);
+  const reposMatchingSerach = repos[page].filter(
     d =>
       !d.reponame || d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
   );
@@ -40,12 +43,12 @@ function Dashboard() {
       <Header />
 
       <Grid item md={2}>
-        <Navigation setPage={setPage} />
+        <Navigation />
       </Grid>
 
       <Grid item md={10}>
         <SearchBar
-          show={!loadingData && page.key !== "aggregateCharts"}
+          show={!loadingData && page !== "aggregateCharts"}
           onSearch={q => {
             setActivePage(1);
             setSearchValue(q);
@@ -84,12 +87,12 @@ function Dashboard() {
           )}
 
           {!loadingData &&
-            (repos[page.key].length === 0 || visibleRepos.length === 0) && (
+            (repos[page].length === 0 || visibleRepos.length === 0) && (
               <div>
                 <br />
                 <div className="nothing">
                   Nothing to show here.
-                  {page.key === "aggregateCharts" && (
+                  {page === "aggregateCharts" && (
                     <div>
                       <NewAggregateChartButton text="Create First Aggregate Chart" />
                     </div>
@@ -99,8 +102,8 @@ function Dashboard() {
             )}
 
           {!loadingData &&
-            page.key === "aggregateCharts" &&
-            repos[page.key].length > 0 && (
+            page === "aggregateCharts" &&
+            repos[page].length > 0 && (
               <center>
                 <NewAggregateChartButton text="Create New Aggregate Chart" />
               </center>
