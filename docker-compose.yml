@@ -4,8 +4,8 @@ services:
   mongo:
     image: mongo
     restart: unless-stopped
-    volumes:
-      - ./backup:/backup
+    # volumes:
+      # - ./backup:/backup
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
@@ -23,8 +23,8 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
 
   frontend:
-    image: artifacts.microchip.com:7999/microchip/m8a/github-views/frontend:prod
-    # build: ./frontend
+    # image: artifacts.microchip.com:7999/microchip/m8a/github-views/frontend:prod
+    build: ./frontend
     ports:
       - 8000:3000
     environment:
@@ -34,7 +34,7 @@ services:
 
   backend:
     image: artifacts.microchip.com:7999/microchip/m8a/github-views/backend:prod
-    build: ./backend
+    # build: ./backend
     restart: unless-stopped
     ports:
       - 3000:8000

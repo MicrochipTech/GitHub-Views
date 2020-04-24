@@ -16,7 +16,7 @@ RUN npm install react-scripts@3.0.1 -g
 COPY . /app
 
 COPY entrypoint.sh /usr/local/bin/
-# RUN chmod +x /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 3000
 ENTRYPOINT ["entrypoint.sh"]
