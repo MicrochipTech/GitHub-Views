@@ -33,9 +33,11 @@ services:
       - backend
 
   backend:
-    image: artifacts.microchip.com:7999/microchip/m8a/github-views/backend:prod
-    # build: ./backend
-    restart: unless-stopped
+    # image: artifacts.microchip.com:7999/microchip/m8a/github-views/backend:prod
+    build: ./backend
+    volumes:
+      - ./backend:/app/
+    restart: always
     ports:
       - 3000:8000
     depends_on:

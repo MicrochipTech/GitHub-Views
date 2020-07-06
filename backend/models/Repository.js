@@ -13,6 +13,17 @@ const repositorySchema = new mongoose.Schema({
       uniques: Number
     }
   ],
+  clones: {
+    total_count: Number,
+    total_uniques: Number,
+    data: [
+      {
+        timestamp: Date,
+        count: Number,
+        uniques: Number
+      }
+    ]
+  },
   not_found: Boolean
 });
 

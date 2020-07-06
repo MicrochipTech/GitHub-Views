@@ -21,7 +21,7 @@ async function updateRepositories() {
       const {
         response: repoDetailsResponse,
         responseJson: repoDetails
-      } = await GitHubApiCtrl.getRepoTraffic(
+      } = await GitHubApiCtrl.getRepoTrafficOld(
         repoEntry.reponame,
         repoEntry.user_id.token_ref.value
       ).catch(() =>
@@ -88,7 +88,7 @@ async function updateRepositories() {
   }).populate("token_ref");
 
   const userPromises = users.map(async user => {
-    await UserCtrl.syncRepos(user);
+    await UserCtrl.syncRepos(user, user.token_ref.value);
   });
   Promise.all(userPromises);
 }

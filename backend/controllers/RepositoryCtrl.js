@@ -23,7 +23,7 @@ module.exports = {
     const { user } = req;
     const t = await TokenModel.findOne({ _id: user.token_ref });
 
-    const success = await UserCtrl.syncRepos(user, t.value, false);
+    const success = await UserCtrl.syncRepos(user, t.value);
 
     if (success) {
       UserCtrl.getData(req, {
