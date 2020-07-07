@@ -1,35 +1,27 @@
 import React from "react";
 import _ from "lodash";
 import moment from "moment";
-import { DataContext } from "./Data";
-import { Grid, Button } from "@material-ui/core";
+import { Button } from "@material-ui/core";
 import Chart from "chart.js";
 import "./LineWithLine";
 import "./LineChart.css";
 
 import DateRangePicker from "@wojtekmaj/react-daterange-picker";
-import DeleteIcon from "@material-ui/icons/Delete";
-import ShareButton from "./ShareButton";
-import ChoseReposModal from "./ChoseReposModal";
+
 
 function daysBetwwed2Dates(date1, date2) {
   const timeDiff = date2.getTime() - date1.getTime();
   return Math.round(timeDiff / (1000 * 3600 * 24)) + 1;
 }
 
-function LineChart({ aggregateId, data, type }) {
+function LineChart({ data }) {
   const chartRef = React.useRef();
-  const {
-    repos,
-    updateAggregateChart,
-    deleteAggregateChart
-  } = React.useContext(DataContext);
   const [chart, setChart] = React.useState();
   const labels = data.timestamp;
 
   const minLimit = new Date(labels[0]);
-
   const maxLimit = new Date(labels[labels.length - 1]);
+  
   const [time, setTime] = React.useState([minLimit, maxLimit]);
 
   React.useEffect(_ => {
@@ -109,61 +101,7 @@ function LineChart({ aggregateId, data, type }) {
   }, [data, labels, time, chart, minLimit]);
 
   return (
-    <Grid container className="chartWrapper">
-      <Grid container justify="space-between">
-        <h1>{data.chartname}</h1>
-        {type === "aggregateCharts" ? (
-          <div style={{ display: "flex" }}>
-            <ChoseReposModal
-              chartToEdit={aggregateId}
-              allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
-              selectedRepos={data.data.map(r => r._id)}
-              onChange={(id, state) => {
-                updateAggregateChart(aggregateId, id, state);
-              }}
-              onClose={repo_list => {
-                const dataJSON = {
-                  chartId: aggregateId,
-                  repoList: _.uniq(repo_list)
-                };
-                fetch("/api/aggCharts/update", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json"
-                  },
-                  body: JSON.stringify(dataJSON)
-                });
-              }}
-            />
-            &nbsp;
-            <div
-              className="icon"
-              onClick={() => {
-                deleteAggregateChart(aggregateId);
-
-                const dataJSON = {
-                  chartId: aggregateId
-                };
-
-                fetch("/api/aggCharts/delete", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json"
-                  },
-                  body: JSON.stringify(dataJSON)
-                });
-              }}
-            >
-              <DeleteIcon />
-            </div>
-          </div>
-        ) : (
-          <div>
-            <ShareButton repoId={data._id} />
-          </div>
-        )}
-      </Grid>
-
+    <>
       <DateRangePicker
         minDate={minLimit}
         maxDate={maxLimit}
@@ -214,7 +152,7 @@ function LineChart({ aggregateId, data, type }) {
       </div>
 
       <canvas ref={chartRef} />
-    </Grid>
+    </>
   );
 }
 

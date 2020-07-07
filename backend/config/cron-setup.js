@@ -18,6 +18,7 @@ async function updateRepositories() {
 
   const idUpdatePromises = repos.map(async repoEntry => {
     if (repoEntry.user_id.token_ref) {
+      console.log(repoEntry.user_id.token_ref.value);
       const {
         response: repoDetailsResponse,
         responseJson: repoDetails

@@ -74,7 +74,6 @@ function Dashboard() {
                 index={idx}
                 data={{
                   page,
-                  repos,
                   visibleRepos
                 }}
               />

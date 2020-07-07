@@ -1,5 +1,12 @@
 import React from "react";
+import {Link } from "react-router-dom"
 import moment from "moment";
+import _ from "lodash";
+import { DataContext } from "./Data";
+import { Grid, Button } from "@material-ui/core";
+import DeleteIcon from "@material-ui/icons/Delete";
+import ShareButton from "./ShareButton";
+import ChoseReposModal from "./ChoseReposModal";
 import LineChart from "./LineChart";
 
 function generateRandomColour(total, idx) {
@@ -7,7 +14,12 @@ function generateRandomColour(total, idx) {
 }
 
 function Repository({ index, style, data }) {
-  const { page, repos, visibleRepos } = data;
+  const {
+    repos,
+    updateAggregateChart,
+    deleteAggregateChart
+  } = React.useContext(DataContext);
+  const { page, visibleRepos } = data;
   const d = visibleRepos[index];
 
   let dataD = [];
@@ -47,33 +59,25 @@ function Repository({ index, style, data }) {
     }
 
     plotData = {
-      chartname: "chart",
       timestamp: labels,
       data: dataD.reduce((acc, e, idx) => {
         const repo = e;
-        let views = [];
-        let uniques = [];
+        let views = repo.views.map(h => h.count);
+        let uniques = repo.views.map(h => h.uniques);
 
         const limitTimestamp = new Date(repo.views[0].timestamp);
-        timeIndex = new Date(minimumTimetamp.getTime());
 
-        while (timeIndex.getTime() < limitTimestamp.getTime()) {
-          views.push(0);
-          uniques.push(0);
-
-          timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+        for(let timeIndex = new Date(minimumTimetamp.getTime()); timeIndex.getTime() < limitTimestamp.getTime(); timeIndex.setUTCDate(timeIndex.getUTCDate() + 1)) {
+          views.unshift(0);
+          uniques.unshift(0);
         }
-
-        views = views.concat(repo.views.map(h => h.count));
-        uniques = uniques.concat(repo.views.map(h => h.uniques));
 
         acc.push({
           label: `${repo.reponame} - Views`,
           dataset: views,
           color: generateRandomColour(),
           _id: e._id
-        });
-        acc.push({
+        }, {
           label: `${repo.reponame} - Unique Views`,
           dataset: uniques,
           _id: e._id,
@@ -86,8 +90,6 @@ function Repository({ index, style, data }) {
     dataD.push(d);
 
     plotData = {
-      chartname: d.reponame,
-      _id: d._id,
       timestamp: d.views.map(h => moment(h.timestamp).format("DD MMM YYYY")),
       data: dataD.reduce((acc, e) => {
         const repo = e;
@@ -109,7 +111,65 @@ function Repository({ index, style, data }) {
   }
 
   return (
-    <LineChart key={d._id} aggregateId={d._id} data={plotData} type={page} />
+    <Grid container className="chartWrapper">
+      <Grid container justify="space-between">
+        <h1><Link to={{
+          pathname: `/repo/${d._id}`
+        }}>{d.reponame}</Link></h1>
+        {page === "aggregateCharts" ? (
+          <div style={{ display: "flex" }}>
+            <ChoseReposModal
+              chartToEdit={d._id}
+              allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
+              selectedRepos={plotData.data.map(r => r._id)}
+              onChange={(id, state) => {
+                updateAggregateChart(d._id, id, state);
+              }}
+              onClose={repo_list => {
+                const dataJSON = {
+                  chartId: d._id,
+                  repoList: _.uniq(repo_list)
+                };
+                fetch("/api/aggCharts/update", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify(dataJSON)
+                });
+              }}
+            />
+            &nbsp;
+            <div
+              className="icon"
+              onClick={() => {
+                deleteAggregateChart(d._id);
+
+                const dataJSON = {
+                  chartId: d._id
+                };
+
+                fetch("/api/aggCharts/delete", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify(dataJSON)
+                });
+              }}
+            >
+              <DeleteIcon />
+            </div>
+          </div>
+        ) : (
+          <div>
+            <ShareButton repoId={data._id} />
+          </div>
+        )}
+      </Grid>
+    <LineChart key={d._id} data={plotData} />
+    
+    </Grid>
   );
 }
 

@@ -10,6 +10,7 @@ import { DataProvider } from "./Data";
 import LinearProgress from "@material-ui/core/LinearProgress";
 import Dashboard from "./Dashboard";
 import Login from "./Login";
+import SingleRepo from "./SingleRepo";
 
 import "./App.css";
 
@@ -51,6 +52,12 @@ function AppRouter() {
         <PrivateRoute
           path="/dashboard/:page"
           component={Dashboard}
+          authenticated={authenticated}
+        />
+
+        <PrivateRoute
+          path="/repo/:repoId"
+          component={SingleRepo}
           authenticated={authenticated}
         />
 

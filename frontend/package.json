@@ -23,6 +23,7 @@
     "material-ui-datetime-range-picker": "^1.0.0",
     "material-ui-pickers": "^2.2.4",
     "moment": "^2.24.0",
+    "path-to-regexp": "^6.1.0",
     "react": "^16.12.0",
     "react-chartjs-2": "^2.9.0",
     "react-dom": "^16.12.0",
