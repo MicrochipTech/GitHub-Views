@@ -13,7 +13,7 @@ RUN apk update && apk upgrade && \
 # install and cache app dependencies
 COPY package.json /app/package.json
 RUN npm install
-RUN npm install react-scripts@3.0.1 -g
+RUN npm install react-scripts@3.4.1 -g
 
 COPY . /app
 
