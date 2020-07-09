@@ -82,8 +82,8 @@ passport.use(
             repo,
             newUser._id,
             t.value
-          ).catch(() =>
-            console.log(`Fail creating repository ${repo.reponame}`)
+          ).catch((e) =>
+            console.log(e,`Fail creating repository ${repo.reponame}`)
           );
         });
         await Promise.all(promises);

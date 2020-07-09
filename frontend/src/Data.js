@@ -4,7 +4,7 @@ import axios from "axios";
 
 const DataContext = React.createContext();
 
-function prepareRepo(repo) {
+function add0s(series) {
   let firstTimestamp = new Date();
   firstTimestamp.setUTCHours(0, 0, 0, 0);
   firstTimestamp.setUTCDate(firstTimestamp.getUTCDate() - 14);
@@ -13,9 +13,9 @@ function prepareRepo(repo) {
   lastTimestamp.setUTCHours(0, 0, 0, 0);
   lastTimestamp.setUTCDate(lastTimestamp.getUTCDate() - 1);
 
-  if (repo.views.length !== 0) {
-    const first = new Date(repo.views[0].timestamp);
-    const last = new Date(repo.views[repo.views.length - 1].timestamp);
+  if (series.length !== 0) {
+    const first = new Date(series[0].timestamp);
+    const last = new Date(series[series.length - 1].timestamp);
 
     if (first.getTime() < firstTimestamp.getTime()) {
       firstTimestamp = first;
@@ -30,17 +30,17 @@ function prepareRepo(repo) {
   const timeIndex = firstTimestamp;
 
   while (timeIndex.getTime() <= lastTimestamp.getTime()) {
-    if (repo.views[index] === undefined) {
-      repo.views.push({
+    if (series[index] === undefined) {
+      series.push({
         timestamp: timeIndex.toISOString(),
         count: 0,
         uniques: 0
       });
     } else {
-      const currentTimestamp = new Date(repo.views[index].timestamp);
+      const currentTimestamp = new Date(series[index].timestamp);
 
       if (timeIndex.getTime() < currentTimestamp.getTime()) {
-        repo.views.splice(index, 0, {
+        series.splice(index, 0, {
           timestamp: timeIndex.toISOString(),
           count: 0,
           uniques: 0
@@ -52,7 +52,7 @@ function prepareRepo(repo) {
     timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
   }
 
-  return repo;
+  return series;
 }
 
 const reducer = (state, action) =>
@@ -132,13 +132,13 @@ function DataProvider({ children }) {
         if (res != null) {
           res.data.zombieRepos = res.data.userRepos
             .filter(r => r.not_found)
-            .map(r => prepareRepo(r));
+            .map(r => ({...r, views: add0s(r.views)}));
 
           res.data.userRepos = res.data.userRepos
             .filter(r => !r.not_found)
-            .map(r => prepareRepo(r));
+            .map(r => ({...r, views: add0s(r.views), clones: {...r.clones, data: add0s(r.clones.data)}}));
 
-          res.data.sharedRepos = res.data.sharedRepos.map(r => prepareRepo(r));
+          res.data.sharedRepos = res.data.sharedRepos.map(r => ({...r, views: add0s(r.views)}));
 
           dispatch({ type: "DATA_READY", payload: res.data });
         } else {
@@ -156,8 +156,8 @@ function DataProvider({ children }) {
     const json = await res.json();
     console.log(json);
     if (json.data) {
-      json.data.userRepos = json.data.userRepos.map(r => prepareRepo(r));
-      json.data.sharedRepos = json.data.sharedRepos.map(r => prepareRepo(r));
+      json.data.userRepos = json.data.userRepos.map(r => ({...r, views: add0s(r.views)}));
+      json.data.sharedRepos = json.data.sharedRepos.map(r => ({...r, views: add0s(r.views)}));
       dispatch({ type: "DATA_READY", payload: json.data });
     } else {
       dispatch({ type: "STOP_LOADING" });
