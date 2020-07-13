@@ -23,8 +23,11 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
 
   frontend:
-    # image: artifacts.microchip.com:7999/microchip/m8a/github-views/frontend:prod
     build: ./frontend
+    command: npm start
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
       - 8000:3000
     environment:

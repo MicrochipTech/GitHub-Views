@@ -26,7 +26,7 @@ function updateRepoTraffic(repo, traffic) {
       return false;
     });
   }
-
+  
   repo.views.push(...viewsToUpdate);
 
   /* Update clones */
@@ -94,6 +94,7 @@ async function updateRepo(repo, token, recurssiveDepth = 2) {
   } = await GitHubApiCtrl.getRepoTraffic(repo.reponame, token).catch(
     (e) => {
       console.log(
+        e,
         `updateRepo: Error getting repo traffic for ${repo.reponame}`
       );
       return false;
@@ -170,8 +171,84 @@ module.exports = {
     }
   },
 
-  syncRepos: async (user, token) => {
+  syncRepos: async () => {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    const repos = await RepositoryModel.find({not_found: false}).catch(() => {
+      console.log(
+        `syncRepos ${user}: error getting repo ${repo.full_name}`
+      );
+    });
+
+    /* 
+     * Before updating, repos mark them as not updated.
+     * After update, if it is still marked as not updated, it means it was deleted.
+     */
+    repos.forEach(repo => { repo.not_found = true });
+
+    const users = await UserModel.find({
+      githubId: { $ne: null },
+      token_ref: { $exists: true }
+    }).populate("token_ref");
+  
+    const userPromises = users.map(async user => {
+
+      const token = user.token_ref.value;
+      /* Get all repos for a user through GitHub API */
+      const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(
+        () => {
+          console.log(`syncRepos ${user}: error getting user repos`);
+        }
+      );
+
+      /* Get repos from local database */
+      const userRepos = repos.filter(repo => repo.user_id.equals(user._id))
+
+      const updateReposPromises = githubRepos.map(async githubRepo => {
+
+        const repoEntry = userRepos.find(userRepo => userRepo.github_repo_id === String(githubRepo.id));
+
+        if(repoEntry === undefined) {
+          repoEntry = await GitHubApiCtrl.createNewUpdatedRepo(githubRepo, user._id, token).catch(
+            (e) => {
+              console.log(e, `syncRepos ${user}: error creating a new repo`);
+            }
+          );
+        } else {
+          /* The repository still exists on GitHub*/
+          repoEntry.not_found = false;
+
+          /* Update repository name if changed */
+          if(repoEntry.reponame !== githubRepo.full_name) {
+            repoEntry.reponame = githubRepo.full_name;
+          }
+
+          /* Update forks */
+          repoEntry.forks.tree_updated = false;
+          if(repoEntry.forks.data[repoEntry.forks.data.length - 1].count !== githubRepo.forks_count) {
+            repoEntry.forks.data.push({
+              timestamp: today.toISOString(),
+              count: githubRepo.forks_count
+            });
+          }
+
+          /* Update traffic */
+          const traffic = await GitHubApiCtrl.getRepoTraffic(repoEntry.reponame, token);
+
+          updateRepoTraffic(repoEntry, traffic);
+        }
+        repoEntry.save();
+      });
+      await Promise.all(updateReposPromises);
+    });
+    await Promise.all(userPromises);
+  },
+
+  syncReposOLD: async (user, token) => {
     let success = true;
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
 
     /* Check for renamed and deleted repositories */
     const localRepos = await RepositoryModel.find({ user_id: user._id }).catch(
@@ -186,7 +263,30 @@ module.exports = {
         updateRepo(repoEntry, token);
       }
     });
-    Promise.all(localReposPromises);
+    await Promise.all(localReposPromises);
+
+    const usart = await RepoModel.findOne({ github_repo_id: "162296155" }).catch(
+      () => {
+        console.log("get uart");
+      }
+    );
+
+    const {success: treeStatus, data: treeData} = await GitHubApiCtrl.updateForksTree(usart.github_repo_id).catch(
+      (e) => {
+        console.log("????", e);
+      }
+    );
+
+    if(treeStatus === true) {
+      usart.forks.children = treeData;
+    } else {
+      console.log("FAIL " + treeData);
+    }
+
+    console.log(".................")
+    console.log(JSON.stringify(usart.forks.children));
+    console.log(".................")
+    usart.update();
 
     /* Checking for new repositories on GitHub */
     const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(
@@ -199,7 +299,7 @@ module.exports = {
     if (githubRepos) {
       const githubReposPromises = githubRepos.map(async repo => {
         const repoEntry = await RepositoryModel.findOne({
-          reponame: repo.full_name,
+          github_repo_id: repo.id,
           user_id: user._id
         }).catch(() => {
           console.log(
@@ -208,16 +308,35 @@ module.exports = {
           success = false;
         });
 
+        /* Create the new repository in local database */
         if (repoEntry === null) {
+          /* createNewUpdatedRepo changed. It returns the created repo object */
           await GitHubApiCtrl.createNewUpdatedRepo(repo, user._id, token).catch(
             (e) => {
               console.log(e, `syncRepos ${user}: error creating a new repo`);
               success = false;
             }
           );
+        } else {
+
+          /* Update repository name if changed */
+          if(repoEntry.reponame !== repo.full_name) {
+            repoEntry.reponame = repo.full_name;
+          }
+
+          /* Update forks */
+          repoEntry.forks.tree_updated = false;
+          if(repoEntry.forks.data[repoEntry.forks.data.length - 1].count !== repo.forks_count) {
+            repoEntry.forks.data.push({
+              timestamp: today.toISOString(),
+              count: repo.forks_count
+            });
+          }
+
+          repoEntry.save();
         }
       });
-      Promise.all(githubReposPromises);
+      await Promise.all(githubReposPromises);
     }
     return success;
   }
