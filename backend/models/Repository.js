@@ -42,6 +42,31 @@ const repositorySchema = new mongoose.Schema({
       }
     ]
   },
+  refferrs: [
+    {
+      name: String,
+      data: [
+        {
+          timestamp: Date,
+          count: Number,
+          uniques: Number
+        }
+      ]
+    }
+  ],
+  content: [
+    {
+      path: String,
+      title: TimeRanges,
+      data: [
+        {
+          timestamp: Date,
+          count: Number,
+          uniques: Number
+        }
+      ]
+    }
+  ]
   not_found: Boolean
 });
 

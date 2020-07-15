@@ -78,10 +78,44 @@ async function getRepoClones(reponame, token) {
   return { response: response, responseJson };
 }
 
-async function getRepoForks(reponame) {
+async function getRepoPopularPaths(reponame, token) {
+  const response = await fetch(
+    `https://api.github.com/repos/${reponame}/traffic/popular/paths`,
+    {
+      method: "get",
+      redirect: "manual",
+      headers: {
+        Authorization: `token ${token}`
+      }
+    }
+  ).catch(() => console.log(`getRepoPopularPaths repo ${reponame}: error`));
+
+  const responseJson = await response.json();
+
+  return { response: response, responseJson };
+}
+
+async function getRepoPopularReferrers(reponame, token) {
+  const response = await fetch(
+    `https://api.github.com/repos/${reponame}/traffic/popular/referrers`,
+    {
+      method: "get",
+      redirect: "manual",
+      headers: {
+        Authorization: `token ${token}`
+      }
+    }
+  ).catch(() => console.log(`getRepoPopularReferrers repo ${reponame}: error`));
+
+  const responseJson = await response.json();
+
+  return { response: response, responseJson };
+}
+
+async function getRepoForks(github_repo_id) {
 
   const response = await fetch(
-    `https://api.github.com/repos/${reponame}/forks`,
+    `https://api.github.com/repositories/${github_repo_id}/forks`,
     {
       method: "get",
       redirect: "manual"
@@ -102,7 +136,7 @@ async function updateForksTree(github_repo_id) {
     }
   );
 
-  if(response.headers.get('x-ratelimit-remaining') === 0) {
+  if(response.headers.get('x-ratelimit-remaining') === '0') {
     return {
       status: false,
       data: response.headers.get('x-ratelimit-reset')
@@ -113,6 +147,7 @@ async function updateForksTree(github_repo_id) {
 
   for(var i = 0; i < responseJson.length; i += 1) {
     
+    console.log(responseJson[i].full_name)
     const { status, data } = await updateForksTree(responseJson[i].id);
 
     if(status === false) {
@@ -155,7 +190,22 @@ async function getRepoTraffic(reponame, token) {
     }
   );
 
-  return {...viewsResponseJson, clones: cloneResponseJson.clones}
+  const {
+    response: referrerResponse,
+    responseJson: referrerResponseJson
+  } = await getRepoPopularReferrers(reponame, token).catch(
+    () => {
+      console.log(
+        `getRepoPopularReferrers : Error getting repo referrers for repo ${reponame}`
+      );
+    }
+  );
+
+  return {
+    ...viewsResponseJson, 
+    clones: cloneResponseJson.clones, 
+    referrers: referrerResponseJson
+  }
 }
 
 /* TODO rename function */

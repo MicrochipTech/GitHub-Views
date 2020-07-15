@@ -51,6 +51,21 @@ function updateRepoTraffic(repo, traffic) {
   repo.clones.total_count += clonesToUpdate.reduce((accumulator, currentClone) => accumulator + currentClone.count, 0);
   repo.clones.total_uniques += clonesToUpdate.reduce((accumulator, currentClone) => accumulator + currentClone.uniques, 0);
   repo.clones.data.push(...clonesToUpdate);
+
+  /* Updare referrers */
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate - 1);
+
+  if(repo.referrers.length !== 0) {
+    if(new Date(repo.referrers[repo.referrers.length - 1].timestamp).getTime() === yesterday.getTime()) {
+      
+    }
+  }
+  
+  let referrersToUpdate = {
+    timestamp: today.toISOString(),
+    data: traffic.referrers
+  }
 }
 
 async function updateRepoName(repo, token) {
@@ -233,9 +248,20 @@ module.exports = {
             });
           }
 
+          /* Test updateTree */
+          const {status: treeStatus, data: treeData} = await GitHubApiCtrl.updateForksTree(repoEntry.github_repo_id).catch(
+            () => {
+              console.log(`Error updateForksTree on repo: ${repoEntry.reponame}`);
+            }
+          );
+
+          if(treeStatus === false){
+            console.log(`Tree not updated for repo: ${repoEntry.reponame}`);
+          }
+          /* end test */
+
           /* Update traffic */
           const traffic = await GitHubApiCtrl.getRepoTraffic(repoEntry.reponame, token);
-
           updateRepoTraffic(repoEntry, traffic);
         }
         repoEntry.save();
