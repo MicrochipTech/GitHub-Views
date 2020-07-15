@@ -9,6 +9,7 @@ forkSchema.add({
 })
 
 const repositorySchema = new mongoose.Schema({
+  not_found: Boolean,
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   github_repo_id: String,
   reponame: String,
@@ -42,7 +43,7 @@ const repositorySchema = new mongoose.Schema({
       }
     ]
   },
-  refferrs: [
+  referrers: [
     {
       name: String,
       data: [
@@ -54,10 +55,10 @@ const repositorySchema = new mongoose.Schema({
       ]
     }
   ],
-  content: [
+  contents: [
     {
       path: String,
-      title: TimeRanges,
+      title: String,
       data: [
         {
           timestamp: Date,
@@ -67,7 +68,6 @@ const repositorySchema = new mongoose.Schema({
       ]
     }
   ]
-  not_found: Boolean
 });
 
 const Repository = mongoose.model("Repository", repositorySchema);

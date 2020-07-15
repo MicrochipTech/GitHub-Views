@@ -146,8 +146,6 @@ async function updateForksTree(github_repo_id) {
   const children = [];
 
   for(var i = 0; i < responseJson.length; i += 1) {
-    
-    console.log(responseJson[i].full_name)
     const { status, data } = await updateForksTree(responseJson[i].id);
 
     if(status === false) {
@@ -201,10 +199,22 @@ async function getRepoTraffic(reponame, token) {
     }
   );
 
+  const {
+    response: pathResponse,
+    responseJson: pathResponseJson
+  } = await getRepoPopularPaths(reponame, token).catch(
+    () => {
+      console.log(
+        `getRepoPopularReferrers : Error getting repo referrers for repo ${reponame}`
+      );
+    }
+  );
+
   return {
     ...viewsResponseJson, 
     clones: cloneResponseJson.clones, 
-    referrers: referrerResponseJson
+    referrers: referrerResponseJson,
+    contents: pathResponseJson
   }
 }
 

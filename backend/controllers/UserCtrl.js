@@ -52,20 +52,57 @@ function updateRepoTraffic(repo, traffic) {
   repo.clones.total_uniques += clonesToUpdate.reduce((accumulator, currentClone) => accumulator + currentClone.uniques, 0);
   repo.clones.data.push(...clonesToUpdate);
 
-  /* Updare referrers */
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate - 1);
-
-  if(repo.referrers.length !== 0) {
-    if(new Date(repo.referrers[repo.referrers.length - 1].timestamp).getTime() === yesterday.getTime()) {
-      
+  /* Update referrers */
+  traffic.referrers.forEach(data => {
+    foundReferrer = repo.referrers.find(r => r.name === data.referrer);
+    if(foundReferrer) {
+      /* The referrer is already in database */
+      foundReferrer.data.push({
+        timestamp: today.toISOString(),
+        count: data.count,
+        uniques: data.uniques
+      });
+    } else {
+      /* Add the new referrer in database */
+      repo.referrers.push({
+        name: data.referrer,
+        data: [
+          {
+            timestamp: today.toISOString(),
+            count: data.count,
+            uniques: data.uniques
+          }
+        ]
+      });
     }
-  }
-  
-  let referrersToUpdate = {
-    timestamp: today.toISOString(),
-    data: traffic.referrers
-  }
+  });
+
+  /* Update content */
+  traffic.contents.forEach(data => {
+    foundContent = repo.contents.find(c => c.path === data.path);
+    if(foundContent) {
+      /* The content is already in database */
+      foundContent.data.push({
+        timestamp: today.toISOString(),
+        count: data.count,
+        uniques: data.uniques
+      })
+    } else {
+      /* Add the new content in database */
+      repo.contents.push({
+        path: data.path,
+        title: data.title,
+        data: [
+          {
+            timestamp: today.toISOString(),
+            count: data.count,
+            uniques: data.uniques
+          }
+        ]
+      })
+    }
+  });
+
 }
 
 async function updateRepoName(repo, token) {
@@ -220,6 +257,7 @@ module.exports = {
       /* Get repos from local database */
       const userRepos = repos.filter(repo => repo.user_id.equals(user._id))
 
+      /* TODO githubRepos check */
       const updateReposPromises = githubRepos.map(async githubRepo => {
 
         const repoEntry = userRepos.find(userRepo => userRepo.github_repo_id === String(githubRepo.id));
