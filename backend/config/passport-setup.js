@@ -53,7 +53,7 @@ passport.use(
       if (currentUser) {
         // Delete old token
         await TokenModel.deleteOne({ _id: currentUser.token_ref });
-        // Creae new token
+        // Create new token
         const t = await new TokenModel({ value: accessToken }).save();
         // Update user
         currentUser.token_ref = t._id;
@@ -78,13 +78,14 @@ passport.use(
         const repos = await GitHubApiCtrl.getUserRepos(newUser, t.value);
 
         const promises = repos.map(async repo => {
-          await GitHubApiCtrl.createNewUpdatedRepo(
+          repoEntry = await GitHubApiCtrl.createNewUpdatedRepo(
             repo,
             newUser._id,
             t.value
           ).catch((e) =>
             console.log(e,`Fail creating repository ${repo.reponame}`)
           );
+          repoEntry.save();
         });
         await Promise.all(promises);
 

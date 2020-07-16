@@ -19,6 +19,26 @@ module.exports = {
     }
   },
 
+  updateForksTree: async (req, res) => {
+    const { repo_id } = req.body;
+    const repoEntry = await RepositoryModel.findOne({_id: repo_id});
+
+    const {status: treeStatus, data: treeData} = await GitHubApiCtrl.updateForksTree(repoEntry.github_repo_id).catch(
+      () => {
+        console.log(`Error updateForksTree on repo: ${repoEntry.reponame}`);
+      }
+    );
+
+    if(treeStatus === false){
+      console.log(`Tree not updated for repo: ${repoEntry.reponame}`);
+    }
+
+    res.json({
+      treeData,
+      treeStatus
+    })
+  },
+
   sync: async (req, res) => {
     const { user } = req;
     const t = await TokenModel.findOne({ _id: user.token_ref });

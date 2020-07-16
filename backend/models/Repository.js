@@ -2,14 +2,14 @@ const mongoose = require("mongoose");
 
 const forkSchema = new mongoose.Schema();
 forkSchema.add({
-  count: Number,    
-  repoid: String,
-  username: String, 
-  full_name: String,
+  github_repo_id: String,
+  reponame: String,
+  count: Number,
   children: [forkSchema]
 })
 
 const repositorySchema = new mongoose.Schema({
+  not_found: Boolean,
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   github_repo_id: String,
   reponame: String,
@@ -33,8 +33,41 @@ const repositorySchema = new mongoose.Schema({
       }
     ]
   },
-  forks: [forkSchema],
-  not_found: Boolean
+  forks: {
+    tree_updated: Boolean,
+    children: [forkSchema],
+    data: [
+      {
+        timestamp: Date,
+        count: Number
+      }
+    ]
+  },
+  referrers: [
+    {
+      name: String,
+      data: [
+        {
+          timestamp: Date,
+          count: Number,
+          uniques: Number
+        }
+      ]
+    }
+  ],
+  contents: [
+    {
+      path: String,
+      title: String,
+      data: [
+        {
+          timestamp: Date,
+          count: Number,
+          uniques: Number
+        }
+      ]
+    }
+  ]
 });
 
 const Repository = mongoose.model("Repository", repositorySchema);
