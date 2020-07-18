@@ -20,7 +20,7 @@ async function updateRepositories() {
   UserCtrl.syncRepos();
 }
 
-updateRepositories();
+//updateRepositories();
 
 cron.schedule("25 12 * * *", async () => {
   await updateRepositories();

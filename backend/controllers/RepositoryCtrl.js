@@ -21,6 +21,7 @@ module.exports = {
 
   updateForksTree: async (req, res) => {
     const { repo_id } = req.body;
+    console.log(repo_id)
     const repoEntry = await RepositoryModel.findOne({_id: repo_id});
 
     const {status: treeStatus, data: treeData} = await GitHubApiCtrl.updateForksTree(repoEntry.github_repo_id).catch(
