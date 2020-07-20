@@ -10,6 +10,7 @@ import Header from "./Header";
 import { Navigation, PAGES } from "./Navigation";
 import Pagination from "react-js-pagination";
 import Repository from "./Repository";
+import SelfShare from "./SelfShare";
 import "./Dashboard.css";
 
 const ITEMS_PER_PAGE = 15;
@@ -99,6 +100,8 @@ function Dashboard() {
                 </div>
               </div>
             )}
+
+          {!loadingData && page === "sharedRepos" && <SelfShare />}
 
           {!loadingData &&
             page === "aggregateCharts" &&

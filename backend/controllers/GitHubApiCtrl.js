@@ -111,7 +111,6 @@ async function getRepoPopularReferrers(reponame, token) {
 }
 
 async function getRepoForks(github_repo_id) {
-
   const response = await fetch(
     `https://api.github.com/repositories/${github_repo_id}/forks`,
     {
@@ -134,31 +133,31 @@ async function updateForksTree(github_repo_id) {
     }
   );
 
-  if(response.status === 403 &&
-    response.headers.get('x-ratelimit-remaining') === '0') {
+  if (
+    response.status === 403 &&
+    response.headers.get("x-ratelimit-remaining") === "0"
+  ) {
     return {
       status: false,
-      data: response.headers.get('x-ratelimit-reset')
-    }
+      data: response.headers.get("x-ratelimit-reset")
+    };
   }
 
   const children = [];
 
-  for(var i = 0; i < responseJson.length; i += 1) {
+  for (var i = 0; i < responseJson.length; i += 1) {
     const { status, data } = await updateForksTree(responseJson[i].id);
 
-    if(status === false) {
-      return { status, data }
+    if (status === false) {
+      return { status, data };
     }
-    
-    children.push(
-      {
-        github_repo_id: responseJson[i].id,
-        reponame: responseJson[i].full_name,
-        count: responseJson[i].forks_count,
-        children: data
-      }
-    );
+
+    children.push({
+      github_repo_id: responseJson[i].id,
+      reponame: responseJson[i].full_name,
+      count: responseJson[i].forks_count,
+      children: data
+    });
   }
 
   return { success: true, data: children };

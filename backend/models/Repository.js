@@ -6,7 +6,7 @@ forkSchema.add({
   reponame: String,
   count: Number,
   children: [forkSchema]
-})
+});
 
 const repositorySchema = new mongoose.Schema({
   not_found: Boolean,

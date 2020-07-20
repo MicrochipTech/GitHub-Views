@@ -1,7 +1,7 @@
 import React from "react";
 import produce from "immer";
 import axios from "axios";
-import {add0s } from "./utils"
+import { add0s } from "./utils";
 
 const DataContext = React.createContext();
 
@@ -57,6 +57,12 @@ const reducer = (state, action) =>
         draft.repos.aggregateCharts.splice(indexToRemove, 1);
 
         return draft;
+
+      case "ADD_SHARED_REPO":
+        const { repo } = action.payload;
+        draft.sharedRepos.push(repo);
+        return draft;
+
       default:
         throw Error("Dispatch unknown data action");
     }
@@ -82,13 +88,20 @@ function DataProvider({ children }) {
         if (res != null) {
           res.data.zombieRepos = res.data.userRepos
             .filter(r => r.not_found)
-            .map(r => ({...r, views: add0s(r.views)}));
+            .map(r => ({ ...r, views: add0s(r.views) }));
 
           res.data.userRepos = res.data.userRepos
             .filter(r => !r.not_found)
-            .map(r => ({...r, views: add0s(r.views), clones: {...r.clones, data: add0s(r.clones.data)}}));
+            .map(r => ({
+              ...r,
+              views: add0s(r.views),
+              clones: { ...r.clones, data: add0s(r.clones.data) }
+            }));
 
-          res.data.sharedRepos = res.data.sharedRepos.map(r => ({...r, views: add0s(r.views)}));
+          res.data.sharedRepos = res.data.sharedRepos.map(r => ({
+            ...r,
+            views: add0s(r.views)
+          }));
 
           dispatch({ type: "DATA_READY", payload: res.data });
         } else {
@@ -106,8 +119,14 @@ function DataProvider({ children }) {
     const json = await res.json();
     console.log(json);
     if (json.data) {
-      json.data.userRepos = json.data.userRepos.map(r => ({...r, views: add0s(r.views)}));
-      json.data.sharedRepos = json.data.sharedRepos.map(r => ({...r, views: add0s(r.views)}));
+      json.data.userRepos = json.data.userRepos.map(r => ({
+        ...r,
+        views: add0s(r.views)
+      }));
+      json.data.sharedRepos = json.data.sharedRepos.map(r => ({
+        ...r,
+        views: add0s(r.views)
+      }));
       dispatch({ type: "DATA_READY", payload: json.data });
     } else {
       dispatch({ type: "STOP_LOADING" });
@@ -126,6 +145,10 @@ function DataProvider({ children }) {
     dispatch({ type: "DELETE_CHART", payload: { id } });
   };
 
+  const addSharedRepo = repo => {
+    dispatch({ type: "ADD_SHARED_REPO", payload: { repo } });
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -133,7 +156,8 @@ function DataProvider({ children }) {
         updateAggregateChart,
         syncRepos,
         addAggregateChart,
-        deleteAggregateChart
+        deleteAggregateChart,
+        addSharedRepo
       }}
     >
       {children}
