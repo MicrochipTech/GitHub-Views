@@ -55,6 +55,7 @@ function updateRepoTraffic(repo, traffic) {
     const lastViewTimestamp = repo.views[repo.views.length - 1].timestamp;
     viewsToUpdate = viewsToUpdate.filter(info => {
       const timestampDate = new Date(info.timestamp);
+      timestampDate.setUTCHours(0, 0, 0, 0);
 
       if (
         timestampDate.getTime() > lastViewTimestamp.getTime() &&
@@ -66,7 +67,7 @@ function updateRepoTraffic(repo, traffic) {
       return false;
     });
   }
-  
+
   repo.views.push(...viewsToUpdate);
 
   /* Update clones */
