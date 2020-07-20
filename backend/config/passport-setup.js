@@ -2,6 +2,7 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const GitHubStrategy = require("passport-github").Strategy;
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
+const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository.js");
 const UserModel = require("../models/User");
 const TokenModel = require("../models/Token");
@@ -78,7 +79,7 @@ passport.use(
         const repos = await GitHubApiCtrl.getUserRepos(newUser, t.value);
 
         const promises = repos.map(async repo => {
-          repoEntry = await GitHubApiCtrl.createNewUpdatedRepo(
+          repoEntry = await RepositoryCtrl.createRepository(
             repo,
             newUser._id,
             t.value

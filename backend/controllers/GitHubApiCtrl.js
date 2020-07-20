@@ -1,7 +1,5 @@
 const axios = require("axios");
 const fetch = require("node-fetch");
-const RepositoryModel = require("../models/Repository.js");
-const { response } = require("express");
 
 async function getUserRepos(user, token) {
   let userRepos = [];
@@ -136,7 +134,10 @@ async function updateForksTree(github_repo_id) {
     }
   );
 
-  if(response.headers.get('x-ratelimit-remaining') === '0') {
+    console.log(response.status === 403);
+
+  if(response.status === 403 &&
+    response.headers.get('x-ratelimit-remaining') === '0') {
     return {
       status: false,
       data: response.headers.get('x-ratelimit-reset')
@@ -165,112 +166,13 @@ async function updateForksTree(github_repo_id) {
   return { success: true, data: children };
 }
 
-async function getRepoTraffic(reponame, token) {
-  const {
-    response: viewsResponse,
-    responseJson: viewsResponseJson
-  } = await getRepoViews(reponame, token).catch(
-    () => {
-      console.log(
-        `getRepoTraffic : Error getting repo views for repo ${reponame}`
-      );
-    }
-  );
-
-  const {
-    response: cloneResponse,
-    responseJson: cloneResponseJson
-  } = await getRepoClones(reponame, token).catch(
-    () => {
-      console.log(
-        `getRepoTraffic : Error getting repo clones for repo ${reponame}`
-      );
-    }
-  );
-
-  const {
-    response: referrerResponse,
-    responseJson: referrerResponseJson
-  } = await getRepoPopularReferrers(reponame, token).catch(
-    () => {
-      console.log(
-        `getRepoPopularReferrers : Error getting repo referrers for repo ${reponame}`
-      );
-    }
-  );
-
-  const {
-    response: pathResponse,
-    responseJson: pathResponseJson
-  } = await getRepoPopularPaths(reponame, token).catch(
-    () => {
-      console.log(
-        `getRepoPopularReferrers : Error getting repo referrers for repo ${reponame}`
-      );
-    }
-  );
-
-  return {
-    ...viewsResponseJson, 
-    clones: cloneResponseJson.clones, 
-    referrers: referrerResponseJson,
-    contents: pathResponseJson
-  }
-}
-
-/* TODO rename function */
-async function createNewUpdatedRepo(repoDetails, userId, token) {
-  traffic = await getRepoTraffic(
-    repoDetails.full_name,
-    token
-  );
-
-  const { views, clones } = traffic;
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-
-  if (
-    views.length !== 0 &&
-    new Date(views[views.length - 1].timestamp).getTime() >= today.getTime()
-  ) {
-    views.pop();
-  }
-
-  if (
-    clones.length !== 0 &&
-    new Date(clones[clones.length - 1].timestamp).getTime() >= today.getTime()
-  ) {
-    clones.pop();
-  }
-
-  return new RepositoryModel({
-    user_id: userId,
-    github_repo_id: repoDetails.id,
-    reponame: repoDetails.full_name,
-    views,
-    clones: {
-      total_count: clones.reduce((accumulator, currentClone) => accumulator + currentClone.count, 0),
-      total_uniques: clones.reduce((accumulator, currentClone) => accumulator + currentClone.uniques, 0),
-      data: clones
-    },
-    forks: {
-      tree_updated: false,
-      data: [
-        {
-          timestamp: today.toISOString(),
-          count: repoDetails.forks_count
-        }
-      ],
-      children: []
-    },
-    not_found: false
-  });
-}
-
 module.exports = {
-  getRepoDetailsById,
   getUserRepos,
-  getRepoTraffic,
-  updateForksTree,
-  createNewUpdatedRepo
+  getRepoDetailsById,
+  getRepoViews,
+  getRepoClones,
+  getRepoPopularPaths,
+  getRepoPopularReferrers,
+  getRepoForks,
+  updateForksTree
 };
