@@ -25,13 +25,60 @@ function searchDate(dateArr, d1) {
   return false;
 }
 
+function viewsCsv(concatRepos) {
+  let minimumTimetamp = new Date();
+  minimumTimetamp.setUTCHours(0, 0, 0, 0);
+  const maximumTimetamp = new Date();
+  maximumTimetamp.setUTCHours(0, 0, 0, 0);
+
+  const tableHead = ["reponame", "type"];
+
+  for (let i = 0; i < concatRepos.length; i += 1) {
+    let firstRepoTimestamp = new Date(concatRepos[i].views[0].timestamp);
+    if (firstRepoTimestamp < minimumTimetamp) {
+      minimumTimetamp = firstRepoTimestamp;
+    }
+  }
+  let timeIndex = new Date(minimumTimetamp.getTime());
+  timeIndex.setUTCHours(0, 0, 0, 0);
+
+  while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
+    tableHead.push(moment(timeIndex).format("DD MMM YYYY"));
+    timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+  }
+  const rows = [["views"], tableHead];
+
+  for (let i = 0; i < concatRepos.length; i += 1) {
+    let countsCSV = [concatRepos[i].reponame, "counts"];
+    let uniquesCSV = [concatRepos[i].reponame, "uniques"];
+
+    const limitTimestamp = new Date(concatRepos[i].views[0].timestamp);
+    timeIndex = new Date(minimumTimetamp.getTime());
+
+    while (timeIndex.getTime() < limitTimestamp.getTime()) {
+      countsCSV.push(0);
+      uniquesCSV.push(0);
+
+      timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+    }
+
+    const views = concatRepos[i].views.map(h => h.count);
+    const uniques = concatRepos[i].views.map(h => h.uniques);
+
+    countsCSV = countsCSV.concat(views);
+    uniquesCSV = uniquesCSV.concat(uniques);
+
+    rows.push(countsCSV);
+    rows.push(uniquesCSV);
+  }
+  return rows;
+}
+
 function clonesCsv(concatRepos) {
   let minimumTimetamp = new Date();
   minimumTimetamp.setUTCHours(0, 0, 0, 0);
-  minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
   const maximumTimetamp = new Date();
   maximumTimetamp.setUTCHours(0, 0, 0, 0);
-  maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
 
   const tableHead = ["reponame", "type"];
 
@@ -74,60 +121,44 @@ function clonesCsv(concatRepos) {
   return rows;
 }
 
-function viewsCsv(concatRepos) {
+function forksCsv(concatRepos) {
   let minimumTimetamp = new Date();
   minimumTimetamp.setUTCHours(0, 0, 0, 0);
-  minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
   const maximumTimetamp = new Date();
   maximumTimetamp.setUTCHours(0, 0, 0, 0);
-  //maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
 
   const tableHead = ["reponame", "type"];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
-    let firstRepoTimestamp = new Date(concatRepos[i].views[0].timestamp);
+    let firstRepoTimestamp = new Date(concatRepos[i].forks.data[0].timestamp);
     if (firstRepoTimestamp < minimumTimetamp) {
       minimumTimetamp = firstRepoTimestamp;
     }
   }
   let timeIndex = new Date(minimumTimetamp.getTime());
-  timeIndex.setUTCHours(0, 0, 0, 0);
 
   while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
     tableHead.push(moment(timeIndex).format("DD MMM YYYY"));
     timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
   }
-  const rows = [["views"], tableHead];
+  const rows = [["forks"], tableHead];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
-    let countsCSV = [concatRepos[i].reponame, "counts"];
-    let uniquesCSV = [concatRepos[i].reponame, "uniques"];
+    let countsCSV = [concatRepos[i].reponame, "count"];
 
-    const limitTimestamp = new Date(concatRepos[i].views[0].timestamp);
+    const limitTimestamp = new Date(concatRepos[i].forks.data[0].timestamp);
     timeIndex = new Date(minimumTimetamp.getTime());
 
     while (timeIndex.getTime() < limitTimestamp.getTime()) {
       countsCSV.push(0);
-      uniquesCSV.push(0);
 
       timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
     }
 
-    const views = concatRepos[i].views.map(h => h.count);
-    const uniques = concatRepos[i].views.map(h => h.uniques);
+    const counts = concatRepos[i].forks.data.map(d => d.count);
 
-    countsCSV = countsCSV.concat(views);
-    uniquesCSV = uniquesCSV.concat(uniques);
-
-    // if(concatRepos[i].views.length > 0) {
-    //   const lastEntry = concatRepos[i].views[concatRepos[i].views.length - 1];
-    //   const d = new Date(lastEntry.timestamp);
-    //   d.setUTCHours(0, 0, 0, 0);
-    //   if(d == today)
-    // }
-
+    countsCSV = countsCSV.concat(counts);
     rows.push(countsCSV);
-    rows.push(uniquesCSV);
   }
   return rows;
 }
@@ -136,10 +167,10 @@ function createDailyCsv(concatRepos) {
   /* CSV containing views, clones and forks */
   const viewsTable = viewsCsv(concatRepos);
   const clonesTable = clonesCsv(concatRepos);
+  const forksTable = forksCsv(concatRepos);
 
   console.log(clonesTable);
-
-  const trafficCSV = viewsTable.concat(clonesTable);
+  const trafficCSV = viewsTable.concat(clonesTable).concat(forksTable);
 
   return trafficCSV;
 }
