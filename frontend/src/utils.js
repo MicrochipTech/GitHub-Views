@@ -5,7 +5,6 @@ function add0s(series) {
 
   let lastTimestamp = new Date();
   lastTimestamp.setUTCHours(0, 0, 0, 0);
-  //lastTimestamp.setUTCDate(lastTimestamp.getUTCDate() - 1);
 
   if (series.length !== 0) {
     const first = new Date(series[0].timestamp);

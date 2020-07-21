@@ -216,7 +216,6 @@ function downlaodMonthly({ userRepos, sharedRepos }) {
         currentIndex === 2 ||
         compareDate(th[currentIndex], th[currentIndex - 1]) === false
       ) {
-        //console.log(th[currentIndex]);
         total.push(acc);
         acc = [th[currentIndex], 0];
       }
