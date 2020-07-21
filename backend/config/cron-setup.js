@@ -4,6 +4,7 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 
+
 async function updateRepositories() {
   console.log(`Updating local database`);
 
@@ -97,7 +98,7 @@ async function updateRepositories() {
           );
         }
       }
-      repoEntry.save();
+      await repoEntry.save();
     });
     await Promise.all(updateReposPromises);
   });
