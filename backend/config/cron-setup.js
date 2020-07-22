@@ -50,18 +50,20 @@ async function updateRepositories() {
     }
 
     const updateReposPromises = githubRepos.map(async githubRepo => {
-      let repoEntry = userRepos.find(
+      const repoEntry = userRepos.find(
         userRepo => userRepo.github_repo_id === String(githubRepo.id)
       );
 
       if (repoEntry === undefined) {
-        repoEntry = await RepositoryCtrl.createRepository(
+        const newRepo = await RepositoryCtrl.createRepository(
           githubRepo,
           user._id,
           token
         ).catch(e => {
           console.log(e, `syncRepos ${user}: error creating a new repo`);
         });
+
+        await newRepo.save();
       } else {
         /* The repository still exists on GitHub*/
         repoEntry.not_found = false;
@@ -98,11 +100,15 @@ async function updateRepositories() {
           );
         }
       }
-      await repoEntry.save();
     });
     await Promise.all(updateReposPromises);
   });
   await Promise.all(userPromises);
+
+  saveAllRepos = repos.map(async repo => await repo.save());
+  await Promise.all(saveAllRepos);
+
+  console.log(`Local database update finished`);
 }
 
 async function setCron() {
