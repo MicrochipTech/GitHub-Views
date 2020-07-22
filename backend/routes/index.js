@@ -1,33 +1,36 @@
 const router = require("express").Router();
+const fetch = require("node-fetch");
 const authRoutes = require("./auth-routes");
 const repoRoutes = require("./repo-routes");
 const userRoutes = require("./user-routes");
 const aggregateChartsRoutes = require("./aggregateCharts-routes");
 const indexCtrl = require("../controllers/IndexCtrl");
+const { updateRepositories } = require("../config/cron-setup");
+const RepositoryModel = require("../models/Repository");
 
 router.get("/", indexCtrl.home);
-const RepositoryModel = require("../models/Repository");
-const fetch = require("node-fetch")
+router.get("/forceUpdate", async (req, res) => {
+  await updateRepositories();
+  res.send("ok");
+});
+
 // OLD function used in updating repoid and notfound
 async function getRepoTrafficOld(reponame, token) {
-    const response = await fetch(
-      `https://api.github.com/repos/${reponame}`,
-      {
-        method: "get",
-        redirect: "manual",
-        headers: {
-          Authorization: `token ${token}`
-        }
-      }
-    ).catch(() => console.log(`getRepoTrafficOld ${reponame}: error`));
-  
-    const responseJson = await response.json();
-  
-    return { response, responseJson };
-  }
-  // END OLD function
+  const response = await fetch(`https://api.github.com/repos/${reponame}`, {
+    method: "get",
+    redirect: "manual",
+    headers: {
+      Authorization: `token ${token}`
+    }
+  }).catch(() => console.log(`getRepoTrafficOld ${reponame}: error`));
+
+  const responseJson = await response.json();
+
+  return { response, responseJson };
+}
+// END OLD function
 router.get("/migrate_db", async (req, res) => {
-    /* BEGIN - update repoid and not_found */
+  /* BEGIN - update repoid and not_found */
   console.log("Updating repoid and not_found fields");
 
   const repos = await RepositoryModel.find().populate({
@@ -37,16 +40,17 @@ router.get("/migrate_db", async (req, res) => {
 
   const idUpdatePromises = repos.map(async repoEntry => {
     if (repoEntry.user_id.token_ref) {
-    //   console.log(repoEntry.user_id.token_ref.value);
+      //   console.log(repoEntry.user_id.token_ref.value);
       const {
         response: repoDetailsResponse,
         responseJson: repoDetails
       } = await getRepoTrafficOld(
         repoEntry.reponame,
         repoEntry.user_id.token_ref.value
-      ).catch((e) =>
+      ).catch(e =>
         console.log(
-          "Updating repoid and not_found fields: Error getting repo traffic",e
+          "Updating repoid and not_found fields: Error getting repo traffic",
+          e
         )
       );
 
@@ -95,18 +99,22 @@ router.get("/migrate_db", async (req, res) => {
             break;
 
           default:
-            console.log("Error updateing repoid and not_found fields: ", repoDetailsResponse.status, repoEntry.user_id.username);
+            console.log(
+              "Error updateing repoid and not_found fields: ",
+              repoDetailsResponse.status,
+              repoEntry.user_id.username
+            );
         }
         repoEntry.clones.total_uniques = repoEntry.clones.total_count = 0;
         await repoEntry.save();
-        console.log(`${repoEntry.reponame} - ${repoEntry.github_repo_id} `)
+        console.log(`${repoEntry.reponame} - ${repoEntry.github_repo_id} `);
       }
     }
   });
   await Promise.all(idUpdatePromises);
   /* END - update repoid and not_found */
-    res.send("ok")
-})
+  res.send("ok");
+});
 
 router.use("/auth", authRoutes);
 router.use("/repo", repoRoutes);

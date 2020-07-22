@@ -4,7 +4,6 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 
-
 async function updateRepositories() {
   console.log(`Updating local database`);
 
@@ -75,8 +74,9 @@ async function updateRepositories() {
         /* Update forks */
         repoEntry.forks.tree_updated = false;
         if (
+          repoEntry.forks.data.length === 0 ||
           repoEntry.forks.data[repoEntry.forks.data.length - 1].count !==
-          githubRepo.forks_count
+            githubRepo.forks_count
         ) {
           repoEntry.forks.data.push({
             timestamp: today.toISOString(),
@@ -105,13 +105,14 @@ async function updateRepositories() {
   await Promise.all(userPromises);
 }
 
-// (async () => {
-//   for(var i = 0; i < 1500; ++i) {
-//     await updateRepositories();
-//   }
-// })()
-// updateRepositories();
+async function setCron() {
+  console.log("Setting a cronjob every day, to update repositories.");
+  cron.schedule("25 12 * * *", async () => {
+    await updateRepositories();
+  });
+}
 
-cron.schedule("25 12 * * *", async () => {
-  await updateRepositories();
-});
+module.exports = {
+  setCron,
+  updateRepositories
+};

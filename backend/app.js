@@ -8,7 +8,9 @@ const cookieSession = require("cookie-session");
 const passport = require("passport");
 
 require("./config/passport-setup");
-require("./config/cron-setup");
+const { setCron } = require("./config/cron-setup");
+
+setCron();
 
 mongoose.connect(
   `mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@mongo/${process.env.MONGO_INITDB_DATABASE}?authSource=admin`,
