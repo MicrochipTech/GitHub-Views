@@ -5,6 +5,20 @@ const TokenModel = require("../models/Token");
 const GitHubApiCtrl = require("./GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 
+async function unfollowSharedRepo(req, res) {
+  const { repoId } = req.body;
+  const updateRes = await UserModel.update(
+    { _id: req.user._id },
+    { $pull: { sharedRepos: repoId } }
+  );
+  console.log(updateRes);
+  if (updateRes.ok) {
+    res.json({ status: "ok" });
+  } else {
+    res.json({ status: "notok:(" });
+  }
+}
+
 async function getWhereUsernameStartsWith(req, res) {
   const { q } = req.query;
   const users = await UserModel.find(
@@ -45,7 +59,6 @@ async function getData(req, res) {
 }
 
 async function checkForNewRepos(user, token) {
-
   // if(token === undefined) {
   //   token = user.token_ref.value;
   // }
@@ -53,25 +66,27 @@ async function checkForNewRepos(user, token) {
   let anyNewRepo = false;
 
   /* Get all repos for a user through GitHub API */
-  const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(
-    e => {
-      console.log(`checkForNewRepos ${user.username}: error getting user repos`, e);
-      if (
-        e.response.status === 403 &&
-        e.response.headers["x-ratelimit-remaining"] === "0"
-      ) {
-        console.log("Forbidden. No more remaining requests");
-      }
+  const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(e => {
+    console.log(
+      `checkForNewRepos ${user.username}: error getting user repos`,
+      e
+    );
+    if (
+      e.response.status === 403 &&
+      e.response.headers["x-ratelimit-remaining"] === "0"
+    ) {
+      console.log("Forbidden. No more remaining requests");
     }
-  );
+  });
 
   /* Get repos from local database */
-  const userRepos = await RepoModel.find({ user_id: user._id, not_found: false }).catch(
-    () => {
-      console.log(`checkForNewRepos ${user}: Error getting repos`);
-      success = false;
-    }
-  );
+  const userRepos = await RepoModel.find({
+    user_id: user._id,
+    not_found: false
+  }).catch(() => {
+    console.log(`checkForNewRepos ${user}: Error getting repos`);
+    success = false;
+  });
 
   if (githubRepos === undefined) {
     return;
@@ -126,5 +141,6 @@ async function sync(req, res) {
 module.exports = {
   getWhereUsernameStartsWith,
   getData,
-  sync
+  sync,
+  unfollowSharedRepo
 };

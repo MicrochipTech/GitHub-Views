@@ -18,7 +18,7 @@ function Repository({ index, style, data }) {
     repos,
     updateAggregateChart,
     deleteAggregateChart,
-    deleteSharedRpo
+    unfollowSharedRepo
   } = React.useContext(DataContext);
   const { page, visibleRepos } = data;
   const d = visibleRepos[index];
@@ -185,19 +185,7 @@ function Repository({ index, style, data }) {
           <div
             className="icon"
             onClick={() => {
-              deleteSharedRpo(d._id);
-
-              const dataJSON = {
-                repo: d._id
-              };
-
-              fetch("/api/user/deleteSharedRepo", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify(dataJSON)
-              });
+              unfollowSharedRepo(d._id);
             }}
           >
             <DeleteIcon />

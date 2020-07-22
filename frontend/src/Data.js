@@ -71,6 +71,13 @@ const reducer = (state, action) =>
         draft.repos.sharedRepos.push({ ...repo, views: add0s(repo.views) });
         return draft;
 
+      case "REMOVE_SHARED_REPO":
+        const { repoId } = action.payload;
+        draft.repos.sharedRepos = draft.repos.sharedRepos.filter(
+          r => r._id !== repoId
+        );
+        return draft;
+
       default:
         throw Error("Dispatch unknown data action");
     }
@@ -152,7 +159,19 @@ function DataProvider({ children }) {
     dispatch({ type: "ADD_SHARED_REPO", payload: { repo: prepareRepo(repo) } });
   };
 
-  async function deleteSharedRpo(id) {}
+  async function unfollowSharedRepo(repoId) {
+    const res = await fetch("/api/user/unfollowSharedRepo", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ repoId })
+    });
+    const resJson = await res.json();
+    if (resJson.status === "ok") {
+      dispatch({ type: "REMOVE_SHARED_REPO", payload: { repoId } });
+    }
+  }
 
   return (
     <DataContext.Provider
@@ -163,7 +182,7 @@ function DataProvider({ children }) {
         addAggregateChart,
         deleteAggregateChart,
         addSharedRepo,
-        deleteSharedRpo
+        unfollowSharedRepo
       }}
     >
       {children}
