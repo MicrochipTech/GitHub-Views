@@ -10,13 +10,22 @@ async function nameContains(req, res) {
     {
       reponame: {
         $regex: `${q}.*`
+        // highligting the matched text is more complex on the frontend, for case insensitive match
+        // $options: "i"
       }
     },
     { reponame: 1, user_id: 1, createAt: 1, _id: 1 }
   ).populate("user_id");
 
   const reposList = repos
-    .filter(r => !r.reponame.startsWith(r.user_id.username))
+    .filter(r => {
+      if (req.user.sharedRepos.indexOf(r._id) !== -1) return 0;
+      return (
+        r.reponame.startsWith("microchip-pic-avr-examples") ||
+        r.reponame.startsWith("microchip-pic-avr-solutions") ||
+        r.reponame.startsWith("MicrochipTech")
+      );
+    })
     .map(r => ({ reponame: r.reponame, _id: r._id }));
 
   res.send(reposList);
@@ -295,10 +304,10 @@ async function share(req, res) {
   await user.save();
 
   if (username === req.user.username) {
-    res.send("Success sharing the repo!");
-  } else {
     const repo = await RepositoryModel.findOne({ _id: repoId });
     res.json({ repo });
+  } else {
+    res.send("Success sharing the repo!");
   }
 }
 

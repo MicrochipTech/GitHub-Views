@@ -1,11 +1,12 @@
 import React from "react";
 import { AuthContext } from "./Auth";
+import { DataContext } from "./Data";
 import { Button, Typography, TextField } from "@material-ui/core";
 import Autocomplete from "@material-ui/lab/Autocomplete";
 
-function SelfShare({ onChange }) {
+function SelfShare({ onRepoAdded }) {
   const { user } = React.useContext(AuthContext);
-
+  const { addSharedRepo } = React.useContext(DataContext);
   const [options, setOptions] = React.useState([]);
   const [selected, setSelected] = React.useState(null);
   const [q, setQ] = React.useState();
@@ -23,7 +24,6 @@ function SelfShare({ onChange }) {
         getOptionLabel={o => o.reponame}
         onChange={(e, value, reason) => setSelected(value)}
         onInputChange={(e, val) => {
-          if (onChange) onChange(val);
           if (e.target.value && e.target.value.length > 0) {
             setQ(e.target.value);
             fetch(`/api/repo/nameContains?q=${e.target.value}`, {
@@ -66,6 +66,8 @@ function SelfShare({ onChange }) {
             })
           });
           const resData = await res.json();
+          addSharedRepo(resData.repo);
+          if (onRepoAdded) onRepoAdded();
         }}
       >
         Add

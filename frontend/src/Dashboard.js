@@ -101,7 +101,14 @@ function Dashboard() {
               </div>
             )}
 
-          {!loadingData && page === "sharedRepos" && <SelfShare />}
+          {!loadingData && page === "sharedRepos" && (
+            <SelfShare
+              onRepoAdded={() => {
+                setSearchValue("");
+                setActivePage(repos[page].length / ITEMS_PER_PAGE + 1);
+              }}
+            />
+          )}
 
           {!loadingData &&
             page === "aggregateCharts" &&

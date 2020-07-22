@@ -38,7 +38,6 @@ function ViewsTab({ repo }) {
 
   return (
     <Grid item xs={12}>
-      <Typography className="repoSectionTitle">Views</Typography>
       <LineChart data={viewsPlotData} />
     </Grid>
   );
@@ -69,7 +68,6 @@ function ClonesTab({ repo }) {
 
   return (
     <Grid item xs={12}>
-      <Typography className="repoSectionTitle">Clones</Typography>
       <LineChart data={clonesPlotData} />
     </Grid>
   );
@@ -113,7 +111,6 @@ function ReferringSitesTab({ repo }) {
 
   return (
     <Grid item xs={12}>
-      <Typography className="repoSectionTitle">Reffering Sites</Typography>
       <LineChart data={referringSitePlotData} />
     </Grid>
   );
@@ -158,7 +155,6 @@ function PopularContentTab({ repo }) {
 
   return (
     <Grid item xs={12}>
-      <Typography className="repoSectionTitle">Popular Content</Typography>
       <LineChart data={popularContentPlotData} />
     </Grid>
   );
@@ -182,41 +178,48 @@ function ForksTab({ repo }) {
   console.log(forksPlotData);
   return (
     <Grid item xs={12}>
-      <Typography className="repoSectionTitle">Views</Typography>
       <LineChart data={forksPlotData} />
     </Grid>
   );
 }
 
+function ForksTreeItem({ item }) {
+  return (
+    <TreeItem label={item.reponame}>
+      {item.children.map(i => (
+        <ForksTreeItem item={i} />
+      ))}
+    </TreeItem>
+  );
+}
+
 function ForksTreeTab({ repo }) {
-  axios
-    .post("/api/repo/updateForksTree", {
-      repo_id: repo._id
-    })
-    .then(res => {
-      console.log(res);
-    });
+  const [treeData, setTreeData] = React.useState([]);
+
+  React.useEffect(() => {
+    if (repo.forks.tree_updated) {
+      setTreeData(repo.forks.children);
+    } else {
+      axios
+        .post("/api/repo/updateForksTree", {
+          repo_id: repo._id
+        })
+        .then(res => {
+          console.log(res);
+          setTreeData(res.data.treeData);
+        });
+    }
+  }, []);
+
   return (
     <Grid item xs={12}>
-      <Typography className="repoSectionTitle">Forks</Typography>
       <TreeView
         defaultCollapseIcon={<ExpandMoreIcon />}
         defaultExpandIcon={<ChevronRightIcon />}
       >
-        <TreeItem nodeId="1" label="Applications">
-          <TreeItem nodeId="2" label="Calendar" />
-          <TreeItem nodeId="3" label="Chrome" />
-          <TreeItem nodeId="4" label="Webstorm" />
-        </TreeItem>
-        <TreeItem nodeId="5" label="Documents">
-          <TreeItem nodeId="10" label="OSS" />
-          <TreeItem nodeId="6" label="Material-UI">
-            <TreeItem nodeId="7" label="src">
-              <TreeItem nodeId="8" label="index.js" />
-              <TreeItem nodeId="9" label="tree-view.js" />
-            </TreeItem>
-          </TreeItem>
-        </TreeItem>
+        {treeData.map(i => (
+          <ForksTreeItem item={i} />
+        ))}
       </TreeView>
     </Grid>
   );
@@ -278,7 +281,7 @@ function SingleRepo() {
         </Typography>
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid item xs={12} style={{ marginBottom: "20px" }}>
         <ul className="dataNav">
           {Object.keys(tabOptions).map(k => (
             <li

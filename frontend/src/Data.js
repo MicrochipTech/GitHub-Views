@@ -5,6 +5,14 @@ import { add0s } from "./utils";
 
 const DataContext = React.createContext();
 
+function prepareRepo(r) {
+  return {
+    ...r,
+    views: add0s(r.views),
+    clones: { ...r.clones, data: add0s(r.clones.data) }
+  };
+}
+
 const reducer = (state, action) =>
   produce(state, draft => {
     switch (action.type) {
@@ -60,7 +68,7 @@ const reducer = (state, action) =>
 
       case "ADD_SHARED_REPO":
         const { repo } = action.payload;
-        draft.sharedRepos.push(repo);
+        draft.repos.sharedRepos.push({ ...repo, views: add0s(repo.views) });
         return draft;
 
       default:
@@ -88,20 +96,13 @@ function DataProvider({ children }) {
         if (res != null) {
           res.data.zombieRepos = res.data.userRepos
             .filter(r => r.not_found)
-            .map(r => ({ ...r, views: add0s(r.views) }));
+            .map(prepareRepo);
 
           res.data.userRepos = res.data.userRepos
             .filter(r => !r.not_found)
-            .map(r => ({
-              ...r,
-              views: add0s(r.views),
-              clones: { ...r.clones, data: add0s(r.clones.data) }
-            }));
+            .map(prepareRepo);
 
-          res.data.sharedRepos = res.data.sharedRepos.map(r => ({
-            ...r,
-            views: add0s(r.views)
-          }));
+          res.data.sharedRepos = res.data.sharedRepos.map(prepareRepo);
 
           dispatch({ type: "DATA_READY", payload: res.data });
         } else {
@@ -119,14 +120,16 @@ function DataProvider({ children }) {
     const json = await res.json();
     console.log(json);
     if (json.data) {
-      json.data.userRepos = json.data.userRepos.map(r => ({
-        ...r,
-        views: add0s(r.views)
-      }));
-      json.data.sharedRepos = json.data.sharedRepos.map(r => ({
-        ...r,
-        views: add0s(r.views)
-      }));
+      json.data.zombieRepos = json.data.userRepos
+        .filter(r => r.not_found)
+        .map(prepareRepo);
+
+      json.data.userRepos = json.data.userRepos
+        .filter(r => !r.not_found)
+        .map(prepareRepo);
+
+      json.data.sharedRepos = json.data.sharedRepos.map(prepareRepo);
+
       dispatch({ type: "DATA_READY", payload: json.data });
     } else {
       dispatch({ type: "STOP_LOADING" });
@@ -146,8 +149,10 @@ function DataProvider({ children }) {
   };
 
   const addSharedRepo = repo => {
-    dispatch({ type: "ADD_SHARED_REPO", payload: { repo } });
+    dispatch({ type: "ADD_SHARED_REPO", payload: { repo: prepareRepo(repo) } });
   };
+
+  async function deleteSharedRpo(id) {}
 
   return (
     <DataContext.Provider
@@ -157,7 +162,8 @@ function DataProvider({ children }) {
         syncRepos,
         addAggregateChart,
         deleteAggregateChart,
-        addSharedRepo
+        addSharedRepo,
+        deleteSharedRpo
       }}
     >
       {children}
