@@ -1,87 +1,26 @@
 const cron = require("node-cron");
-const fetch = require("node-fetch");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
-const UserCtrl = require("../controllers/UserCtrl");
+const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 
 async function updateRepositories() {
-  console.log("Updating repositories for all users");
+  console.log(`Updating local database`);
 
-  /* BEGIN - update repoid and not_found */
-  console.log("Updating repoid and not_found fields");
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
 
-  const repos = await RepositoryModel.find().populate({
-    path: "user_id",
-    populate: { path: "token_ref" }
+  const repos = await RepositoryModel.find({ not_found: false }).catch(() => {
+    console.log(`syncRepos: error getting repo ${repo.full_name}`);
   });
 
-  const idUpdatePromises = repos.map(async repoEntry => {
-    if (repoEntry.user_id.token_ref) {
-      console.log(repoEntry.user_id.token_ref.value);
-      const {
-        response: repoDetailsResponse,
-        responseJson: repoDetails
-      } = await GitHubApiCtrl.getRepoTrafficOld(
-        repoEntry.reponame,
-        repoEntry.user_id.token_ref.value
-      ).catch(() =>
-        console.log(
-          "Updating repoid and not_found fields: Error getting repo traffic"
-        )
-      );
-
-      if (repoDetails) {
-        switch (repoDetailsResponse.status) {
-          case 404:
-            /* Mark the repository as not found */
-            repoEntry.not_found = true;
-
-            break;
-
-          case 301: {
-            /* The repository was renamed */
-
-            const redirectDetailsResponse = await fetch(repoDetails.url, {
-              method: "get",
-              redirect: "manual",
-              headers: {
-                Authorization: `token ${repoEntry.user_id.token_ref.value}`
-              }
-            }).catch(() =>
-              console.log(
-                "Updating repoid and not_found fields: Error after redirect"
-              )
-            );
-            const redirectDetails = await redirectDetailsResponse.json();
-
-            if (redirectDetails) {
-              repoEntry.not_found = false;
-              repoEntry.github_repo_id = redirectDetails.id;
-            } else {
-              console.log(
-                `Error trying to update github_id and not_found fields for ${repoEntry.reponame}`
-              );
-            }
-
-            break;
-          }
-          case 200:
-            /* The repository exists and will be updated */
-            repoEntry.not_found = false;
-            repoEntry.github_repo_id = repoDetails.id;
-
-            break;
-
-          default:
-            console.log("Error updateing repoid and not_found fields");
-        }
-        await repoEntry.save();
-      }
-    }
+  /*
+   * Before updating, repos mark them as not updated.
+   * After update, if it is still marked as not updated, it means it was deleted.
+   */
+  repos.forEach(repo => {
+    repo.not_found = true;
   });
-  await Promise.all(idUpdatePromises);
-  /* END - update repoid and not_found */
 
   const users = await UserModel.find({
     githubId: { $ne: null },
@@ -89,13 +28,97 @@ async function updateRepositories() {
   }).populate("token_ref");
 
   const userPromises = users.map(async user => {
-    await UserCtrl.syncRepos(user, user.token_ref.value);
+    const token = user.token_ref.value;
+    /* Get all repos for a user through GitHub API */
+    const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(
+      e => {
+        console.log(`syncRepos ${user.username}: error getting user repos`);
+        if (
+          e.response.status === 403 &&
+          e.response.headers["x-ratelimit-remaining"] === "0"
+        ) {
+          console.log("Forbidden. No more remaining requests");
+        }
+      }
+    );
+
+    /* Get repos from local database */
+    const userRepos = repos.filter(repo => repo.user_id.equals(user._id));
+
+    if (githubRepos === undefined) {
+      return;
+    }
+
+    const updateReposPromises = githubRepos.map(async githubRepo => {
+      const repoEntry = userRepos.find(
+        userRepo => userRepo.github_repo_id === String(githubRepo.id)
+      );
+
+      if (repoEntry === undefined) {
+        const newRepo = await RepositoryCtrl.createRepository(
+          githubRepo,
+          user._id,
+          token
+        ).catch(e => {
+          console.log(e, `syncRepos ${user}: error creating a new repo`);
+        });
+
+        await newRepo.save();
+      } else {
+        /* The repository still exists on GitHub*/
+        repoEntry.not_found = false;
+
+        /* Update repository name if changed */
+        if (repoEntry.reponame !== githubRepo.full_name) {
+          repoEntry.reponame = githubRepo.full_name;
+        }
+
+        /* Update forks */
+        repoEntry.forks.tree_updated = false;
+        if (
+          repoEntry.forks.data.length === 0 ||
+          repoEntry.forks.data[repoEntry.forks.data.length - 1].count !==
+            githubRepo.forks_count
+        ) {
+          repoEntry.forks.data.push({
+            timestamp: today.toISOString(),
+            count: githubRepo.forks_count
+          });
+        }
+
+        /* Update traffic (views, clones, referrers, contents) */
+        const { status, data: traffic } = await RepositoryCtrl.getRepoTraffic(
+          repoEntry.reponame,
+          token
+        );
+
+        if (status === true) {
+          RepositoryCtrl.updateRepoTraffic(repoEntry, traffic);
+        } else {
+          console.log(
+            `Fail getting traffic data for repo ${repoEntry.reponame}`
+          );
+        }
+      }
+    });
+    await Promise.all(updateReposPromises);
   });
-  Promise.all(userPromises);
+  await Promise.all(userPromises);
+
+  saveAllRepos = repos.map(async repo => await repo.save());
+  await Promise.all(saveAllRepos);
+
+  console.log(`Local database update finished`);
 }
 
-updateRepositories();
+async function setCron() {
+  console.log("Setting a cronjob every day, to update repositories.");
+  cron.schedule("25 12 * * *", async () => {
+    await updateRepositories();
+  });
+}
 
-cron.schedule("25 12 * * *", async () => {
-  await updateRepositories();
-});
+module.exports = {
+  setCron,
+  updateRepositories
+};

@@ -1,5 +1,5 @@
 import React from "react";
-import {Link } from "react-router-dom"
+import { Link } from "react-router-dom";
 import moment from "moment";
 import _ from "lodash";
 import { DataContext } from "./Data";
@@ -17,7 +17,8 @@ function Repository({ index, style, data }) {
   const {
     repos,
     updateAggregateChart,
-    deleteAggregateChart
+    deleteAggregateChart,
+    unfollowSharedRepo
   } = React.useContext(DataContext);
   const { page, visibleRepos } = data;
   const d = visibleRepos[index];
@@ -67,22 +68,29 @@ function Repository({ index, style, data }) {
 
         const limitTimestamp = new Date(repo.views[0].timestamp);
 
-        for(let timeIndex = new Date(minimumTimetamp.getTime()); timeIndex.getTime() < limitTimestamp.getTime(); timeIndex.setUTCDate(timeIndex.getUTCDate() + 1)) {
+        for (
+          let timeIndex = new Date(minimumTimetamp.getTime());
+          timeIndex.getTime() < limitTimestamp.getTime();
+          timeIndex.setUTCDate(timeIndex.getUTCDate() + 1)
+        ) {
           views.unshift(0);
           uniques.unshift(0);
         }
 
-        acc.push({
-          label: `${repo.reponame} - Views`,
-          dataset: views,
-          color: generateRandomColour(),
-          _id: e._id
-        }, {
-          label: `${repo.reponame} - Unique Views`,
-          dataset: uniques,
-          _id: e._id,
-          color: generateRandomColour()
-        });
+        acc.push(
+          {
+            label: `${repo.reponame} - Views`,
+            dataset: views,
+            color: generateRandomColour(),
+            _id: e._id
+          },
+          {
+            label: `${repo.reponame} - Unique Views`,
+            dataset: uniques,
+            _id: e._id,
+            color: generateRandomColour()
+          }
+        );
         return acc;
       }, [])
     };
@@ -113,10 +121,16 @@ function Repository({ index, style, data }) {
   return (
     <Grid container className="chartWrapper">
       <Grid container justify="space-between">
-        <h1><Link to={{
-          pathname: `/repo/${d._id}`
-        }}>{d.reponame}</Link></h1>
-        {page === "aggregateCharts" ? (
+        <h1>
+          <Link
+            to={{
+              pathname: `/repo/${d._id}`
+            }}
+          >
+            {d.reponame}
+          </Link>
+        </h1>
+        {page === "aggregateCharts" && (
           <div style={{ display: "flex" }}>
             <ChoseReposModal
               chartToEdit={d._id}
@@ -161,14 +175,24 @@ function Repository({ index, style, data }) {
               <DeleteIcon />
             </div>
           </div>
-        ) : (
+        )}
+        {page === "userRepos" && (
           <div>
             <ShareButton repoId={data._id} />
           </div>
         )}
+        {page === "sharedRepos" && (
+          <div
+            className="icon"
+            onClick={() => {
+              unfollowSharedRepo(d._id);
+            }}
+          >
+            <DeleteIcon />
+          </div>
+        )}
       </Grid>
-    <LineChart key={d._id} data={plotData} />
-    
+      <LineChart key={d._id} data={plotData} />
     </Grid>
   );
 }

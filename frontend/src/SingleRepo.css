@@ -1,3 +1,8 @@
+.dashboardWrapper {
+    padding: 80px;
+    padding-top: 0px;
+}
+
 .backBtn {
     padding: 10px;
     margin-bottom: 10px;
@@ -16,4 +21,24 @@
 
 .repoSectionTitle {
     margin-top: 20px !important;
+}
+
+ul.dataNav {
+    padding: 0;
+    margin: 0;
+    margin-top: 20px;
+}
+
+ul.dataNav li {
+    list-style-type: none;
+    float: left;
+    padding: 20px;
+    cursor: pointer;
+    background-color: #dfdfdf;
+}
+
+ul.dataNav li.active, ul.dataNav li:hover {
+    background-color: #000;
+    color: #fff;
+    transition: 0.5s ease;
 }
