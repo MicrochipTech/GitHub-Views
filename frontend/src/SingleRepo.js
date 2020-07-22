@@ -74,6 +74,10 @@ function ClonesTab({ repo }) {
 }
 
 function ReferringSitesTab({ repo }) {
+  if (repo.referrers.length === 0) {
+    return "This repository has no Referring Sites data";
+  }
+
   const referrersRowData = repo.referrers.map(r => {
     // remove duplicates from r.data based on r.data[i].timestamp
     // add0s in the sparse array
@@ -117,6 +121,10 @@ function ReferringSitesTab({ repo }) {
 }
 
 function PopularContentTab({ repo }) {
+  if (repo.contents.length === 0) {
+    return "This repository has no Popular Contents data";
+  }
+
   const popularContentRowData = repo.contents.map(r => {
     // remove duplicates from r.data based on r.data[i].timestamp
     // add0s in the sparse array
@@ -195,6 +203,10 @@ function ForksTreeItem({ item }) {
 
 function ForksTreeTab({ repo }) {
   const [treeData, setTreeData] = React.useState([]);
+  const [
+    isLayeFetchingInProgress,
+    setIsLazzyFetchingInProgress
+  ] = React.useState(false);
 
   React.useEffect(() => {
     if (repo.forks.tree_updated) {
@@ -207,13 +219,19 @@ function ForksTreeTab({ repo }) {
         .then(res => {
           console.log(res);
           setTreeData(res.data.treeData);
+          setIsLazzyFetchingInProgress(false);
         });
+      setIsLazzyFetchingInProgress(true);
     }
   }, []);
 
+  if (isLayeFetchingInProgress) {
+    return <CircularProgress />;
+  }
+
   return (
     <Grid item xs={12}>
-      {repo.forks.tree_updated &&
+      {!isLayeFetchingInProgress &&
         treeData.length === 0 &&
         "This repository has no forks yet."}
       <TreeView

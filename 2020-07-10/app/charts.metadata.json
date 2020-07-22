@@ -1,1 +1,0 @@
-{"options":{},"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_","ns":"app.charts"}],"uuid":"b74e9b7044ee4a4384b6e95800a4e015"}

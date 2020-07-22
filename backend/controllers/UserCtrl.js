@@ -111,6 +111,7 @@ async function checkForNewRepos(user, token) {
       /* Update repository name if changed */
       if (repoEntry.reponame !== githubRepo.full_name) {
         repoEntry.reponame = githubRepo.full_name;
+        anyNewRepo = true;
       }
     }
 
