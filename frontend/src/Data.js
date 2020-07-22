@@ -116,7 +116,7 @@ function DataProvider({ children }) {
 
   const syncRepos = async _ => {
     dispatch({ type: "START_LOADING" });
-    const res = await fetch("/api/repo/sync");
+    const res = await fetch("/api/user/sync");
     const json = await res.json();
     console.log(json);
     if (json.data) {

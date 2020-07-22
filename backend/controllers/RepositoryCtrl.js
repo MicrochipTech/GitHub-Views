@@ -1,8 +1,6 @@
 const UserModel = require("../models/User");
 const RepositoryModel = require("../models/Repository");
-const TokenModel = require("../models/Token");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
-const UserCtrl = require("./UserCtrl");
 
 async function nameContains(req, res) {
   const { q } = req.query;
@@ -63,7 +61,9 @@ async function createRepository(repoDetails, userId, token) {
   const { status, data: traffic } = await getRepoTraffic(
     newRepo.reponame,
     token
-  );
+  ).catch(e => {
+    console.log(e, `createRepository ${user}: error getting repoTraffic for a new repo`);
+  });
 
   if (status === true) {
     updateRepoTraffic(newRepo, traffic);
@@ -311,29 +311,11 @@ async function share(req, res) {
   }
 }
 
-async function sync(req, res) {
-  const { user } = req;
-  const t = await TokenModel.findOne({ _id: user.token_ref });
-
-  const success = await UserCtrl.syncRepos(user, t.value);
-
-  if (success) {
-    UserCtrl.getData(req, {
-      json: data => {
-        res.json({ status: "ok", data });
-      }
-    });
-  } else {
-    res.json({ status: "ok" });
-  }
-}
-
 module.exports = {
   createRepository,
   updateRepoTraffic,
   getRepoTraffic,
   updateForksTree,
   share,
-  sync,
   nameContains
 };
