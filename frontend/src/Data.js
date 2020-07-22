@@ -13,6 +13,21 @@ function prepareRepo(r) {
   };
 }
 
+function prepareData(data) {
+  data.zombieRepos = data.userRepos
+    .filter(r => r.not_found)
+    .map(prepareRepo)
+    .concat(data.sharedRepos.filter(r => r.not_found).map(prepareRepo));
+
+  data.userRepos = data.userRepos.filter(r => !r.not_found).map(prepareRepo);
+
+  data.sharedRepos = data.sharedRepos
+    .filter(r => !r.not_found)
+    .map(prepareRepo);
+
+  return data;
+}
+
 const reducer = (state, action) =>
   produce(state, draft => {
     switch (action.type) {
@@ -101,17 +116,7 @@ function DataProvider({ children }) {
       const getData = async _ => {
         const res = await axios.get("/api/user/getData").catch(e => {});
         if (res != null) {
-          res.data.zombieRepos = res.data.userRepos
-            .filter(r => r.not_found)
-            .map(prepareRepo);
-
-          res.data.userRepos = res.data.userRepos
-            .filter(r => !r.not_found)
-            .map(prepareRepo);
-
-          res.data.sharedRepos = res.data.sharedRepos.map(prepareRepo);
-
-          dispatch({ type: "DATA_READY", payload: res.data });
+          dispatch({ type: "DATA_READY", payload: prepareData(res.data) });
         } else {
           dispatch({ type: "DATA_READY", payload: reposInit });
         }
@@ -127,17 +132,7 @@ function DataProvider({ children }) {
     const json = await res.json();
     console.log(json);
     if (json.data) {
-      json.data.zombieRepos = json.data.userRepos
-        .filter(r => r.not_found)
-        .map(prepareRepo);
-
-      json.data.userRepos = json.data.userRepos
-        .filter(r => !r.not_found)
-        .map(prepareRepo);
-
-      json.data.sharedRepos = json.data.sharedRepos.map(prepareRepo);
-
-      dispatch({ type: "DATA_READY", payload: json.data });
+      dispatch({ type: "DATA_READY", payload: prepareData(json.data) });
     } else {
       dispatch({ type: "STOP_LOADING" });
     }

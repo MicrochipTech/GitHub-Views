@@ -185,9 +185,9 @@ function ForksTab({ repo }) {
 
 function ForksTreeItem({ item }) {
   return (
-    <TreeItem label={item.reponame}>
+    <TreeItem nodeId={item.github_repo_id} label={item.reponame}>
       {item.children.map(i => (
-        <ForksTreeItem item={i} />
+        <ForksTreeItem key={i.github_repo_id} item={i} />
       ))}
     </TreeItem>
   );
@@ -213,12 +213,15 @@ function ForksTreeTab({ repo }) {
 
   return (
     <Grid item xs={12}>
+      {repo.forks.tree_updated &&
+        treeData.length === 0 &&
+        "This repository has no forks yet."}
       <TreeView
         defaultCollapseIcon={<ExpandMoreIcon />}
         defaultExpandIcon={<ChevronRightIcon />}
       >
         {treeData.map(i => (
-          <ForksTreeItem item={i} />
+          <ForksTreeItem key={i.github_repo_id} item={i} />
         ))}
       </TreeView>
     </Grid>
