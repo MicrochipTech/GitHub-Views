@@ -59,10 +59,6 @@ async function getData(req, res) {
 }
 
 async function checkForNewRepos(user, token) {
-  // if(token === undefined) {
-  //   token = user.token_ref.value;
-  // }
-
   let anyNewRepo = false;
 
   /* Get all repos for a user through GitHub API */
