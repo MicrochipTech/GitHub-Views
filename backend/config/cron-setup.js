@@ -4,6 +4,10 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 
+async function* updateRepositoriesGen() {}
+
+updateRepositoriesGen();
+
 async function updateRepositories() {
   console.log(`Updating local database`);
 
@@ -30,26 +34,29 @@ async function updateRepositories() {
   const userPromises = users.map(async user => {
     const token = user.token_ref.value;
     /* Get all repos for a user through GitHub API */
-    const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(
-      e => {
-        console.log(`syncRepos ${user.username}: error getting user repos`);
-        if (
-          e.response.status === 403 &&
-          e.response.headers["x-ratelimit-remaining"] === "0"
-        ) {
-          console.log("Forbidden. No more remaining requests");
-        }
-      }
-    );
+    const githubRepos = await GitHubApiCtrl.getUserRepos(token);
+    // .catch(e => {
+    //   console.log(`syncRepos ${user.username}: error getting user repos`);
+    //   if (
+    //     e.response.status === 403 &&
+    //     e.response.headers["x-ratelimit-remaining"] === "0"
+    //   ) {
+    //     console.log("Forbidden. No more remaining requests");
+    //   }
+    // });
+
+    if (githubRepos.success === false) {
+      return;
+    }
+
+    // if (githubRepos === undefined) {
+    //   return;
+    // }
 
     /* Get repos from local database */
     const userRepos = repos.filter(repo => repo.user_id.equals(user._id));
 
-    if (githubRepos === undefined) {
-      return;
-    }
-
-    const updateReposPromises = githubRepos.map(async githubRepo => {
+    const updateReposPromises = githubRepos.data.map(async githubRepo => {
       const repoEntry = userRepos.find(
         userRepo => userRepo.github_repo_id === String(githubRepo.id)
       );
@@ -63,7 +70,11 @@ async function updateRepositories() {
           console.log(e, `syncRepos ${user}: error creating a new repo`);
         });
 
-        await newRepo.save();
+        if (newRepo.success === false) {
+          return;
+        }
+
+        await newRepo.data.save();
       } else {
         /* The repository still exists on GitHub*/
         repoEntry.not_found = false;
@@ -105,7 +116,7 @@ async function updateRepositories() {
   });
   await Promise.all(userPromises);
 
-  saveAllRepos = repos.map(async repo => await repo.save());
+  const saveAllRepos = repos.map(repo => repo.save());
   await Promise.all(saveAllRepos);
 
   console.log(`Local database update finished`);

@@ -61,17 +61,19 @@ async function createRepository(repoDetails, userId, token) {
   const { status, data: traffic } = await getRepoTraffic(
     newRepo.reponame,
     token
-  ).catch(e => {
-    console.log(e, `createRepository ${user}: error getting repoTraffic for a new repo`);
-  });
+  );
+  // .catch(e => {
+  //     console.log(e, `createRepository ${user}: error getting repoTraffic for a new repo`);
+  //   });
 
-  if (status === true) {
-    updateRepoTraffic(newRepo, traffic);
-  } else {
+  if (status === false) {
     console.log(`Fail getting traffic data for repo ${newRepo.reponame}`);
+    return { success: false };
   }
 
-  return newRepo;
+  updateRepoTraffic(newRepo, traffic);
+
+  return { success: true, data: newRepo };
 }
 
 function updateRepoTraffic(repo, traffic) {

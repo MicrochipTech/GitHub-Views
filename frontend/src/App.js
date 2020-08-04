@@ -11,6 +11,7 @@ import LinearProgress from "@material-ui/core/LinearProgress";
 import Dashboard from "./Dashboard";
 import Login from "./Login";
 import SingleRepo from "./SingleRepo";
+import FeedbackBtn from "./FeedbackBtn";
 
 import "./App.css";
 
@@ -42,6 +43,7 @@ function AppRouter() {
   }
   return (
     <Router>
+      <FeedbackBtn />
       <Switch>
         {user && user.githubId ? (
           <Redirect exact from="/" to="/dashboard/userRepos" />

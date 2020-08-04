@@ -76,17 +76,28 @@ passport.use(
           .save()
           .catch("Error saveing new user.");
 
-        const repos = await GitHubApiCtrl.getUserRepos(newUser, t.value);
+        const repos = await GitHubApiCtrl.getUserRepos(t.value);
 
-        const promises = repos.map(async repo => {
-          repoEntry = await RepositoryCtrl.createRepository(
+        if (repos.success === false) {
+          console.log(
+            "ERROR: passport-setup.js:82: GitHubApiCtrl.getUserRepos failed with code ",
+            repos.code
+          );
+          return;
+        }
+
+        const promises = repos.data.map(async repo => {
+          const newRepos = await RepositoryCtrl.createRepository(
             repo,
             newUser._id,
             t.value
           ).catch(e =>
             console.log(e, `Fail creating repository ${repo.reponame}`)
           );
-          repoEntry.save();
+          if (newRepo.success === false) {
+            return;
+          }
+          newRepo.data.save();
         });
         await Promise.all(promises);
 

@@ -1,29 +1,40 @@
-const axios = require("axios");
 const fetch = require("node-fetch");
 
-async function getUserRepos(user, token) {
-  let userRepos = [];
+async function getUserRepos(token) {
+  const userRepos = [];
   let page = 1;
   // eslint-disable-next-line camelcase
   const per_page = 100;
   const type = "all";
-  let res = await axios({
-    url: `https://api.github.com/user/repos`,
+  let res = await fetch(`https://api.github.com/user/repos`, {
+    method: "get",
     headers: { Authorization: `token ${token}` },
     params: { type, per_page, page }
   });
 
-  while (typeof res.data !== "undefined" && res.data.length > 0) {
-    userRepos = userRepos.concat(res.data);
+  if (res.status !== 200) {
+    return { success: false, status: res.status };
+  }
+
+  let resJson = await res.json();
+
+  while (resJson.length > 0) {
+    userRepos.push(...resJson);
     page += 1;
     // eslint-disable-next-line no-await-in-loop
-    res = await axios({
-      url: `https://api.github.com/user/repos`,
+    res = await fetch(`https://api.github.com/user/repos`, {
+      method: "get",
       headers: { Authorization: `token ${token}` },
       params: { type, per_page, page }
     });
+    if (res.status !== 200) {
+      return { success: false, status: res.status };
+    }
+    // eslint-disable-next-line no-await-in-loop
+    resJson = await res.json();
   }
-  return userRepos;
+
+  return { success: true, data: userRepos };
 }
 
 async function getRepoDetailsById(repoid, token) {

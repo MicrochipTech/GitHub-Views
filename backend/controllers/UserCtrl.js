@@ -66,18 +66,27 @@ async function checkForNewRepos(user, token) {
   let anyNewRepo = false;
 
   /* Get all repos for a user through GitHub API */
-  const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(e => {
+  const githubRepos = await GitHubApiCtrl.getUserRepos(token);
+  // .catch(e => {
+  //   console.log(
+  //     `checkForNewRepos ${user.username}: error getting user repos`,
+  //     e
+  //   );
+  //   if (
+  //     e.response.status === 403 &&
+  //     e.response.headers["x-ratelimit-remaining"] === "0"
+  //   ) {
+  //     console.log("Forbidden. No more remaining requests");
+  //   }
+  // });
+
+  if (githubRepos.success === false) {
     console.log(
-      `checkForNewRepos ${user.username}: error getting user repos`,
-      e
+      "ERROR: UserCtrl.js:85: GitHubApiCtrl.getUserRepos failed with code ",
+      githubRepos.code
     );
-    if (
-      e.response.status === 403 &&
-      e.response.headers["x-ratelimit-remaining"] === "0"
-    ) {
-      console.log("Forbidden. No more remaining requests");
-    }
-  });
+    return;
+  }
 
   /* Get repos from local database */
   const userRepos = await RepoModel.find({
@@ -88,11 +97,11 @@ async function checkForNewRepos(user, token) {
     success = false;
   });
 
-  if (githubRepos === undefined) {
-    return;
-  }
+  // if (githubRepos === undefined) {
+  //   return;
+  // }
 
-  const updateReposPromises = githubRepos.map(async githubRepo => {
+  const updateReposPromises = githubRepos.data.map(async githubRepo => {
     let repoEntry = userRepos.find(
       userRepo => userRepo.github_repo_id === String(githubRepo.id)
     );
@@ -100,26 +109,31 @@ async function checkForNewRepos(user, token) {
     if (repoEntry === undefined) {
       anyNewRepo = true;
 
-      repoEntry = await RepositoryCtrl.createRepository(
+      const newRepo = await RepositoryCtrl.createRepository(
         githubRepo,
         user._id,
         token
-      ).catch(e => {
-        console.log(e, `checkForNewRepos ${user}: error creating a new repo`);
-      });
-    } else {
-      /* Update repository name if changed */
-      if (repoEntry.reponame !== githubRepo.full_name) {
-        repoEntry.reponame = githubRepo.full_name;
-        anyNewRepo = true;
+      );
+
+      if (newRepo.success === false) {
+        return;
       }
+
+      repoEntry = newRepo.data;
+      // .catch(e => {
+      //   console.log(e, `checkForNewRepos ${user}: error creating a new repo`);
+      // });
+    } else if (repoEntry.reponame !== githubRepo.full_name) {
+      /* Update repository name if changed */
+      repoEntry.reponame = githubRepo.full_name;
+      anyNewRepo = true;
     }
 
     await repoEntry.save();
   });
   await Promise.all(updateReposPromises);
 
-  return anyNewRepo;
+  // return anyNewRepo; // whould this return do anything, tho? async function supposed to return a Promise
 }
 
 async function sync(req, res) {

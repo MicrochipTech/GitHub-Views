@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon -L ./bin/www --ignore public/"
+    "start": "nodemon -L ./bin/www --ignore public/",
+    "test": "mocha test/*.test.js"
   },
   "dependencies": {
     "axios": "^0.19.0",
@@ -28,11 +29,15 @@
     "passport-local": "^1.0.0"
   },
   "devDependencies": {
+    "chai": "^4.2.0",
     "eslint": "^6.6.0",
     "eslint-config-airbnb": "^18.0.1",
-    "eslint-plugin-import": "^2.18.2",
     "eslint-config-prettier": "^6.7.0",
+    "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-prettier": "^3.1.1",
-    "prettier": "^1.19.1"
+    "mocha": "^8.1.0",
+    "nock": "^13.0.3",
+    "prettier": "^1.19.1",
+    "sinon": "^9.0.2"
   }
 }
