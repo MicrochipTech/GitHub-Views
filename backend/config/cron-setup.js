@@ -4,7 +4,44 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 
-async function* updateRepositoriesGen() {}
+async function* updateRepositoriesGen() {
+  console.log(`Updating local database`);
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  const repos = await RepositoryModel.find({ not_found: false }).catch(() => {
+    console.log(`syncRepos: error getting repo ${repo.full_name}`);
+  });
+
+  repos.forEach(repo => {
+    repo.not_found = true;
+  });
+
+  const users = await UserModel.find({
+    githubId: { $ne: null },
+    token_ref: { $exists: true }
+  }).populate("token_ref");
+
+  for (let i = 0; i < users.length; i++) {
+    const user = users[i];
+    const token = user.token_ref.value;
+
+    const githubRepos = await GitHubApiCtrl.getUserRepos(token);
+    if (githubRepos.success === false) {
+      yield false;
+    }
+
+    const userRepos = repos.filter(repo => repo.user_id.equals(user._id));
+
+    for (let j = 0; j < githubRepos.length; j++) {
+      const githubRepo = githubRepos[j];
+      const repoEntry = userRepos.find(
+        userRepo => userRepo.github_repo_id === String(githubRepo.id)
+      );
+    }
+  }
+}
 
 updateRepositoriesGen();
 
