@@ -38,7 +38,7 @@ async function getWhereUsernameStartsWith(req, res) {
 
 async function getData(req, res) {
   if (req.isAuthenticated()) {
-    const userRepos = await RepoModel.find({ user_id: req.user._id });
+    const userRepos = await RepoModel.find({ users: { $eq: req.user._id } });
     const { sharedRepos, githubId } = await UserModel.findById(
       req.user._id
     ).populate("sharedRepos");
