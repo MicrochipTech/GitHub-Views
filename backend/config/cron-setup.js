@@ -43,7 +43,14 @@ async function updateRepositories() {
     );
 
     /* Get repos from local database */
-    const userRepos = repos.filter(repo => repo.user_id.equals(user._id));
+    const userRepos = repos.filter(repo => {
+        // TODO return false if not_found is false, because the repo was already updated.
+        repo.users.forEach(userId => {
+            if(userId.equals(user._id))
+                return true;
+        })
+        return false;
+    });
 
     if (githubRepos === undefined) {
       return;
