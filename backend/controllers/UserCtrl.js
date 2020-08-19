@@ -157,5 +157,6 @@ module.exports = {
   getWhereUsernameStartsWith,
   getData,
   sync,
-  unfollowSharedRepo
+  unfollowSharedRepo,
+  checkForNewRepos
 };
