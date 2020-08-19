@@ -109,7 +109,8 @@ router.get("/update_db", async (req, res) => {
           }
           repoEntry.clones.total_uniques = repoEntry.clones.total_count = 0;
           await repoEntry.save();
-          console.log(`${repoEntry.reponame} - ${repoEntry.github_repo_id} `);
+          if(repoEntry.github_repo_id === undefined)
+            console.log(`${repoEntry.reponame} - ${repoEntry.github_repo_id} - ${repoEntry.user_id.username}`);
         }
       }
     });
@@ -152,12 +153,13 @@ router.get("/migrate_db", async (req, res) => {
     const uniqueReponames = [];
 
     const repos = await RepositoryModel.find({}).populate('user_id').catch(() => {
-        console.log(`syncRepos: error getting repo ${repo.full_name}`);
+        console.log(`migrate_db: error getting repo ${repo.full_name}`);
     });
 
     for(let i = 0; i < repos.length; i += 1) {
         const element = repos[i];
 
+        /* Check if repository was already processed */
         const repoProcessed = uniqueReponames.find(
             reponame => reponame === element.reponame
         );
@@ -194,7 +196,36 @@ router.get("/migrate_db", async (req, res) => {
         });
         await Promise.all(dbUpdatePromises);
     }
+
+    res.send("ok");
+});
+
+router.get("/test_migration", async (req, res) => {
     
+    /* Beggin test */
+
+    let repos = await RepositoryModel.find({}).populate('user_id').catch(() => {
+        console.log(`migrate_db test: error getting repo ${repo.full_name}`);
+    });
+
+    
+    while(repos.length > 0) {
+
+        const element = repos[0];
+
+        test = repos.filter(r => r.reponame === element.reponame)
+                         .map(r => [r.reponame, r.github_repo_id, r.user_id.username]);
+
+        if(test.length > 1){
+            console.log(test);
+            console.log("|||||||||||||||||||||||||||||||");
+        }
+    
+        repos = repos.filter(r => r.reponame !== element.reponame)
+    }
+
+    /* End test */
+
     res.send("ok");
 });
 
