@@ -49,8 +49,8 @@ function viewsCsv(concatRepos) {
   const rows = [["views"], tableHead];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
-    let countsCSV = [concatRepos[i].reponame, "counts"];
-    let uniquesCSV = [concatRepos[i].reponame, "uniques"];
+    let countsCSV = [concatRepos[i].reponame, "count"];
+    let uniquesCSV = [concatRepos[i].reponame, "unique"];
 
     const limitTimestamp = new Date(concatRepos[i].views[0].timestamp);
     timeIndex = new Date(minimumTimetamp.getTime());
@@ -98,7 +98,7 @@ function clonesCsv(concatRepos) {
 
   for (let i = 0; i < concatRepos.length; i += 1) {
     let countsCSV = [concatRepos[i].reponame, "count"];
-    let uniquesCSV = [concatRepos[i].reponame, "uniques"];
+    let uniquesCSV = [concatRepos[i].reponame, "unique"];
 
     const limitTimestamp = new Date(concatRepos[i].clones.data[0].timestamp);
     timeIndex = new Date(minimumTimetamp.getTime());
