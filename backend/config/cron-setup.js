@@ -11,7 +11,7 @@ async function updateRepositories() {
   today.setUTCHours(0, 0, 0, 0);
 
   const repos = await RepositoryModel.find({ not_found: false }).catch(() => {
-    console.log(`syncRepos: error getting repo ${repo.full_name}`);
+    console.log(`updateRepositories: error getting repo ${repo.full_name}`);
   });
 
   /*
@@ -32,7 +32,7 @@ async function updateRepositories() {
     /* Get all repos for a user through GitHub API */
     const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(
       e => {
-        console.log(`syncRepos ${user.username}: error getting user repos`);
+        console.log(`updateRepositories ${user.username}: error getting user repos`);
         if (
           e.response.status === 403 &&
           e.response.headers["x-ratelimit-remaining"] === "0"
@@ -60,7 +60,7 @@ async function updateRepositories() {
           user._id,
           token
         ).catch(e => {
-          console.log(e, `syncRepos ${user}: error creating a new repo`);
+          console.log(e, `updateRepositories ${user}: error creating a new repo`);
         });
 
         await newRepo.save();
@@ -96,7 +96,7 @@ async function updateRepositories() {
           RepositoryCtrl.updateRepoTraffic(repoEntry, traffic);
         } else {
           console.log(
-            `Fail getting traffic data for repo ${repoEntry.reponame}`
+            `updateRepositories: Fail getting traffic data for repo ${repoEntry.reponame}`
           );
         }
       }
