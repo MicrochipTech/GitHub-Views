@@ -34,7 +34,7 @@ async function createRepository(repoDetails, userId, token) {
   today.setUTCHours(0, 0, 0, 0);
 
   const newRepo = new RepositoryModel({
-    user_id: userId,
+    users: [userId],
     github_repo_id: repoDetails.id,
     reponame: repoDetails.full_name,
     views: [],
