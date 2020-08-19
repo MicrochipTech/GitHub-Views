@@ -12,8 +12,8 @@ async function nameContains(req, res) {
         // $options: "i"
       }
     },
-    { reponame: 1, user_id: 1, createAt: 1, _id: 1 }
-  ).populate("user_id");
+    { reponame: 1, createAt: 1, _id: 1 }
+  );
 
   const reposList = repos
     .filter(r => {
