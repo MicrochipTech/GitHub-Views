@@ -203,6 +203,7 @@ router.get("/migrate_db", async (req, res) => {
 router.get("/test_migration", async (req, res) => {
     
     /* Beggin test */
+    let foundDuplicates = false;
 
     let repos = await RepositoryModel.find({}).populate('user_id').catch(() => {
         console.log(`migrate_db test: error getting repo ${repo.full_name}`);
@@ -210,13 +211,13 @@ router.get("/test_migration", async (req, res) => {
 
     
     while(repos.length > 0) {
-
         const element = repos[0];
 
         test = repos.filter(r => r.reponame === element.reponame)
-                         .map(r => [r.reponame, r.github_repo_id, r.user_id.username]);
+                         .map(r => [r.reponame, r.github_repo_id]);
 
         if(test.length > 1){
+            foundDuplicates = true;
             console.log(test);
             console.log("|||||||||||||||||||||||||||||||");
         }
@@ -224,9 +225,14 @@ router.get("/test_migration", async (req, res) => {
         repos = repos.filter(r => r.reponame !== element.reponame)
     }
 
-    /* End test */
+    if(foundDuplicates){
+        console.log("FAIL");
+    } else {
+        console.log("GOOD");
+    }
 
     res.send("ok");
+    /* End test */
 });
 
 router.use("/auth", authRoutes);
