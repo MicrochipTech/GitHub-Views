@@ -44,11 +44,14 @@ async function updateRepositories() {
 
     /* Get repos from local database */
     const userRepos = repos.filter(repo => {
-        // TODO return false if not_found is false, because the repo was already updated.
-        repo.users.forEach(userId => {
-            if(userId.equals(user._id))
+        /* TODO: Here can be added check to remove repos already updated */
+        idsToCheck = repo.users;
+
+        for(let i = 0; i < idsToCheck.length; i +=1) {
+            if(idsToCheck[i].equals(user._id)){
                 return true;
-        })
+            }
+        }
         return false;
     });
 
