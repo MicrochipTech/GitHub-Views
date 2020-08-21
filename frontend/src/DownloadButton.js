@@ -3,28 +3,7 @@ import { DataContext } from "./Data";
 import { Select, MenuItem } from "@material-ui/core";
 import moment from "moment";
 import XLSX from "xlsx";
-
-function compareDate(d1, d2) {
-  const date1 = new Date(d1);
-  const date2 = new Date(d2);
-
-  if (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth()
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function searchDate(dateArr, d1) {
-  for (let index = 2; index < dateArr.length; ++index) {
-    if (compareDate(dateArr[index], d1)) return true;
-  }
-
-  return false;
-}
+import { compareDate, searchDate } from "./utils";
 
 function viewsCsv(concatRepos) {
   let minimumTimetamp = new Date();
@@ -50,8 +29,8 @@ function viewsCsv(concatRepos) {
   const rows = [tableHead];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
-    let countsCSV = [concatRepos[i].reponame, "counts"];
-    let uniquesCSV = [concatRepos[i].reponame, "uniques"];
+    let countsCSV = [concatRepos[i].reponame, "count"];
+    let uniquesCSV = [concatRepos[i].reponame, "unique"];
 
     const limitTimestamp = new Date(concatRepos[i].views[0].timestamp);
     timeIndex = new Date(minimumTimetamp.getTime());
@@ -99,7 +78,7 @@ function clonesCsv(concatRepos) {
 
   for (let i = 0; i < concatRepos.length; i += 1) {
     let countsCSV = [concatRepos[i].reponame, "count"];
-    let uniquesCSV = [concatRepos[i].reponame, "uniques"];
+    let uniquesCSV = [concatRepos[i].reponame, "unique"];
 
     const limitTimestamp = new Date(concatRepos[i].clones.data[0].timestamp);
     timeIndex = new Date(minimumTimetamp.getTime());
@@ -166,10 +145,9 @@ function forksCsv(concatRepos) {
 
 function createDailyCsv(concatRepos) {
   /* CSV containing views, clones and forks */
-  const viewsTable = [["views"]].concat(viewsCsv(concatRepos));
-  const clonesTable = [["clones"]].concat(clonesCsv(concatRepos));
-  const forksTable = [["forks"]].concat(forksCsv(concatRepos));
-
+  const viewsTable = viewsCsv(concatRepos);
+  const clonesTable = clonesCsv(concatRepos);
+  const forksTable = forksCsv(concatRepos);
   const trafficCSV = viewsTable.concat(clonesTable).concat(forksTable);
 
   return trafficCSV;
