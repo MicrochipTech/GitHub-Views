@@ -40,7 +40,7 @@ async function* updateRepositoriesGenerator() {
       i--;
       continue;
     } else {
-      const userRepos = repos.filter(repo => repo.user_id.equals(user._id));
+      const userRepos = repos.filter(r => r.users.indexOf(user._id) !== -1);
 
       for (let j = 0; j < githubRepos.data.length; j += 1) {
         console.log(`--> Repo ${j}/${githubRepos.data.length}`);
@@ -145,40 +145,11 @@ async function updateRepositories() {
     const token = user.token_ref.value;
     const githubRepos = await GitHubApiCtrl.getUserRepos(token);
 
-    // /* Get all repos for a user through GitHub API */
-    // const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(
-    //   e => {
-    //     console.log(`updateRepositories ${user.username}: error getting user repos`);
-    //     if (
-    //       e.response.status === 403 &&
-    //       e.response.headers["x-ratelimit-remaining"] === "0"
-    //     ) {
-    //       console.log("Forbidden. No more remaining requests");
-    //     }
-    //   }
-    // );
-
-    // /* Get repos from local database */
-    // const userRepos = repos.filter(repo => {
-    //     /* TODO: Here can be added check to remove repos already updated */
-    //     idsToCheck = repo.users;
-    //
-    //     for(let i = 0; i < idsToCheck.length; i +=1) {
-    //         if(idsToCheck[i].equals(user._id)){
-    //             return true;
-    //         }
-    //     }
-    //     return false;
-    // });
-
-    const userRepos = repos.filter(r => r.users.indexOf(user._id) !== -1);
-
     if (githubRepos.success === false) {
       return;
     }
 
-    /* Get repos from local database */
-    const userRepos = repos.filter(repo => repo.user_id.equals(user._id));
+    const userRepos = repos.filter(r => r.users.indexOf(user._id) !== -1);
 
     const updateReposPromises = githubRepos.data.map(async githubRepo => {
       const repoEntry = userRepos.find(

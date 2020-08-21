@@ -1,8 +1,7 @@
-downloadExcelFileimport React from "react";
+import React from "react";
 import { DataContext } from "./Data";
 import { Select, MenuItem } from "@material-ui/core";
 import moment from "moment";
-import XLSX from "xlsx";
 import { compareDate, searchDate, downloadExcelFile } from "./utils";
 
 function viewsCsv(concatRepos) {
@@ -143,21 +142,15 @@ function forksCsv(concatRepos) {
   return rows;
 }
 
-function createDailyCsv(concatRepos) {
-  /* CSV containing views, clones and forks */
+function downlaodDaily({ userRepos, sharedRepos }) {
+  const concatRepos = [...userRepos, ...sharedRepos];
   const viewsTable = viewsCsv(concatRepos);
   const clonesTable = clonesCsv(concatRepos);
   const forksTable = forksCsv(concatRepos);
-  const trafficCSV = viewsTable.concat(clonesTable).concat(forksTable);
+  const rows = [['views']].concat(viewsTable).concat([['clones']]).concat(clonesTable).concat([['forks']]).concat(forksTable);
 
-  return trafficCSV;
-}
-
-function downlaodDaily({ userRepos, sharedRepos }) {
-  const concatRepos = [...userRepos, ...sharedRepos];
-  const rows = createDailyCsv(concatRepos);
-
-  downloadExcelFile(rows);
+  console.log(rows);
+  downloadExcelFile(rows)
 }
 
 function reduceToMonthly(rows) {
@@ -235,7 +228,8 @@ function downlaodMonthly({ userRepos, sharedRepos }) {
     .concat(reducedClonesTable)
     .concat(reducedForksTable);
 
-  downloadCsvFile(trafficCSV);
+    console.log(trafficCSV);
+    downloadExcelFile(trafficCSV);
 }
 
 function DownloadButton() {
@@ -252,7 +246,7 @@ function DownloadButton() {
 
   return (
     <div>
-      <li onClick={handleOpen}>Download as CSV</li>
+      <li onClick={handleOpen}>Download as Excel</li>
       {downloadSelectOpen && (
         <Select
           open={downloadSelectOpen}

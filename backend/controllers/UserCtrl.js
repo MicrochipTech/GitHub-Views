@@ -72,11 +72,11 @@ async function checkForNewRepos(user, token) {
     return;
   }
 
-  if (githubRepos === undefined) {
+  if (githubRepos.data === undefined) {
     return;
   }
 
-  const updateReposPromises = githubRepos.map(async githubRepo => {
+  const updateReposPromises = githubRepos.data.map(async githubRepo => {
     const repos = await RepoModel.find({
       github_repo_id: String(githubRepo.id),
       not_found: false
@@ -103,7 +103,7 @@ async function checkForNewRepos(user, token) {
         return;
       }
 
-      newRepo.data.save();
+      await newRepo.data.save();
     } else if (repos.length === 1) {
       const repo = repos[0];
 
@@ -119,8 +119,7 @@ async function checkForNewRepos(user, token) {
 
       /* Update users list if needed */
       const foundedUserId = repo.users.find(
-        /* Comparison needs check */
-        userId => userId === user._id
+        userId => String(userId) === String(user._id)
       );
 
       if (foundedUserId === undefined) {
@@ -137,7 +136,7 @@ async function checkForNewRepos(user, token) {
   });
   await Promise.all(updateReposPromises);
 
-  // return anyNewRepo; // whould this return do anything, tho? async function supposed to return a Promise
+  return anyNewRepo; 
 }
 
 async function sync(req, res) {

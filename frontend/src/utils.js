@@ -1,4 +1,5 @@
 import moment from "moment";
+import XLSX from "xlsx";
 
 function add0s(series) {
   let firstTimestamp = new Date();
@@ -134,7 +135,7 @@ function dailyToMonthlyReducer(dailyData) {
   return rowsMapReduced;
 }
 
-function downloadExcelFile(rows) {
+function downloadExcelFile(rows, name="repoTraffic.xlsx") {
   const sheets = [];
   let currentSheet = -1;
 
@@ -155,7 +156,7 @@ function downloadExcelFile(rows) {
     XLSX.utils.book_append_sheet(wb, ws, s.name);
   });
 
-  XLSX.writeFile(wb, "repoTraffic.xlsx");
+  XLSX.writeFile(wb, name);
 }
 
 export {
