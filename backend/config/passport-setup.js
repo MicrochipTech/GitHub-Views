@@ -3,6 +3,7 @@ const LocalStrategy = require("passport-local").Strategy;
 const GitHubStrategy = require("passport-github").Strategy;
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
+const UserCtrl = require("../controllers/UserCtrl");
 const RepositoryModel = require("../models/Repository.js");
 const UserModel = require("../models/User");
 const TokenModel = require("../models/Token");
@@ -76,30 +77,7 @@ passport.use(
           .save()
           .catch("Error saveing new user.");
 
-        const repos = await GitHubApiCtrl.getUserRepos(t.value);
-
-        if (repos.success === false) {
-          console.log(
-            "ERROR: passport-setup.js:82: GitHubApiCtrl.getUserRepos failed with code ",
-            repos.code
-          );
-          return;
-        }
-
-        const promises = repos.data.map(async repo => {
-          const newRepo = await RepositoryCtrl.createRepository(
-            repo,
-            newUser._id,
-            t.value
-          ).catch(e =>
-            console.log(e, `Fail creating repository ${repo.reponame}`)
-          );
-          if (newRepo.success === false) {
-            return;
-          }
-          newRepo.data.save();
-        });
-        await Promise.all(promises);
+        await UserCtrl.checkForNewRepos(newUser, t.value);
 
         done(null, newUser);
       }

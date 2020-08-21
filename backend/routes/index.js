@@ -33,8 +33,9 @@ async function getRepoTrafficOld(reponame, token) {
 
   return { response, responseJson };
 }
+
 // END OLD function
-router.get("/migrate_db", async (req, res) => {
+router.get("/update_db", async (req, res) => {
   /* BEGIN - update repoid and not_found */
   console.log("Updating repoid and not_found fields");
 
@@ -112,13 +113,142 @@ router.get("/migrate_db", async (req, res) => {
         }
         repoEntry.clones.total_uniques = repoEntry.clones.total_count = 0;
         await repoEntry.save();
-        console.log(`${repoEntry.reponame} - ${repoEntry.github_repo_id} `);
+        if (repoEntry.github_repo_id === undefined)
+          console.log(
+            `${repoEntry.reponame} - ${repoEntry.github_repo_id} - ${repoEntry.user_id.username}`
+          );
       }
     }
   });
   await Promise.all(idUpdatePromises);
   /* END - update repoid and not_found */
   res.send("ok");
+});
+
+function oldestRepo(r1, r2) {
+  if (r1.views.length === 0) return r2;
+
+  if (r2.views.length === 0) return r1;
+
+  if (
+    new Date(r1.views[0].timestamp).getTime() >
+    new Date(r2.views[0].timestamp).getTime()
+  )
+    return r2;
+  else return r1;
+}
+
+router.get("/migrate_db", async (req, res) => {
+  /*
+  allepos
+  forEach repo in allrepos
+    MINIMAL:
+    repo.users.push(repo.user_id)
+    repo.save()
+
+    FULL IMPLEMENTATION:
+    duplicates = allreposo find where r.id == repo.id
+    oldest_duplicate = duplicates where views[0].timestamp is olders
+    oldest_duplicate.users =  [...duplicates.user_id]
+    (duplicates = oldest_duplicate).delete()
+    //oldest_duplicate.user_id = null
+    oldest_duplicate.save()
+    all_repos -= duplicates
+  */
+
+  const uniqueReponames = [];
+
+  const repos = await RepositoryModel.find({})
+    .populate("user_id")
+    .catch(() => {
+      console.log(`migrate_db: error getting repo ${repo.full_name}`);
+    });
+
+  for (let i = 0; i < repos.length; i += 1) {
+    const element = repos[i];
+
+    /* Check if repository was already processed */
+    const repoProcessed = uniqueReponames.find(
+      reponame => reponame === element.reponame
+    );
+
+    if (repoProcessed) {
+      /* This repo already exists in database */
+      continue;
+    }
+
+    const duplicates = repos.filter(repo => repo.reponame === element.reponame);
+    const oldestDuplicate = duplicates.reduce(
+      (acc, el) => oldestRepo(acc, el),
+      duplicates[0]
+    );
+
+    if (oldestDuplicate.github_repo_id === undefined) {
+      const repoWithGithubRepoId = duplicates.find(
+        d => d.github_repo_id !== undefined
+      );
+
+      if (repoWithGithubRepoId === undefined) {
+        console.log(
+          `ERROR removing duplicates for Reponame: ${oldestDuplicate.reponame}, User: ${oldestDuplicate.user_id.username}`
+        );
+        continue;
+      }
+
+      oldestDuplicate.github_repo_id = repoWithGithubRepoId.github_repo_id;
+    }
+
+    oldestDuplicate.users = duplicates.map(d => d.user_id);
+
+    uniqueReponames.push(element.reponame);
+
+    const dbUpdatePromises = duplicates.map(async d => {
+      if (d._id === oldestDuplicate._id) {
+        await d.save();
+      } else {
+        await d.remove();
+      }
+    });
+    await Promise.all(dbUpdatePromises);
+  }
+
+  res.send("ok");
+});
+
+router.get("/test_migration", async (req, res) => {
+  /* Beggin test */
+  let foundDuplicates = false;
+
+  let repos = await RepositoryModel.find({})
+    .populate("user_id")
+    .catch(() => {
+      console.log(`migrate_db test: error getting repo ${repo.full_name}`);
+    });
+
+  while (repos.length > 0) {
+    const element = repos[0];
+
+    test = repos
+      .filter(r => r.reponame === element.reponame)
+      .map(r => [r.reponame, r.github_repo_id]);
+
+    if (test.length > 1) {
+      foundDuplicates = true;
+      console.log(test);
+      console.log("|||||||||||||||||||||||||||||||");
+    }
+
+    repos = repos.filter(r => r.reponame !== element.reponame);
+  }
+
+  if (foundDuplicates) {
+    console.log("FAIL");
+  } else {
+    console.log("GOOD");
+  }
+
+  res.send("ok");
+  /* End test */
 });
 
 router.use("/auth", authRoutes);

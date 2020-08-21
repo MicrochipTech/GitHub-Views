@@ -38,7 +38,7 @@ async function getWhereUsernameStartsWith(req, res) {
 
 async function getData(req, res) {
   if (req.isAuthenticated()) {
-    const userRepos = await RepoModel.find({ user_id: req.user._id });
+    const userRepos = await RepoModel.find({ users: { $eq: req.user._id } });
     const { sharedRepos, githubId } = await UserModel.findById(
       req.user._id
     ).populate("sharedRepos");
@@ -59,54 +59,37 @@ async function getData(req, res) {
 }
 
 async function checkForNewRepos(user, token) {
-  // if(token === undefined) {
-  //   token = user.token_ref.value;
-  // }
-
   let anyNewRepo = false;
 
   /* Get all repos for a user through GitHub API */
   const githubRepos = await GitHubApiCtrl.getUserRepos(token);
-  // .catch(e => {
-  //   console.log(
-  //     `checkForNewRepos ${user.username}: error getting user repos`,
-  //     e
-  //   );
-  //   if (
-  //     e.response.status === 403 &&
-  //     e.response.headers["x-ratelimit-remaining"] === "0"
-  //   ) {
-  //     console.log("Forbidden. No more remaining requests");
-  //   }
-  // });
 
   if (githubRepos.success === false) {
     console.log(
-      "ERROR: UserCtrl.js:85: GitHubApiCtrl.getUserRepos failed with code ",
+      "ERROR: UserCtrl.js: GitHubApiCtrl.getUserRepos failed with code ",
       githubRepos.code
     );
     return;
   }
 
-  /* Get repos from local database */
-  const userRepos = await RepoModel.find({
-    user_id: user._id,
-    not_found: false
-  }).catch(() => {
-    console.log(`checkForNewRepos ${user}: Error getting repos`);
-    success = false;
-  });
+  if (githubRepos === undefined) {
+    return;
+  }
 
-  // if (githubRepos === undefined) {
-  //   return;
-  // }
+  const updateReposPromises = githubRepos.map(async githubRepo => {
+    const repos = await RepoModel.find({
+      github_repo_id: String(githubRepo.id),
+      not_found: false
+    }).catch(() => {
+      console.log(`checkForNewRepos ${user}: Error getting repos`);
+      success = false;
+    });
 
-  const updateReposPromises = githubRepos.data.map(async githubRepo => {
-    let repoEntry = userRepos.find(
-      userRepo => userRepo.github_repo_id === String(githubRepo.id)
-    );
+    if (repos === undefined) {
+      return;
+    }
 
-    if (repoEntry === undefined) {
+    if (repos.length === 0) {
       anyNewRepo = true;
 
       const newRepo = await RepositoryCtrl.createRepository(
@@ -115,21 +98,42 @@ async function checkForNewRepos(user, token) {
         token
       );
 
-      if (newRepo.success === false) {
+      if (!newRepo.success) {
+        console.log("UserCtrl.js:checkForNewRepos error");
         return;
       }
 
-      repoEntry = newRepo.data;
-      // .catch(e => {
-      //   console.log(e, `checkForNewRepos ${user}: error creating a new repo`);
-      // });
-    } else if (repoEntry.reponame !== githubRepo.full_name) {
-      /* Update repository name if changed */
-      repoEntry.reponame = githubRepo.full_name;
-      anyNewRepo = true;
-    }
+      newRepo.data.save();
+    } else if (repos.length === 1) {
+      const repo = repos[0];
 
-    await repoEntry.save();
+      /* Update repository name if changed */
+      if (repo.reponame !== githubRepo.full_name) {
+        repo.nameHistory.push({
+          date: new Date(),
+          change: `${repoEntry.reponame} -> ${githubRepo.full_name}`
+        });
+        repo.reponame = githubRepo.full_name;
+        anyNewRepo = true;
+      }
+
+      /* Update users list if needed */
+      const foundedUserId = repo.users.find(
+        /* Comparison needs check */
+        userId => userId === user._id
+      );
+
+      if (foundedUserId === undefined) {
+        repo.users.push(user._id);
+      }
+
+      /* Save changes to the repo in database */
+      await repo.save();
+    } else {
+      /* More than one element was found -> log an error */
+      logList = repos.map(r => [r.reponame, r.user.username, r.github_repo_id]);
+      console.log(`Found more repos with the same name in database ${logList}`);
+    }
   });
   await Promise.all(updateReposPromises);
 
@@ -157,5 +161,6 @@ module.exports = {
   getWhereUsernameStartsWith,
   getData,
   sync,
-  unfollowSharedRepo
+  unfollowSharedRepo,
+  checkForNewRepos
 };

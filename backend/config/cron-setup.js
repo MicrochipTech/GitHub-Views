@@ -4,9 +4,9 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 
-/* 
+/*
 Using back off is way slower because requests are made sequential.
-Still, being slower actually reduces the chance of making 5000+ requests per hour.   
+Still, being slower actually reduces the chance of making 5000+ requests per hour.
 */
 const UPDATE_WITH_BACK_OFF_ON_ERROR = false;
 
@@ -29,19 +29,19 @@ async function* updateRepositoriesGenerator() {
 
   for (let i = 0; i < users.length; i += 1) {
     console.log(`-----> User ${i}/${users.length}`);
-    
+
     const user = users[i];
     const token = user.token_ref.value;
 
     const githubRepos = await GitHubApiCtrl.getUserRepos(token);
     const retry = yield githubRepos.success;
-    
-    if(retry) {
+
+    if (retry) {
       i--;
       continue;
     } else {
       const userRepos = repos.filter(repo => repo.user_id.equals(user._id));
-      
+
       for (let j = 0; j < githubRepos.data.length; j += 1) {
         console.log(`--> Repo ${j}/${githubRepos.data.length}`);
         const githubRepo = githubRepos.data[j];
@@ -53,10 +53,10 @@ async function* updateRepositoriesGenerator() {
             githubRepo,
             user._id,
             token
-          )
+          );
 
           const retry = yield newRepo.success;
-          if(retry) {
+          if (retry) {
             j--;
             continue;
           }
@@ -95,7 +95,7 @@ async function* updateRepositoriesGenerator() {
           );
 
           const retry = yield status;
-          if(retry) {
+          if (retry) {
             j--;
             continue;
           }
@@ -111,7 +111,7 @@ async function* updateRepositoriesGenerator() {
 async function runGenerator(g, retry = false) {
   for (let r = await g.next(retry); !r.done; r = await g.next(false)) {
     if (!r.value) {
-      console.log("Generator returned error.")
+      console.log("Generator returned error.");
       setTimeout(() => {
         runGenerator(g, true);
       }, 1000 * 60 * 60);
@@ -145,6 +145,34 @@ async function updateRepositories() {
     const token = user.token_ref.value;
     const githubRepos = await GitHubApiCtrl.getUserRepos(token);
 
+    // /* Get all repos for a user through GitHub API */
+    // const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(
+    //   e => {
+    //     console.log(`updateRepositories ${user.username}: error getting user repos`);
+    //     if (
+    //       e.response.status === 403 &&
+    //       e.response.headers["x-ratelimit-remaining"] === "0"
+    //     ) {
+    //       console.log("Forbidden. No more remaining requests");
+    //     }
+    //   }
+    // );
+
+    // /* Get repos from local database */
+    // const userRepos = repos.filter(repo => {
+    //     /* TODO: Here can be added check to remove repos already updated */
+    //     idsToCheck = repo.users;
+    //
+    //     for(let i = 0; i < idsToCheck.length; i +=1) {
+    //         if(idsToCheck[i].equals(user._id)){
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // });
+
+    const userRepos = repos.filter(r => r.users.indexOf(user._id) !== -1);
+
     if (githubRepos.success === false) {
       return;
     }
@@ -163,7 +191,10 @@ async function updateRepositories() {
           user._id,
           token
         ).catch(e => {
-          console.log(e, `syncRepos ${user}: error creating a new repo`);
+          console.log(
+            e,
+            `updateRepositories ${user}: error creating a new repo`
+          );
         });
 
         if (newRepo.success === false) {
@@ -207,7 +238,7 @@ async function updateRepositories() {
           RepositoryCtrl.updateRepoTraffic(repoEntry, traffic);
         } else {
           console.log(
-            `Fail getting traffic data for repo ${repoEntry.reponame}`
+            `updateRepositories: Fail getting traffic data for repo ${repoEntry.reponame}`
           );
         }
       }
@@ -225,7 +256,7 @@ async function updateRepositories() {
 async function setCron() {
   console.log("Setting a cronjob every day, to update repositories.");
   cron.schedule("25 12 * * *", async () => {
-    if(UPDATE_WITH_BACK_OFF_ON_ERROR) {
+    if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
       runGenerator(updateRepositoriesGenerator());
     } else {
       await updateRepositories();
@@ -236,7 +267,7 @@ async function setCron() {
 module.exports = {
   setCron,
   updateRepositories: async () => {
-    if(UPDATE_WITH_BACK_OFF_ON_ERROR) {
+    if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
       await runGenerator(updateRepositoriesGenerator());
     } else {
       await updateRepositories();
