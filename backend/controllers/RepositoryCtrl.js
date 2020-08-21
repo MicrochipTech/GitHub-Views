@@ -55,6 +55,10 @@ async function createRepository(repoDetails, userId, token) {
     },
     referrers: [],
     contents: [],
+    commits: {
+      updated: false,
+      data: []
+    },
     not_found: false
   });
 
