@@ -150,10 +150,11 @@ async function updateRepositories() {
     }
 
     const userRepos = repos.filter(r => r.users.indexOf(user._id) !== -1);
+    console.log(userRepos.length, user.username);
 
     const updateReposPromises = githubRepos.data.map(async githubRepo => {
       const repoEntry = userRepos.find(
-        userRepo => userRepo.github_repo_id === String(githubRepo.id)
+        userRepo => String(userRepo.github_repo_id) === String(githubRepo.id)
       );
 
       if (repoEntry === undefined) {
@@ -198,6 +199,9 @@ async function updateRepositories() {
             count: githubRepo.forks_count
           });
         }
+
+        /* Update commits update variable */
+        repoEntry.commits.updated = false;
 
         /* Update traffic (views, clones, referrers, contents) */
         const { status, data: traffic } = await RepositoryCtrl.getRepoTraffic(

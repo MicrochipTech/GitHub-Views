@@ -74,7 +74,17 @@ const repositorySchema = new mongoose.Schema({
       date: Date,
       change: String
     }
-  ]
+  ],
+  commits: {
+    updated: Boolean,
+    data: [
+      {
+        sha: String,
+        message: String,
+        timestamp: Date
+      }
+    ]
+  }
 });
 
 const Repository = mongoose.model("Repository", repositorySchema);

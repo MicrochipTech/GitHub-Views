@@ -109,6 +109,10 @@ function forksCsv(concatRepos) {
   const tableHead = ["reponame", "type"];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
+    if(concatRepos[i].forks.data.length === 0) {
+        console.log(concatRepos[i].reponame);
+        continue;
+    }
     let firstRepoTimestamp = new Date(concatRepos[i].forks.data[0].timestamp);
     if (firstRepoTimestamp < minimumTimetamp) {
       minimumTimetamp = firstRepoTimestamp;
@@ -123,6 +127,11 @@ function forksCsv(concatRepos) {
   const rows = [tableHead];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
+    if(concatRepos[i].forks.data.length === 0) {
+        console.log(concatRepos[i].reponame);
+        continue;
+    }
+
     let countsCSV = [concatRepos[i].reponame, "count"];
 
     const limitTimestamp = new Date(concatRepos[i].forks.data[0].timestamp);

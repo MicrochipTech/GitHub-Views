@@ -55,6 +55,10 @@ async function createRepository(repoDetails, userId, token) {
     },
     referrers: [],
     contents: [],
+    commits: {
+      updated: false,
+      data: []
+    },
     not_found: false
   });
 
@@ -272,7 +276,6 @@ async function getRepoTraffic(reponame, token) {
 
 async function updateForksTree(req, res) {
   const { repo_id } = req.body;
-
   const repoEntry = await RepositoryModel.findOne({ _id: repo_id });
 
   const {
@@ -298,6 +301,54 @@ async function updateForksTree(req, res) {
   });
 }
 
+async function updateRepoCommits(req, res) {
+  const { repo_id } = req.body;
+  const repoEntry = await RepositoryModel.findOne({ _id: repo_id });
+
+  if(repoEntry.commits.updated) {
+    // TO REVIEW
+    return {
+      status: true,
+      data: repoEntry.commits.data
+    };
+  }
+
+  const { response, responseJson } = await GitHubApiCtrl.getRepoCommits(github_repo_id).catch(
+    () => {
+      console.log(`updateRepoCommits : Error getting commits for repository ${github_repo_id}`);
+  });
+    
+  if (
+    response.status === 403 &&
+    response.headers.get("x-ratelimit-remaining") === "0"
+  ) {
+    return {
+      status: false,
+      data: response.headers.get("x-ratelimit-reset")
+    };
+  }
+
+  commitsData = responseJson.map(c => {
+    return {
+      sha: c.sha,
+      message: c.commit.message,
+      timestamp: c.commit.author.date
+    }
+  });
+
+  repoEntry.commits = {
+    updated: true,
+    data: commitsData
+  }
+
+  repoEntry.save();
+
+  return {
+    status: true,
+    data: commitsData
+  };
+}
+
 async function share(req, res) {
   const { repoId, username } = req.body;
 
@@ -318,6 +369,7 @@ module.exports = {
   updateRepoTraffic,
   getRepoTraffic,
   updateForksTree,
+  updateRepoCommits,
   share,
   nameContains
 };
