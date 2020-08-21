@@ -86,6 +86,9 @@ async function updateRepositories() {
           });
         }
 
+        /* Update commits update variable */
+        repoEntry.commits.updated = false;
+
         /* Update traffic (views, clones, referrers, contents) */
         const { status, data: traffic } = await RepositoryCtrl.getRepoTraffic(
           repoEntry.reponame,
