@@ -117,7 +117,7 @@ async function getRepoForks(github_repo_id) {
       method: "get",
       redirect: "manual"
     }
-  ).catch(() => console.log(`getRepoForks repo ${reponame}: error`));
+  ).catch(() => console.log(`getRepoForks repo ${github_repo_id}: error`));
 
   const responseJson = await response.json();
 
@@ -163,6 +163,20 @@ async function updateForksTree(github_repo_id) {
   return { success: true, data: children };
 }
 
+async function getRepoCommits(github_repo_id) {
+    const response = await fetch(
+      `https://api.github.com/repositories/${github_repo_id}/commits`,
+      {
+        method: "get",
+        redirect: "manual"
+      }
+    ).catch(() => console.log(`getRepoCommits repo ${github_repo_id}: error`));
+  
+    const responseJson = await response.json();
+  
+    return { response: response, responseJson };
+}
+
 module.exports = {
   getUserRepos,
   getRepoDetailsById,
@@ -171,5 +185,6 @@ module.exports = {
   getRepoPopularPaths,
   getRepoPopularReferrers,
   getRepoForks,
-  updateForksTree
+  updateForksTree,
+  getRepoCommits
 };
