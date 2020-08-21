@@ -11,7 +11,7 @@ import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import randomColor from "randomcolor";
 import Header from "./Header";
 import LineChart from "./LineChart";
-import { add0s, dailyToMonthlyReducer } from "./utils";
+import { add0s, dailyToMonthlyReducer, downloadExcelFile } from "./utils";
 
 import "./SingleRepo.css";
 
@@ -115,7 +115,7 @@ function ReferringSitesTab({ repo }) {
 
   function dailyReferrers() {
     /* First row contains the name of the repository */
-    const rows = [ [ repo.reponame ] ];
+    const rows = [[repo.reponame]];
 
     let tableHead = ["referrer", "type"];
     tableHead = tableHead.concat(referringSitePlotData.timestamp);
@@ -132,15 +132,29 @@ function ReferringSitesTab({ repo }) {
   return (
     <Grid item xs={12}>
       <LineChart data={referringSitePlotData} />
-      <a href="#" onClick={() => {
+      <a
+        href="#"
+        onClick={() => {
           const dailyReferrersData = dailyReferrers();
-          console.log(dailyReferrersData);
-      }}>Download Daily as Excel</a>
-      <a href="#" onClick={() => {
+          // console.log(dailyReferrersData);
+          downloadExcelFile(dailyReferrersData);
+        }}
+      >
+        Download Daily as Excel
+      </a>
+      <a
+        href="#"
+        onClick={() => {
           const dailyReferrersData = dailyReferrers();
-          const monthlyReferrersData = dailyToMonthlyReducer(dailyReferrersData);
-          console.log(monthlyReferrersData);
-      }}>Download Monthly as Excel</a>
+          const monthlyReferrersData = dailyToMonthlyReducer(
+            dailyReferrersData
+          );
+          // console.log(monthlyReferrersData);
+          downloadExcelFile(monthlyReferrersData);
+        }}
+      >
+        Download Monthly as Excel
+      </a>
     </Grid>
   );
 }
@@ -187,12 +201,12 @@ function PopularContentTab({ repo }) {
   };
 
   function dailyContents() {
-    const rows = [ [ repo.reponame ] ];
+    const rows = [[repo.reponame]];
 
     let tableHead = ["content", "type"];
     tableHead = tableHead.concat(popularContentPlotData.timestamp);
     rows.push(tableHead);
-    
+
     popularContentPlotData.data.forEach(d => {
       const referrerEntry = d.label.split(" ");
       rows.push(referrerEntry.concat(d.dataset));
@@ -204,15 +218,25 @@ function PopularContentTab({ repo }) {
   return (
     <Grid item xs={12}>
       <LineChart data={popularContentPlotData} />
-      <a href="#" onClick={()=>{
+      <a
+        href="#"
+        onClick={() => {
           const dailyContentsData = dailyContents();
           console.log(dailyContentsData);
-      }}>Download Daily as Excel</a>
-      <a href="#" onClick={()=>{
+        }}
+      >
+        Download Daily as Excel
+      </a>
+      <a
+        href="#"
+        onClick={() => {
           const dailyContentsData = dailyContents();
           const monthlyContentsData = dailyToMonthlyReducer(dailyContentsData);
           console.log(monthlyContentsData);
-      }}>Download Monthly as Excel</a>
+        }}
+      >
+        Download Monthly as Excel
+      </a>
     </Grid>
   );
 }

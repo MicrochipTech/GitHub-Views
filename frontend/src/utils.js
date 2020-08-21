@@ -51,19 +51,19 @@ function add0s(series) {
 }
 
 function compareDate(d1, d2) {
-    const date1 = new Date(d1);
-    const date2 = new Date(d2);
-  
-    if (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth()
-    ) {
-      return true;
-    }
-  
-    return false;
+  const date1 = new Date(d1);
+  const date2 = new Date(d2);
+
+  if (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth()
+  ) {
+    return true;
   }
-  
+
+  return false;
+}
+
 function searchDate(dateArr, d1) {
   for (let index = 2; index < dateArr.length; ++index) {
     if (compareDate(dateArr[index], d1)) return true;
@@ -134,9 +134,34 @@ function dailyToMonthlyReducer(dailyData) {
   return rowsMapReduced;
 }
 
-export { 
+function downloadExcelFile(rows) {
+  const sheets = [];
+  let currentSheet = -1;
+
+  for (let i = 0; i < rows.length; i += 1) {
+    if (rows[i].length <= 2) {
+      sheets[++currentSheet] = {
+        data: [],
+        name: rows[i][0]
+      };
+    } else {
+      sheets[currentSheet].data.push(rows[i]);
+    }
+  }
+
+  const wb = XLSX.utils.book_new();
+  sheets.forEach(s => {
+    const ws = XLSX.utils.json_to_sheet(s.data, { skipHeader: true });
+    XLSX.utils.book_append_sheet(wb, ws, s.name);
+  });
+
+  XLSX.writeFile(wb, "repoTraffic.xlsx");
+}
+
+export {
   add0s,
   compareDate,
   searchDate,
-  dailyToMonthlyReducer
- };
+  dailyToMonthlyReducer,
+  downloadExcelFile
+};

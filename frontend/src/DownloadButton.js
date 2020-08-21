@@ -1,9 +1,9 @@
-import React from "react";
+downloadExcelFileimport React from "react";
 import { DataContext } from "./Data";
 import { Select, MenuItem } from "@material-ui/core";
 import moment from "moment";
 import XLSX from "xlsx";
-import { compareDate, searchDate } from "./utils";
+import { compareDate, searchDate, downloadExcelFile } from "./utils";
 
 function viewsCsv(concatRepos) {
   let minimumTimetamp = new Date();
@@ -153,35 +153,11 @@ function createDailyCsv(concatRepos) {
   return trafficCSV;
 }
 
-function downloadCsvFile(rows) {
-  const sheets = [];
-  let currentSheet = -1;
-
-  for (let i = 0; i < rows.length; i += 1) {
-    if (rows[i].length <= 2) {
-      sheets[++currentSheet] = {
-        data: [],
-        name: rows[i][0]
-      };
-    } else {
-      sheets[currentSheet].data.push(rows[i]);
-    }
-  }
-
-  const wb = XLSX.utils.book_new();
-  sheets.forEach(s => {
-    const ws = XLSX.utils.json_to_sheet(s.data, { skipHeader: true });
-    XLSX.utils.book_append_sheet(wb, ws, s.name);
-  });
-
-  XLSX.writeFile(wb, "repoTraffic.xlsx");
-}
-
 function downlaodDaily({ userRepos, sharedRepos }) {
   const concatRepos = [...userRepos, ...sharedRepos];
   const rows = createDailyCsv(concatRepos);
 
-  downloadCsvFile(rows);
+  downloadExcelFile(rows);
 }
 
 function reduceToMonthly(rows) {
