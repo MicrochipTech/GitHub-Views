@@ -6,28 +6,21 @@ const { getUserRepos } = require("../controllers/GitHubApiCtrl");
 describe("GitHubApiCtrl", () => {
   describe("getUserRepos", () => {
     it("should get user repositories", async () => {
-      const userRepos = [
-        {
-          reponame: "Foo"
-        },
-        {
-          reponame: "Bar"
-        }
-      ];
+      const userRepos = [{ reponame: "Foo" }, { reponame: "Bar" }];
 
       nock("https://api.github.com/")
         .get("/user/repos")
-        .query(true)
+        .query({ type: "all", per_page: 100, page: 1 })
         .reply(200, [userRepos[0]]);
 
       nock("https://api.github.com/")
         .get("/user/repos")
-        .query(true)
+        .query({ type: "all", per_page: 100, page: 2 })
         .reply(200, [userRepos[1]]);
 
       nock("https://api.github.com/")
         .get("/user/repos")
-        .query(true)
+        .query({ type: "all", per_page: 100, page: 3 })
         .reply(200, []);
 
       const res = await getUserRepos("dummyTocken");

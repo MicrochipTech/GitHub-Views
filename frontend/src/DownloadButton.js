@@ -2,6 +2,7 @@ import React from "react";
 import { DataContext } from "./Data";
 import { Select, MenuItem } from "@material-ui/core";
 import moment from "moment";
+import XLSX from "xlsx";
 
 function compareDate(d1, d2) {
   const date1 = new Date(d1);
@@ -46,7 +47,7 @@ function viewsCsv(concatRepos) {
     tableHead.push(moment(timeIndex).format("DD MMM YYYY"));
     timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
   }
-  const rows = [["views"], tableHead];
+  const rows = [tableHead];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
     let countsCSV = [concatRepos[i].reponame, "counts"];
@@ -94,7 +95,7 @@ function clonesCsv(concatRepos) {
     tableHead.push(moment(timeIndex).format("DD MMM YYYY"));
     timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
   }
-  const rows = [["clones"], tableHead];
+  const rows = [tableHead];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
     let countsCSV = [concatRepos[i].reponame, "count"];
@@ -141,7 +142,7 @@ function forksCsv(concatRepos) {
     tableHead.push(moment(timeIndex).format("DD MMM YYYY"));
     timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
   }
-  const rows = [["forks"], tableHead];
+  const rows = [tableHead];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
     let countsCSV = [concatRepos[i].reponame, "count"];
@@ -165,27 +166,37 @@ function forksCsv(concatRepos) {
 
 function createDailyCsv(concatRepos) {
   /* CSV containing views, clones and forks */
-  const viewsTable = viewsCsv(concatRepos);
-  const clonesTable = clonesCsv(concatRepos);
-  const forksTable = forksCsv(concatRepos);
+  const viewsTable = [["views"]].concat(viewsCsv(concatRepos));
+  const clonesTable = [["clones"]].concat(clonesCsv(concatRepos));
+  const forksTable = [["forks"]].concat(forksCsv(concatRepos));
 
-  console.log(clonesTable);
   const trafficCSV = viewsTable.concat(clonesTable).concat(forksTable);
 
   return trafficCSV;
 }
 
 function downloadCsvFile(rows) {
-  let csvContent =
-    "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+  const sheets = [];
+  let currentSheet = -1;
 
-  var encodedUri = encodeURI(csvContent);
-  var link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "repoTraffic.csv");
-  document.body.appendChild(link);
+  for (let i = 0; i < rows.length; i += 1) {
+    if (rows[i].length <= 2) {
+      sheets[++currentSheet] = {
+        data: [],
+        name: rows[i][0]
+      };
+    } else {
+      sheets[currentSheet].data.push(rows[i]);
+    }
+  }
 
-  link.click();
+  const wb = XLSX.utils.book_new();
+  sheets.forEach(s => {
+    const ws = XLSX.utils.json_to_sheet(s.data, { skipHeader: true });
+    XLSX.utils.book_append_sheet(wb, ws, s.name);
+  });
+
+  XLSX.writeFile(wb, "repoTraffic.xlsx");
 }
 
 function downlaodDaily({ userRepos, sharedRepos }) {
@@ -195,10 +206,7 @@ function downlaodDaily({ userRepos, sharedRepos }) {
   downloadCsvFile(rows);
 }
 
-function downlaodMonthly({ userRepos, sharedRepos }) {
-  const concatRepos = [...userRepos, ...sharedRepos];
-  const rows = createDailyCsv(concatRepos);
-
+function reduceToMonthly(rows) {
   function reducer(total, currentValue, currentIndex) {
     if (currentIndex > 1) {
       if (searchDate(total, currentValue) === false) {
@@ -256,8 +264,24 @@ function downlaodMonthly({ userRepos, sharedRepos }) {
     }
   });
 
-  downloadCsvFile(rowsMapReduced);
-  console.log(rowsMapReduced);
+  return rowsMapReduced;
+}
+
+function downlaodMonthly({ userRepos, sharedRepos }) {
+  const concatRepos = [...userRepos, ...sharedRepos];
+
+  const viewsTable = viewsCsv(concatRepos);
+  const reducedViewsTable = [["views"]].concat(reduceToMonthly(viewsTable));
+  const clonesTable = clonesCsv(concatRepos);
+  const reducedClonesTable = [["clones"]].concat(reduceToMonthly(clonesTable));
+  const forksTable = forksCsv(concatRepos);
+  const reducedForksTable = [["forks"]].concat(reduceToMonthly(forksTable));
+
+  const trafficCSV = reducedViewsTable
+    .concat(reducedClonesTable)
+    .concat(reducedForksTable);
+
+  downloadCsvFile(trafficCSV);
 }
 
 function DownloadButton() {

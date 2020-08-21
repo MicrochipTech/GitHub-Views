@@ -3,14 +3,15 @@ const fetch = require("node-fetch");
 async function getUserRepos(token) {
   const userRepos = [];
   let page = 1;
-  // eslint-disable-next-line camelcase
-  const per_page = 100;
+  const perPage = 100;
   const type = "all";
-  let res = await fetch(`https://api.github.com/user/repos`, {
-    method: "get",
-    headers: { Authorization: `token ${token}` },
-    params: { type, per_page, page }
-  });
+  let res = await fetch(
+    `https://api.github.com/user/repos?type=${type}&per_page=${perPage}&page=${page}`,
+    {
+      method: "get",
+      headers: { Authorization: `token ${token}` }
+    }
+  );
 
   if (res.status !== 200) {
     return { success: false, status: res.status };
@@ -20,20 +21,24 @@ async function getUserRepos(token) {
 
   while (resJson.length > 0) {
     userRepos.push(...resJson);
+    if (resJson.length === 0) {
+      break;
+    }
     page += 1;
     // eslint-disable-next-line no-await-in-loop
-    res = await fetch(`https://api.github.com/user/repos`, {
-      method: "get",
-      headers: { Authorization: `token ${token}` },
-      params: { type, per_page, page }
-    });
+    res = await fetch(
+      `https://api.github.com/user/repos?type=${type}&per_page=${perPage}&page=${page}`,
+      {
+        method: "get",
+        headers: { Authorization: `token ${token}` }
+      }
+    );
     if (res.status !== 200) {
       return { success: false, status: res.status };
     }
     // eslint-disable-next-line no-await-in-loop
     resJson = await res.json();
   }
-
   return { success: true, data: userRepos };
 }
 

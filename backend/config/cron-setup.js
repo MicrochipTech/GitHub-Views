@@ -4,15 +4,19 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 
-async function* updateRepositoriesGen() {
+/* 
+Using back off is way slower because requests are made sequential.
+Still, being slower actually reduces the chance of making 5000+ requests per hour.   
+*/
+const UPDATE_WITH_BACK_OFF_ON_ERROR = false;
+
+async function* updateRepositoriesGenerator() {
   console.log(`Updating local database`);
 
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
-  const repos = await RepositoryModel.find({ not_found: false }).catch(() => {
-    console.log(`syncRepos: error getting repo ${repo.full_name}`);
-  });
+  const repos = await RepositoryModel.find({ not_found: false });
 
   repos.forEach(repo => {
     repo.not_found = true;
@@ -23,27 +27,98 @@ async function* updateRepositoriesGen() {
     token_ref: { $exists: true }
   }).populate("token_ref");
 
-  for (let i = 0; i < users.length; i++) {
+  for (let i = 0; i < users.length; i += 1) {
+    console.log(`-----> User ${i}/${users.length}`);
+    
     const user = users[i];
     const token = user.token_ref.value;
 
     const githubRepos = await GitHubApiCtrl.getUserRepos(token);
-    if (githubRepos.success === false) {
-      yield false;
-    }
+    const retry = yield githubRepos.success;
+    
+    if(retry) {
+      i--;
+      continue;
+    } else {
+      const userRepos = repos.filter(repo => repo.user_id.equals(user._id));
+      
+      for (let j = 0; j < githubRepos.data.length; j += 1) {
+        console.log(`--> Repo ${j}/${githubRepos.data.length}`);
+        const githubRepo = githubRepos.data[j];
+        const repoEntry = userRepos.find(
+          userRepo => userRepo.github_repo_id === String(githubRepo.id)
+        );
+        if (repoEntry === undefined) {
+          const newRepo = await RepositoryCtrl.createRepository(
+            githubRepo,
+            user._id,
+            token
+          )
 
-    const userRepos = repos.filter(repo => repo.user_id.equals(user._id));
+          const retry = yield newRepo.success;
+          if(retry) {
+            j--;
+            continue;
+          }
 
-    for (let j = 0; j < githubRepos.length; j++) {
-      const githubRepo = githubRepos[j];
-      const repoEntry = userRepos.find(
-        userRepo => userRepo.github_repo_id === String(githubRepo.id)
-      );
+          newRepo.data.save();
+        } else {
+          /* The repository still exists on GitHub */
+          repoEntry.not_found = false;
+
+          /* Update repository name if changed */
+          if (repoEntry.reponame !== githubRepo.full_name) {
+            repoEntry.nameHistory.push({
+              date: new Date(),
+              change: `${repoEntry.reponame} -> ${githubRepo.full_name}`
+            });
+            repoEntry.reponame = githubRepo.full_name;
+          }
+
+          /* Update forks */
+          repoEntry.forks.tree_updated = false;
+          if (
+            repoEntry.forks.data.length === 0 ||
+            repoEntry.forks.data[repoEntry.forks.data.length - 1].count !==
+              githubRepo.forks_count
+          ) {
+            repoEntry.forks.data.push({
+              timestamp: today.toISOString(),
+              count: githubRepo.forks_count
+            });
+          }
+
+          /* Update traffic (views, clones, referrers, contents) */
+          const { status, data: traffic } = await RepositoryCtrl.getRepoTraffic(
+            repoEntry.reponame,
+            token
+          );
+
+          const retry = yield status;
+          if(retry) {
+            j--;
+            continue;
+          }
+
+          RepositoryCtrl.updateRepoTraffic(repoEntry, traffic);
+          repoEntry.save();
+        }
+      }
     }
   }
 }
 
-updateRepositoriesGen();
+async function runGenerator(g, retry = false) {
+  for (let r = await g.next(retry); !r.done; r = await g.next(false)) {
+    if (!r.value) {
+      console.log("Generator returned error.")
+      setTimeout(() => {
+        runGenerator(g, true);
+      }, 1000 * 60 * 60);
+      break;
+    }
+  }
+}
 
 async function updateRepositories() {
   console.log(`Updating local database`);
@@ -51,9 +126,7 @@ async function updateRepositories() {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
-  const repos = await RepositoryModel.find({ not_found: false }).catch(() => {
-    console.log(`syncRepos: error getting repo ${repo.full_name}`);
-  });
+  const repos = await RepositoryModel.find({ not_found: false });
 
   /*
    * Before updating, repos mark them as not updated.
@@ -70,25 +143,11 @@ async function updateRepositories() {
 
   const userPromises = users.map(async user => {
     const token = user.token_ref.value;
-    /* Get all repos for a user through GitHub API */
     const githubRepos = await GitHubApiCtrl.getUserRepos(token);
-    // .catch(e => {
-    //   console.log(`syncRepos ${user.username}: error getting user repos`);
-    //   if (
-    //     e.response.status === 403 &&
-    //     e.response.headers["x-ratelimit-remaining"] === "0"
-    //   ) {
-    //     console.log("Forbidden. No more remaining requests");
-    //   }
-    // });
 
     if (githubRepos.success === false) {
       return;
     }
-
-    // if (githubRepos === undefined) {
-    //   return;
-    // }
 
     /* Get repos from local database */
     const userRepos = repos.filter(repo => repo.user_id.equals(user._id));
@@ -113,11 +172,15 @@ async function updateRepositories() {
 
         await newRepo.data.save();
       } else {
-        /* The repository still exists on GitHub*/
+        /* The repository still exists on GitHub */
         repoEntry.not_found = false;
 
         /* Update repository name if changed */
         if (repoEntry.reponame !== githubRepo.full_name) {
+          repoEntry.nameHistory.push({
+            date: new Date(),
+            change: `${repoEntry.reponame} -> ${githubRepo.full_name}`
+          });
           repoEntry.reponame = githubRepo.full_name;
         }
 
@@ -162,11 +225,21 @@ async function updateRepositories() {
 async function setCron() {
   console.log("Setting a cronjob every day, to update repositories.");
   cron.schedule("25 12 * * *", async () => {
-    await updateRepositories();
+    if(UPDATE_WITH_BACK_OFF_ON_ERROR) {
+      runGenerator(updateRepositoriesGenerator());
+    } else {
+      await updateRepositories();
+    }
   });
 }
 
 module.exports = {
   setCron,
-  updateRepositories
+  updateRepositories: async () => {
+    if(UPDATE_WITH_BACK_OFF_ON_ERROR) {
+      await runGenerator(updateRepositoriesGenerator());
+    } else {
+      await updateRepositories();
+    }
+  }
 };

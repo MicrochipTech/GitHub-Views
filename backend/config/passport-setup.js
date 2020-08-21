@@ -87,7 +87,7 @@ passport.use(
         }
 
         const promises = repos.data.map(async repo => {
-          const newRepos = await RepositoryCtrl.createRepository(
+          const newRepo = await RepositoryCtrl.createRepository(
             repo,
             newUser._id,
             t.value

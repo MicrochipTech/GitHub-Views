@@ -59,11 +59,12 @@ function Login({ authenticated }) {
           This tool will automatically collect views data for all the
           repositories you have access to.
         </p>
-        <p>It will not be shared with anyone unless you give access to.</p>
         <hr />
         <p>
           Login with username and password and you will still be able to view
-          repos that other users share with you in this app
+          repos from <b>"microchip-pic-avr-examples</b>,{" "}
+          <b>"microchip-pic-avr-solutions</b> and <b>MicrochipTech</b> <br />
+          organizations, plus what other repos other users share with you.
         </p>
         <div className="localLoginWrapper">
           <div>

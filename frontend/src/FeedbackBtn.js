@@ -33,7 +33,21 @@ function FeedbackBtn() {
         open={feedbackInstructionsModalIsOpened}
         onClose={() => setFeedbackInstructionsModalIsOpened(false)}
       >
-        <div className={classes.paper}>djsahdgsadkjad</div>
+        <div className={classes.paper}>
+          <h2>Thank you for using GitHub View!</h2>
+          <p>Your feedback is crutial for making this tool better.</p>
+          <p>
+            Use{" "}
+            <a href={"https://jira.microchip.com/projects/MCU8APPS/issues"}>
+              this
+            </a>{" "}
+            JIRA project to create an issue describing the bug/feature
+            suggestion you have.
+          </p>
+          <p>
+            Assign the issue to <b>Alexandru Niculae</b> or <b>Filip Manole</b>.
+          </p>
+        </div>
       </Modal>
       <div
         className="feebackBtn"

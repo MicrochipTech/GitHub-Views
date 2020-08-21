@@ -67,6 +67,12 @@ const repositorySchema = new mongoose.Schema({
         }
       ]
     }
+  ],
+  nameHistory: [
+    {
+      date: Date,
+      change: String
+    }
   ]
 });
 
