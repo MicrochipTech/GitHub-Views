@@ -2,28 +2,7 @@ import React from "react";
 import { DataContext } from "./Data";
 import { Select, MenuItem } from "@material-ui/core";
 import moment from "moment";
-
-function compareDate(d1, d2) {
-  const date1 = new Date(d1);
-  const date2 = new Date(d2);
-
-  if (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth()
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function searchDate(dateArr, d1) {
-  for (let index = 2; index < dateArr.length; ++index) {
-    if (compareDate(dateArr[index], d1)) return true;
-  }
-
-  return false;
-}
+import { compareDate, searchDate } from "./utils";
 
 function viewsCsv(concatRepos) {
   let minimumTimetamp = new Date();
@@ -168,8 +147,6 @@ function createDailyCsv(concatRepos) {
   const viewsTable = viewsCsv(concatRepos);
   const clonesTable = clonesCsv(concatRepos);
   const forksTable = forksCsv(concatRepos);
-
-  console.log(clonesTable);
   const trafficCSV = viewsTable.concat(clonesTable).concat(forksTable);
 
   return trafficCSV;

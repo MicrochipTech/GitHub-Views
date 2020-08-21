@@ -48,4 +48,29 @@ function add0s(series) {
   return series;
 }
 
-export { add0s };
+function compareDate(d1, d2) {
+    const date1 = new Date(d1);
+    const date2 = new Date(d2);
+  
+    if (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth()
+    ) {
+      return true;
+    }
+  
+    return false;
+  }
+  
+function searchDate(dateArr, d1) {
+  for (let index = 2; index < dateArr.length; ++index) {
+    if (compareDate(dateArr[index], d1)) return true;
+  }
+
+  return false;
+}
+export { 
+  add0s,
+  compareDate,
+  searchDate
+ };
