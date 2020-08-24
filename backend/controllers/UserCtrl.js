@@ -130,7 +130,7 @@ async function checkForNewRepos(user, token) {
       await repo.save();
     } else {
       /* More than one element was found -> log an error */
-      logList = repos.map(r => [r.reponame, r.user.username, r.github_repo_id]);
+      logList = repos.map(r => [r.reponame, user.username, r.github_repo_id]);
       console.log(`Found more repos with the same name in database ${logList}`);
     }
   });
