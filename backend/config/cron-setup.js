@@ -172,9 +172,8 @@ async function updateRepositories() {
         if (newRepo.success === false) {
           return;
         }
-        
-        repos.push(newRepo);
-        await newRepo.data.save();
+
+        repos.push(newRepo.data);
       } else {
         /* The repository still exists on GitHub */
         repoEntry.not_found = false;
