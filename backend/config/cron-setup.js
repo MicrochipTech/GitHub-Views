@@ -18,13 +18,13 @@ async function* updateRepositoriesGenerator() {
 
   const repos = await RepositoryModel.find({ not_found: false });
 
-  repos.forEach(repo => {
+  repos.forEach((repo) => {
     repo.not_found = true;
   });
 
   const users = await UserModel.find({
     githubId: { $ne: null },
-    token_ref: { $exists: true }
+    token_ref: { $exists: true },
   }).populate("token_ref");
 
   for (let i = 0; i < users.length; i += 1) {
@@ -40,13 +40,13 @@ async function* updateRepositoriesGenerator() {
       i--;
       continue;
     } else {
-      const userRepos = repos.filter(r => r.users.indexOf(user._id) !== -1);
+      const userRepos = repos.filter((r) => r.users.indexOf(user._id) !== -1);
 
       for (let j = 0; j < githubRepos.data.length; j += 1) {
         console.log(`--> Repo ${j}/${githubRepos.data.length}`);
         const githubRepo = githubRepos.data[j];
         const repoEntry = userRepos.find(
-          userRepo => userRepo.github_repo_id === String(githubRepo.id)
+          (userRepo) => userRepo.github_repo_id === String(githubRepo.id)
         );
         if (repoEntry === undefined) {
           const newRepo = await RepositoryCtrl.createRepository(
@@ -70,21 +70,25 @@ async function* updateRepositoriesGenerator() {
           if (repoEntry.reponame !== githubRepo.full_name) {
             repoEntry.nameHistory.push({
               date: new Date(),
-              change: `${repoEntry.reponame} -> ${githubRepo.full_name}`
+              change: `${repoEntry.reponame} -> ${githubRepo.full_name}`,
             });
             repoEntry.reponame = githubRepo.full_name;
           }
 
           /* Update forks */
           repoEntry.forks.tree_updated = false;
-          if (
-            repoEntry.forks.data.length === 0 ||
-            repoEntry.forks.data[repoEntry.forks.data.length - 1].count !==
-              githubRepo.forks_count
-          ) {
-            repoEntry.forks.data.push({
-              timestamp: today.toISOString(),
-              count: githubRepo.forks_count
+
+          const forksDataLen = repoEntry.forks.data.length;
+          if (forksDataLen === 0) {
+            repoentry.forks.data.push({
+              timestamp: today.toisostring(),
+              count: githubrepo.forks_count,
+            });
+          } else {
+            const lastForksCount = repoEntry.forks.data[forksDataLen - 1].count;
+            repoentry.forks.data.push({
+              timestamp: today.toisostring(),
+              count: githubrepo.forks_count - lastforkscount,
             });
           }
 
@@ -132,16 +136,16 @@ async function updateRepositories() {
    * Before updating, repos mark them as not updated.
    * After update, if it is still marked as not updated, it means it was deleted.
    */
-  repos.forEach(repo => {
+  repos.forEach((repo) => {
     repo.not_found = true;
   });
 
   const users = await UserModel.find({
     githubId: { $ne: null },
-    token_ref: { $exists: true }
+    token_ref: { $exists: true },
   }).populate("token_ref");
 
-  const userPromises = users.map(async user => {
+  const userPromises = users.map(async (user) => {
     const token = user.token_ref.value;
     const githubRepos = await GitHubApiCtrl.getUserRepos(token);
 
@@ -149,12 +153,12 @@ async function updateRepositories() {
       return;
     }
 
-    const userRepos = repos.filter(r => r.users.indexOf(user._id) !== -1);
+    const userRepos = repos.filter((r) => r.users.indexOf(user._id) !== -1);
     console.log(userRepos.length, user.username);
 
-    const updateReposPromises = githubRepos.data.map(async githubRepo => {
+    const updateReposPromises = githubRepos.data.map(async (githubRepo) => {
       const repoEntry = userRepos.find(
-        userRepo => String(userRepo.github_repo_id) === String(githubRepo.id)
+        (userRepo) => String(userRepo.github_repo_id) === String(githubRepo.id)
       );
 
       if (repoEntry === undefined) {
@@ -162,7 +166,7 @@ async function updateRepositories() {
           githubRepo,
           user._id,
           token
-        ).catch(e => {
+        ).catch((e) => {
           console.log(
             e,
             `updateRepositories ${user}: error creating a new repo`
@@ -182,7 +186,7 @@ async function updateRepositories() {
         if (repoEntry.reponame !== githubRepo.full_name) {
           repoEntry.nameHistory.push({
             date: new Date(),
-            change: `${repoEntry.reponame} -> ${githubRepo.full_name}`
+            change: `${repoEntry.reponame} -> ${githubRepo.full_name}`,
           });
           repoEntry.reponame = githubRepo.full_name;
         }
@@ -196,7 +200,7 @@ async function updateRepositories() {
         ) {
           repoEntry.forks.data.push({
             timestamp: today.toISOString(),
-            count: githubRepo.forks_count
+            count: githubRepo.forks_count,
           });
         }
 
@@ -222,7 +226,7 @@ async function updateRepositories() {
   });
   await Promise.all(userPromises);
 
-  const saveAllRepos = repos.map(repo => repo.save());
+  const saveAllRepos = repos.map((repo) => repo.save());
   await Promise.all(saveAllRepos);
 
   console.log(`Local database update finished`);
@@ -247,5 +251,5 @@ module.exports = {
     } else {
       await updateRepositories();
     }
-  }
+  },
 };
