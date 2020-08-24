@@ -111,7 +111,7 @@ async function checkForNewRepos(user, token) {
       if (repo.reponame !== githubRepo.full_name) {
         repo.nameHistory.push({
           date: new Date(),
-          change: `${repoEntry.reponame} -> ${githubRepo.full_name}`
+          change: `${repo.reponame} -> ${githubRepo.full_name}`
         });
         repo.reponame = githubRepo.full_name;
         anyNewRepo = true;
