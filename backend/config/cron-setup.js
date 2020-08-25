@@ -149,7 +149,7 @@ async function updateRepositories() {
       return;
     }
 
-    const userRepos = repos.filter(r => r.users.indexOf(user._id) !== -1);
+    const userRepos = repos.filter(r => r.users !== undefined && r.users.indexOf(user._id) !== -1);
     console.log(userRepos.length, user.username);
 
     const updateReposPromises = githubRepos.data.map(async githubRepo => {
