@@ -220,10 +220,21 @@ router.get("/migrate_db_2", async(req, res) => {
         }
 
         const extraLeftForks = d.forks.data.filter(f => new Date(f.timestamp).getTime() < new Date(forks[0].timestamp).getTime());
-        forks.unshift(...extraLeftForks);
+        if(extraLeftForks.length > 0) {
+          if(forks[0].count === extraLeftForks[extraLeftForks.length - 1].count) {
+            forks.shift();
+          }
+          forks.unshift(...extraLeftForks);
+        }
 
         const extraRightForks = d.forks.data.filter(f => new Date(f.timestamp).getTime() > new Date(forks[forks.length - 1].timestamp).getTime());
-        forks.push(...extraRightForks);
+        
+        if(extraRightForks.length > 0) {
+          if(forks[forks.length -1].count === extraRightForks[0].count) {
+            extraRightForks.shift();
+          }
+          forks.push(...extraRightForks);
+        }
       });
 
       /* Merge referrers from all duplicates */
