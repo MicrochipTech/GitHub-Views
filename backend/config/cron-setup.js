@@ -145,49 +145,69 @@ async function updateRepositories() {
     token_ref: { $exists: true },
   }).populate("token_ref");
 
-  //const userPromises = users.map(async (user) => 
-  
-  for(let i = 0; i < users.length; i += 1) {
-    const user = users[i];
+  //const userPromises = users.map(async (user) =>
+
+  const newRepoRequests = {};
+
+  const userPromises = users.map(async (user) => {
+    // for (let i = 0; i < users.length; i += 1) {
+    // const user = users[i];
 
     const token = user.token_ref.value;
     const githubRepos = await GitHubApiCtrl.getUserRepos(token);
 
     if (githubRepos.success === false) {
+      console.log(`Could not get repos for ${user.username}`);
       return;
     }
 
-    const userRepos = repos.filter(r => r.users !== undefined && r.users.indexOf(user._id) !== -1);
-    console.log(userRepos.length, user.username);
+    // const userRepos = repos.filter(
+    //   (r) => r.users !== undefined && r.users.indexOf(user._id) !== -1
+    // );
+    // console.log(
+    //   `User ${user.username} has ${userRepos.length} in db and ${githubRepos.data.length} on Github.`
+    // );
 
-    //const updateReposPromises = githubRepos.data.map(async (githubRepo) => 
-    for(let j = 0; j < githubRepos.data.length; j += 1) {
-      const githubRepo = githubRepos.data[j];
+    console.log(`User ${user.username} has ${githubRepos.length} repos.`);
 
-      const repoEntry = userRepos.find(
-        (userRepo) => String(userRepo.github_repo_id) === String(githubRepo.id)
-      );
+    const updateReposPromises = githubRepos.data.map(async (githubRepo, j) => {
+      // for (let j = 0; j < githubRepos.data.length; j += 1) {
+      //   const githubRepo = githubRepos.data[j];
+
+      console.log(`Checking ${githubRepo.full_name}, ${j}`);
+
+      // const repoEntry = userRepos.find(
+      //   (userRepo) => String(userRepo.github_repo_id) === String(githubRepo.id)
+      // );
+
+      const repoEntry = repos.find((r) => r.reponame === githubRepo.full_name);
 
       if (repoEntry === undefined) {
-
-        console.log(githubRepo.id, githubRepo.full_name);
-
-        const newRepo = await RepositoryCtrl.createRepository(
-          githubRepo,
-          user._id,
-          token
-        ).catch((e) => {
+        if (newRepoRequests[githubRepo.full_name] === undefined) {
           console.log(
-            e,
-            `updateRepositories ${user}: error creating a new repo`
+            `Repos ${githubRepo.full_name}, ${githubRepo.id} does not exist in db. Creating.`
           );
-        });
 
-        if (newRepo.success === false) {
-          return;
+          const newRepo = await RepositoryCtrl.createRepository(
+            githubRepo,
+            user._id,
+            token
+          ).catch((e) => {
+            console.log(
+              e,
+              `updateRepositories ${user}: error creating a new repo`
+            );
+          });
+
+          if (newRepo.success === false) {
+            console.log(`Fild cretig new repo ${githubRepo.full_name}`);
+            return;
+          }
+
+          newRepoRequests[githubRepo.full_name] = newRepo.data;
+        } else {
+          newRepoRequests[githubRepo.full_name].users.push(user._id);
         }
-
-        repos.push(newRepo.data);
       } else {
         /* The repository still exists on GitHub */
         repoEntry.not_found = false;
@@ -231,13 +251,18 @@ async function updateRepositories() {
           );
         }
       }
-    }
-    //await Promise.all(updateReposPromises);
-  }
-  //await Promise.all(userPromises);
+    });
+    await Promise.all(updateReposPromises);
+  });
+  await Promise.all(userPromises);
 
-  const saveAllRepos = repos.map((repo) => repo.save());
-  await Promise.all(saveAllRepos);
+  const saveNewRepos = Object.keys(newRepoRequests).map((k) =>
+    newRepoRequests[k].save()
+  );
+  await Promise.all(saveNewRepos);
+
+  const updateRepos = repos.map((repo) => repo.save());
+  await Promise.all(updateRepos);
 
   console.log(`Local database update finished`);
 }

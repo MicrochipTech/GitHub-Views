@@ -7,16 +7,16 @@ async function nameContains(req, res) {
   const repos = await RepositoryModel.find(
     {
       reponame: {
-        $regex: `${q}.*`
+        $regex: `${q}.*`,
         // highligting the matched text is more complex on the frontend, for case insensitive match
         // $options: "i"
-      }
+      },
     },
     { reponame: 1, createAt: 1, _id: 1 }
   );
 
   const reposList = repos
-    .filter(r => {
+    .filter((r) => {
       if (req.user.sharedRepos.indexOf(r._id) !== -1) return 0;
       return (
         r.reponame.startsWith("microchip-pic-avr-examples") ||
@@ -24,7 +24,7 @@ async function nameContains(req, res) {
         r.reponame.startsWith("MicrochipTech")
       );
     })
-    .map(r => ({ reponame: r.reponame, _id: r._id }));
+    .map((r) => ({ reponame: r.reponame, _id: r._id }));
 
   res.send(reposList);
 }
@@ -41,25 +41,25 @@ async function createRepository(repoDetails, userId, token) {
     clones: {
       total_count: 0,
       total_uniques: 0,
-      data: []
+      data: [],
     },
     forks: {
       tree_updated: false,
       data: [
         {
           timestamp: today.toISOString(),
-          count: repoDetails.forks_count
-        }
+          count: repoDetails.forks_count,
+        },
       ],
-      children: []
+      children: [],
     },
     referrers: [],
     contents: [],
     commits: {
       updated: false,
-      data: []
+      data: [],
     },
-    not_found: false
+    not_found: false,
   });
 
   const { status, data: traffic } = await getRepoTraffic(
@@ -88,7 +88,7 @@ function updateRepoTraffic(repo, traffic) {
   let viewsToUpdate = traffic.views;
   if (repo.views.length !== 0) {
     const lastViewTimestamp = repo.views[repo.views.length - 1].timestamp;
-    viewsToUpdate = viewsToUpdate.filter(info => {
+    viewsToUpdate = viewsToUpdate.filter((info) => {
       const timestampDate = new Date(info.timestamp);
       timestampDate.setUTCHours(0, 0, 0, 0);
 
@@ -110,7 +110,7 @@ function updateRepoTraffic(repo, traffic) {
   if (repo.clones.data.length !== 0) {
     const lastCloneTimestamp =
       repo.clones.data[repo.clones.data.length - 1].timestamp;
-    clonesToUpdate = clonesToUpdate.filter(info => {
+    clonesToUpdate = clonesToUpdate.filter((info) => {
       const timestampDate = new Date(info.timestamp);
 
       if (
@@ -135,14 +135,14 @@ function updateRepoTraffic(repo, traffic) {
   repo.clones.data.push(...clonesToUpdate);
 
   /* Update referrers */
-  traffic.referrers.forEach(data => {
-    foundReferrer = repo.referrers.find(r => r.name === data.referrer);
+  traffic.referrers.forEach((data) => {
+    foundReferrer = repo.referrers.find((r) => r.name === data.referrer);
     if (foundReferrer) {
       /* The referrer is already in database */
       foundReferrer.data.push({
         timestamp: today.toISOString(),
         count: data.count,
-        uniques: data.uniques
+        uniques: data.uniques,
       });
     } else {
       /* Add the new referrer in database */
@@ -152,22 +152,22 @@ function updateRepoTraffic(repo, traffic) {
           {
             timestamp: today.toISOString(),
             count: data.count,
-            uniques: data.uniques
-          }
-        ]
+            uniques: data.uniques,
+          },
+        ],
       });
     }
   });
 
   /* Update content */
-  traffic.contents.forEach(data => {
-    foundContent = repo.contents.find(c => c.path === data.path);
+  traffic.contents.forEach((data) => {
+    foundContent = repo.contents.find((c) => c.path === data.path);
     if (foundContent) {
       /* The content is already in database */
       foundContent.data.push({
         timestamp: today.toISOString(),
         count: data.count,
-        uniques: data.uniques
+        uniques: data.uniques,
       });
     } else {
       /* Add the new content in database */
@@ -178,9 +178,9 @@ function updateRepoTraffic(repo, traffic) {
           {
             timestamp: today.toISOString(),
             count: data.count,
-            uniques: data.uniques
-          }
-        ]
+            uniques: data.uniques,
+          },
+        ],
       });
     }
   });
@@ -189,7 +189,7 @@ function updateRepoTraffic(repo, traffic) {
 async function getRepoTraffic(reponame, token) {
   const {
     response: viewsResponse,
-    responseJson: viewsResponseJson
+    responseJson: viewsResponseJson,
   } = await GitHubApiCtrl.getRepoViews(reponame, token).catch(() => {
     console.log(
       `getRepoTraffic : Error getting repo views for repo ${reponame}`
@@ -202,13 +202,13 @@ async function getRepoTraffic(reponame, token) {
   ) {
     return {
       status: false,
-      data: viewsResponse.headers.get("x-ratelimit-reset")
+      data: viewsResponse.headers.get("x-ratelimit-reset"),
     };
   }
 
   const {
     response: cloneResponse,
-    responseJson: cloneResponseJson
+    responseJson: cloneResponseJson,
   } = await GitHubApiCtrl.getRepoClones(reponame, token).catch(() => {
     console.log(
       `getRepoTraffic : Error getting repo clones for repo ${reponame}`
@@ -221,13 +221,13 @@ async function getRepoTraffic(reponame, token) {
   ) {
     return {
       status: false,
-      data: cloneResponse.headers.get("x-ratelimit-reset")
+      data: cloneResponse.headers.get("x-ratelimit-reset"),
     };
   }
 
   const {
     response: referrerResponse,
-    responseJson: referrerResponseJson
+    responseJson: referrerResponseJson,
   } = await GitHubApiCtrl.getRepoPopularReferrers(reponame, token).catch(() => {
     console.log(
       `getRepoPopularReferrers : Error getting repo referrers for repo ${reponame}`
@@ -240,13 +240,13 @@ async function getRepoTraffic(reponame, token) {
   ) {
     return {
       status: false,
-      data: referrerResponse.headers.get("x-ratelimit-reset")
+      data: referrerResponse.headers.get("x-ratelimit-reset"),
     };
   }
 
   const {
     response: pathResponse,
-    responseJson: pathResponseJson
+    responseJson: pathResponseJson,
   } = await GitHubApiCtrl.getRepoPopularPaths(reponame, token).catch(() => {
     console.log(
       `getRepoPopularPaths : Error getting repo referrers for repo ${reponame}`
@@ -259,7 +259,7 @@ async function getRepoTraffic(reponame, token) {
   ) {
     return {
       status: false,
-      data: pathResponse.headers.get("x-ratelimit-reset")
+      data: pathResponse.headers.get("x-ratelimit-reset"),
     };
   }
 
@@ -267,10 +267,10 @@ async function getRepoTraffic(reponame, token) {
     status: true,
     data: {
       ...viewsResponseJson,
-      clones: cloneResponseJson.clones,
-      referrers: referrerResponseJson,
-      contents: pathResponseJson
-    }
+      clones: cloneResponseJson.clones || [],
+      referrers: referrerResponseJson || [],
+      contents: pathResponseJson || [],
+    },
   };
 }
 
@@ -280,7 +280,7 @@ async function updateForksTree(req, res) {
 
   const {
     status: treeStatus,
-    data: treeData
+    data: treeData,
   } = await GitHubApiCtrl.updateForksTree(repoEntry.github_repo_id).catch(
     () => {
       console.log(`Error updateForksTree on repo: ${repoEntry.reponame}`);
@@ -297,7 +297,7 @@ async function updateForksTree(req, res) {
 
   res.json({
     treeData,
-    treeStatus
+    treeStatus,
   });
 }
 
@@ -305,47 +305,50 @@ async function updateRepoCommits(req, res) {
   const { repo_id } = req.body;
   const repoEntry = await RepositoryModel.findOne({ _id: repo_id });
 
-  if(repoEntry.commits.updated) {
+  if (repoEntry.commits.updated) {
     // TO REVIEW
     return {
       status: true,
-      data: repoEntry.commits.data
+      data: repoEntry.commits.data,
     };
   }
 
-  const { response, responseJson } = await GitHubApiCtrl.getRepoCommits(github_repo_id).catch(
-    () => {
-      console.log(`updateRepoCommits : Error getting commits for repository ${github_repo_id}`);
+  const { response, responseJson } = await GitHubApiCtrl.getRepoCommits(
+    github_repo_id
+  ).catch(() => {
+    console.log(
+      `updateRepoCommits : Error getting commits for repository ${github_repo_id}`
+    );
   });
-    
+
   if (
     response.status === 403 &&
     response.headers.get("x-ratelimit-remaining") === "0"
   ) {
     return {
       status: false,
-      data: response.headers.get("x-ratelimit-reset")
+      data: response.headers.get("x-ratelimit-reset"),
     };
   }
 
-  commitsData = responseJson.map(c => {
+  commitsData = responseJson.map((c) => {
     return {
       sha: c.sha,
       message: c.commit.message,
-      timestamp: c.commit.author.date
-    }
+      timestamp: c.commit.author.date,
+    };
   });
 
   repoEntry.commits = {
     updated: true,
-    data: commitsData
-  }
+    data: commitsData,
+  };
 
   repoEntry.save();
 
   return {
     status: true,
-    data: commitsData
+    data: commitsData,
   };
 }
 
@@ -371,5 +374,5 @@ module.exports = {
   updateForksTree,
   updateRepoCommits,
   share,
-  nameContains
+  nameContains,
 };
