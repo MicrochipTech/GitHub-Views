@@ -156,7 +156,9 @@ function downlaodDaily({ userRepos, sharedRepos }) {
   const viewsTable = viewsCsv(concatRepos);
   const clonesTable = clonesCsv(concatRepos);
   const forksTable = forksCsv(concatRepos);
-  const rows = [['views']].concat(viewsTable).concat([['clones']]).concat(clonesTable).concat([['forks']]).concat(forksTable);
+  const rows = [['views']].concat(viewsTable)
+                .concat([['clones']]).concat(clonesTable)
+                .concat([['forks']]).concat(forksTable);
 
   console.log(rows);
   downloadExcelFile(rows)
