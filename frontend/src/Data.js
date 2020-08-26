@@ -10,6 +10,7 @@ function prepareRepo(r) {
     ...r,
     views: add0s(r.views),
     clones: { ...r.clones, data: add0s(r.clones.data) },
+    forks: { ...r.forks, data: add0s(r.forks.data) },
   };
 }
 

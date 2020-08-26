@@ -223,14 +223,18 @@ async function updateRepositories() {
 
         /* Update forks */
         repoEntry.forks.tree_updated = false;
-        if (
-          repoEntry.forks.data.length === 0 ||
-          repoEntry.forks.data[repoEntry.forks.data.length - 1].count !==
-            githubRepo.forks_count
-        ) {
-          repoEntry.forks.data.push({
-            timestamp: today.toISOString(),
-            count: githubRepo.forks_count,
+
+        const forksDataLen = repoEntry.forks.data.length;
+        if (forksDataLen === 0) {
+          repoentry.forks.data.push({
+            timestamp: today.toisostring(),
+            count: githubrepo.forks_count,
+          });
+        } else {
+          const lastForksCount = repoEntry.forks.data[forksDataLen - 1].count;
+          repoentry.forks.data.push({
+            timestamp: today.toisostring(),
+            count: githubrepo.forks_count - lastforkscount,
           });
         }
 
