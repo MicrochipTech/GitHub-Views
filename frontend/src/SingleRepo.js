@@ -3,7 +3,7 @@ import moment from "moment";
 import axios from "axios";
 import { useParams, Link } from "react-router-dom";
 import { DataContext } from "./Data";
-import { Grid, Typography, CircularProgress } from "@material-ui/core";
+import { Grid, Typography, CircularProgress, Select, MenuItem  } from "@material-ui/core";
 import { TreeView, TreeItem } from "@material-ui/lab";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
@@ -11,7 +11,7 @@ import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import randomColor from "randomcolor";
 import Header from "./Header";
 import LineChart from "./LineChart";
-import { add0s } from "./utils";
+import { add0s, dailyToMonthlyReducer, downloadExcelFile } from "./utils";
 
 import "./SingleRepo.css";
 
@@ -74,6 +74,16 @@ function ClonesTab({ repo }) {
 }
 
 function ReferringSitesTab({ repo }) {
+  const [downloadSelectOpen, setDownloadSelectOpen] = React.useState(false);
+  
+  const handleClose = () => {
+    setDownloadSelectOpen(false);
+  };
+
+  const handleOpen = () => {
+    setDownloadSelectOpen(true);
+  };
+
   if (repo.referrers.length === 0) {
     return "This repository has no Referring Sites data";
   }
@@ -113,14 +123,71 @@ function ReferringSitesTab({ repo }) {
     }, [])
   };
 
+  function dailyReferrers() {
+    /* First row contains the name of the repository */
+    const rows = [["referrers"]];
+
+    let tableHead = ["referrer", "type"];
+    tableHead = tableHead.concat(referringSitePlotData.timestamp);
+    rows.push(tableHead);
+
+    referringSitePlotData.data.forEach(d => {
+      const referrerEntry = d.label.split(" ");
+      rows.push(referrerEntry.concat(d.dataset));
+    });
+
+    return rows;
+  }
+
   return (
     <Grid item xs={12}>
       <LineChart data={referringSitePlotData} />
+
+      <li className="downloadBtnOnTab" onClick={handleOpen}>Download as Excel</li>
+      {downloadSelectOpen && (
+        <Select
+          open={downloadSelectOpen}
+          onClose={handleClose}
+          onOpen={handleOpen}
+          onChange={e => {
+            switch (e.target.value) {
+              case "monthly": {
+                const dailyReferrersData = dailyReferrers();
+                const monthlyReferrersData = dailyToMonthlyReducer(
+                  dailyReferrersData
+                );
+                downloadExcelFile(monthlyReferrersData, `${repo.reponame}-monthly_referrals.xlsx`);
+                }break;
+              case "daily": {
+                const dailyReferrersData = dailyReferrers();
+                downloadExcelFile(dailyReferrersData, `${repo.reponame}-daily_referrals.xlsx`);
+              }break;
+              default:
+                throw Error("Unknown download type requested.");
+            }
+          }}
+        >
+          <MenuItem value="monthly">Monthly view</MenuItem>
+          <MenuItem value="daily">Daily view</MenuItem>
+        </Select>
+      )}
+
+
     </Grid>
   );
 }
 
 function PopularContentTab({ repo }) {
+  const [downloadSelectOpen, setDownloadSelectOpen] = React.useState(false);
+  
+  const handleClose = () => {
+    setDownloadSelectOpen(false);
+  };
+
+  const handleOpen = () => {
+    setDownloadSelectOpen(true);
+  };
+
   if (repo.contents.length === 0) {
     return "This repository has no Popular Contents data";
   }
@@ -161,9 +228,52 @@ function PopularContentTab({ repo }) {
     }, [])
   };
 
+  function dailyContents() {
+    const rows = [["content"]];
+
+    let tableHead = ["path", "type"];
+    tableHead = tableHead.concat(popularContentPlotData.timestamp);
+    rows.push(tableHead);
+
+    popularContentPlotData.data.forEach(d => {
+      const referrerEntry = d.label.split(" ");
+      rows.push(referrerEntry.concat(d.dataset));
+    });
+
+    return rows;
+  }
+
   return (
     <Grid item xs={12}>
       <LineChart data={popularContentPlotData} />
+
+      <li className="downloadBtnOnTab" onClick={handleOpen}>Download as Excel</li>
+      {downloadSelectOpen && (
+        <Select
+          open={downloadSelectOpen}
+          onClose={handleClose}
+          onOpen={handleOpen}
+          onChange={e => {
+            switch (e.target.value) {
+              case "monthly": {
+                const dailyContentsData = dailyContents();
+          const monthlyContentsData = dailyToMonthlyReducer(dailyContentsData);
+          downloadExcelFile(monthlyContentsData, `${repo.reponame}-monthly_content.xlsx`)
+                }break;
+              case "daily": {
+                const dailyContentsData = dailyContents();
+                downloadExcelFile(dailyContentsData, `${repo.reponame}-daily_content.xlsx`)
+              }break;
+              default:
+                throw Error("Unknown downlaod type requested.");
+            }
+          }}
+        >
+          <MenuItem value="monthly">Monthly view</MenuItem>
+          <MenuItem value="daily">Daily view</MenuItem>
+        </Select>
+      )}
+
     </Grid>
   );
 }
@@ -277,7 +387,6 @@ function SingleRepo() {
     .concat(repos.sharedRepos)
     .concat(repos.zombieRepos)
     .find(r => r._id === repoId);
-  console.log(repo);
   const TheTab = tabOptions[curretTab];
 
   return (

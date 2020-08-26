@@ -38,7 +38,7 @@ async function getWhereUsernameStartsWith(req, res) {
 
 async function getData(req, res) {
   if (req.isAuthenticated()) {
-    const userRepos = await RepoModel.find({ user_id: req.user._id });
+    const userRepos = await RepoModel.find({ users: { $eq: req.user._id } });
     const { sharedRepos, githubId } = await UserModel.findById(
       req.user._id
     ).populate("sharedRepos");
@@ -62,60 +62,81 @@ async function checkForNewRepos(user, token) {
   let anyNewRepo = false;
 
   /* Get all repos for a user through GitHub API */
-  const githubRepos = await GitHubApiCtrl.getUserRepos(user, token).catch(e => {
+  const githubRepos = await GitHubApiCtrl.getUserRepos(token);
+
+  if (githubRepos.success === false) {
     console.log(
-      `checkForNewRepos ${user.username}: error getting user repos`,
-      e
+      "ERROR: UserCtrl.js: GitHubApiCtrl.getUserRepos failed with code ",
+      githubRepos.status
     );
-    if (
-      e.response.status === 403 &&
-      e.response.headers["x-ratelimit-remaining"] === "0"
-    ) {
-      console.log("Forbidden. No more remaining requests");
-    }
-  });
-
-  /* Get repos from local database */
-  const userRepos = await RepoModel.find({
-    user_id: user._id,
-    not_found: false
-  }).catch(() => {
-    console.log(`checkForNewRepos ${user}: Error getting repos`);
-    success = false;
-  });
-
-  if (githubRepos === undefined) {
     return;
   }
 
-  const updateReposPromises = githubRepos.map(async githubRepo => {
-    let repoEntry = userRepos.find(
-      userRepo => userRepo.github_repo_id === String(githubRepo.id)
-    );
+  if (githubRepos.data === undefined) {
+    return;
+  }
 
-    if (repoEntry === undefined) {
+  const updateReposPromises = githubRepos.data.map(async githubRepo => {
+    const repos = await RepoModel.find({
+      github_repo_id: String(githubRepo.id),
+      not_found: false
+    }).catch(() => {
+      console.log(`checkForNewRepos ${user}: Error getting repos`);
+      success = false;
+    });
+
+    if (repos === undefined) {
+      return;
+    }
+
+    if (repos.length === 0) {
       anyNewRepo = true;
 
-      repoEntry = await RepositoryCtrl.createRepository(
+      const newRepo = await RepositoryCtrl.createRepository(
         githubRepo,
         user._id,
         token
-      ).catch(e => {
-        console.log(e, `checkForNewRepos ${user}: error creating a new repo`);
-      });
-    } else {
+      );
+
+      if (!newRepo.success) {
+        console.log("UserCtrl.js:checkForNewRepos error");
+        return;
+      }
+
+      await newRepo.data.save();
+    } else if (repos.length === 1) {
+      const repo = repos[0];
+
       /* Update repository name if changed */
-      if (repoEntry.reponame !== githubRepo.full_name) {
-        repoEntry.reponame = githubRepo.full_name;
+      if (repo.reponame !== githubRepo.full_name) {
+        repo.nameHistory.push({
+          date: new Date(),
+          change: `${repo.reponame} -> ${githubRepo.full_name}`
+        });
+        repo.reponame = githubRepo.full_name;
         anyNewRepo = true;
       }
-    }
 
-    await repoEntry.save();
+      /* Update users list if needed */
+      const foundedUserId = repo.users.find(
+        userId => String(userId) === String(user._id)
+      );
+
+      if (foundedUserId === undefined) {
+        repo.users.push(user._id);
+      }
+
+      /* Save changes to the repo in database */
+      await repo.save();
+    } else {
+      /* More than one element was found -> log an error */
+      logList = repos.map(r => [r.reponame, user.username, r.github_repo_id]);
+      console.log(`Found more repos with the same name in database ${logList}`);
+    }
   });
   await Promise.all(updateReposPromises);
 
-  return anyNewRepo;
+  return anyNewRepo; 
 }
 
 async function sync(req, res) {
@@ -139,5 +160,6 @@ module.exports = {
   getWhereUsernameStartsWith,
   getData,
   sync,
-  unfollowSharedRepo
+  unfollowSharedRepo,
+  checkForNewRepos
 };

@@ -2,28 +2,7 @@ import React from "react";
 import { DataContext } from "./Data";
 import { Select, MenuItem } from "@material-ui/core";
 import moment from "moment";
-
-function compareDate(d1, d2) {
-  const date1 = new Date(d1);
-  const date2 = new Date(d2);
-
-  if (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth()
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function searchDate(dateArr, d1) {
-  for (let index = 2; index < dateArr.length; ++index) {
-    if (compareDate(dateArr[index], d1)) return true;
-  }
-
-  return false;
-}
+import { compareDate, searchDate, downloadExcelFile } from "./utils";
 
 function viewsCsv(concatRepos) {
   let minimumTimetamp = new Date();
@@ -49,8 +28,8 @@ function viewsCsv(concatRepos) {
   const rows = [tableHead];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
-    let countsCSV = [concatRepos[i].reponame, "counts"];
-    let uniquesCSV = [concatRepos[i].reponame, "uniques"];
+    let countsCSV = [concatRepos[i].reponame, "count"];
+    let uniquesCSV = [concatRepos[i].reponame, "unique"];
 
     const limitTimestamp = new Date(concatRepos[i].views[0].timestamp);
     timeIndex = new Date(minimumTimetamp.getTime());
@@ -98,7 +77,7 @@ function clonesCsv(concatRepos) {
 
   for (let i = 0; i < concatRepos.length; i += 1) {
     let countsCSV = [concatRepos[i].reponame, "count"];
-    let uniquesCSV = [concatRepos[i].reponame, "uniques"];
+    let uniquesCSV = [concatRepos[i].reponame, "unique"];
 
     const limitTimestamp = new Date(concatRepos[i].clones.data[0].timestamp);
     timeIndex = new Date(minimumTimetamp.getTime());
@@ -130,6 +109,10 @@ function forksCsv(concatRepos) {
   const tableHead = ["reponame", "type"];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
+    if(concatRepos[i].forks.data.length === 0) {
+        console.log(concatRepos[i].reponame);
+        continue;
+    }
     let firstRepoTimestamp = new Date(concatRepos[i].forks.data[0].timestamp);
     if (firstRepoTimestamp < minimumTimetamp) {
       minimumTimetamp = firstRepoTimestamp;
@@ -144,6 +127,11 @@ function forksCsv(concatRepos) {
   const rows = [tableHead];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
+    if(concatRepos[i].forks.data.length === 0) {
+        console.log(concatRepos[i].reponame);
+        continue;
+    }
+
     let countsCSV = [concatRepos[i].reponame, "count"];
 
     const limitTimestamp = new Date(concatRepos[i].forks.data[0].timestamp);
@@ -163,35 +151,17 @@ function forksCsv(concatRepos) {
   return rows;
 }
 
-function createDailyCsv(concatRepos) {
-  /* CSV containing views, clones and forks */
-  const viewsTable = [['views']].concat(viewsCsv(concatRepos));
-  const clonesTable = [['clones']].concat(clonesCsv(concatRepos));
-  const forksTable = [['forks']].concat(forksCsv(concatRepos));
-
-  const trafficCSV = viewsTable.concat(clonesTable).concat(forksTable);
-
-  return trafficCSV;
-}
-
-function downloadCsvFile(rows) {
-  let csvContent =
-    "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-
-  var encodedUri = encodeURI(csvContent);
-  var link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "repoTraffic.csv");
-  document.body.appendChild(link);
-
-  link.click();
-}
-
 function downlaodDaily({ userRepos, sharedRepos }) {
   const concatRepos = [...userRepos, ...sharedRepos];
-  const rows = createDailyCsv(concatRepos);
+  const viewsTable = viewsCsv(concatRepos);
+  const clonesTable = clonesCsv(concatRepos);
+  const forksTable = forksCsv(concatRepos);
+  const rows = [['views']].concat(viewsTable)
+                .concat([['clones']]).concat(clonesTable)
+                .concat([['forks']]).concat(forksTable);
 
-  downloadCsvFile(rows);
+  console.log(rows);
+  downloadExcelFile(rows)
 }
 
 function reduceToMonthly(rows) {
@@ -257,17 +227,20 @@ function reduceToMonthly(rows) {
 
 function downlaodMonthly({ userRepos, sharedRepos }) {
   const concatRepos = [...userRepos, ...sharedRepos];
-  
+
   const viewsTable = viewsCsv(concatRepos);
-  const reducedViewsTable = [['views']].concat(reduceToMonthly(viewsTable));
+  const reducedViewsTable = [["views"]].concat(reduceToMonthly(viewsTable));
   const clonesTable = clonesCsv(concatRepos);
-  const reducedClonesTable = [['clones']].concat(reduceToMonthly(clonesTable));
+  const reducedClonesTable = [["clones"]].concat(reduceToMonthly(clonesTable));
   const forksTable = forksCsv(concatRepos);
-  const reducedForksTable = [['forks']].concat(reduceToMonthly(forksTable));
+  const reducedForksTable = [["forks"]].concat(reduceToMonthly(forksTable));
 
-  const trafficCSV = reducedViewsTable.concat(reducedClonesTable).concat(reducedForksTable);
+  const trafficCSV = reducedViewsTable
+    .concat(reducedClonesTable)
+    .concat(reducedForksTable);
 
-  downloadCsvFile(trafficCSV);
+    console.log(trafficCSV);
+    downloadExcelFile(trafficCSV);
 }
 
 function DownloadButton() {
@@ -284,7 +257,7 @@ function DownloadButton() {
 
   return (
     <div>
-      <li onClick={handleOpen}>Download as CSV</li>
+      <li onClick={handleOpen}>Download as Excel</li>
       {downloadSelectOpen && (
         <Select
           open={downloadSelectOpen}

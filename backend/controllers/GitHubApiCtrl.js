@@ -1,29 +1,45 @@
-const axios = require("axios");
 const fetch = require("node-fetch");
 
-async function getUserRepos(user, token) {
-  let userRepos = [];
+async function getUserRepos(token) {
+  const userRepos = [];
   let page = 1;
-  // eslint-disable-next-line camelcase
-  const per_page = 100;
+  const perPage = 100;
   const type = "all";
-  let res = await axios({
-    url: `https://api.github.com/user/repos`,
-    headers: { Authorization: `token ${token}` },
-    params: { type, per_page, page }
-  });
+  let res = await fetch(
+    `https://api.github.com/user/repos?type=${type}&per_page=${perPage}&page=${page}`,
+    {
+      method: "get",
+      headers: { Authorization: `token ${token}` }
+    }
+  );
 
-  while (typeof res.data !== "undefined" && res.data.length > 0) {
-    userRepos = userRepos.concat(res.data);
+  if (res.status !== 200) {
+    return { success: false, status: res.status };
+  }
+
+  let resJson = await res.json();
+
+  while (resJson.length > 0) {
+    userRepos.push(...resJson);
+    if (resJson.length === 0) {
+      break;
+    }
     page += 1;
     // eslint-disable-next-line no-await-in-loop
-    res = await axios({
-      url: `https://api.github.com/user/repos`,
-      headers: { Authorization: `token ${token}` },
-      params: { type, per_page, page }
-    });
+    res = await fetch(
+      `https://api.github.com/user/repos?type=${type}&per_page=${perPage}&page=${page}`,
+      {
+        method: "get",
+        headers: { Authorization: `token ${token}` }
+      }
+    );
+    if (res.status !== 200) {
+      return { success: false, status: res.status };
+    }
+    // eslint-disable-next-line no-await-in-loop
+    resJson = await res.json();
   }
-  return userRepos;
+  return { success: true, data: userRepos };
 }
 
 async function getRepoDetailsById(repoid, token) {
@@ -117,7 +133,7 @@ async function getRepoForks(github_repo_id) {
       method: "get",
       redirect: "manual"
     }
-  ).catch(() => console.log(`getRepoForks repo ${reponame}: error`));
+  ).catch(() => console.log(`getRepoForks repo ${github_repo_id}: error`));
 
   const responseJson = await response.json();
 
@@ -163,6 +179,20 @@ async function updateForksTree(github_repo_id) {
   return { success: true, data: children };
 }
 
+async function getRepoCommits(github_repo_id) {
+    const response = await fetch(
+      `https://api.github.com/repositories/${github_repo_id}/commits`,
+      {
+        method: "get",
+        redirect: "manual"
+      }
+    ).catch(() => console.log(`getRepoCommits repo ${github_repo_id}: error`));
+  
+    const responseJson = await response.json();
+  
+    return { response: response, responseJson };
+}
+
 module.exports = {
   getUserRepos,
   getRepoDetailsById,
@@ -171,5 +201,6 @@ module.exports = {
   getRepoPopularPaths,
   getRepoPopularReferrers,
   getRepoForks,
-  updateForksTree
+  updateForksTree,
+  getRepoCommits
 };

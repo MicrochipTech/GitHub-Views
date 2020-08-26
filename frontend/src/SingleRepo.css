@@ -42,3 +42,15 @@ ul.dataNav li.active, ul.dataNav li:hover {
     color: #fff;
     transition: 0.5s ease;
 }
+
+.downloadBtnOnTab {
+    list-style-type: none;
+    padding: 10px;
+    background-color: gray;
+    color: white;
+    width: max-content;
+    display: inline-block;
+    margin-top: 25px;
+    margin-left: 25px;
+    cursor: pointer;
+}
