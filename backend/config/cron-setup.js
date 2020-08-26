@@ -168,7 +168,7 @@ async function updateRepositories() {
     //   `User ${user.username} has ${userRepos.length} in db and ${githubRepos.data.length} on Github.`
     // );
 
-    console.log(`User ${user.username} has ${githubRepos.length} repos.`);
+    console.log(`User ${user.username} has ${githubRepos.data.length} repos.`);
 
     const updateReposPromises = githubRepos.data.map(async (githubRepo, j) => {
       // for (let j = 0; j < githubRepos.data.length; j += 1) {
@@ -223,18 +223,12 @@ async function updateRepositories() {
 
         /* Update forks */
         repoEntry.forks.tree_updated = false;
-
-        const forksDataLen = repoEntry.forks.data.length;
-        if (forksDataLen === 0) {
-          repoentry.forks.data.push({
-            timestamp: today.toisostring(),
-            count: githubrepo.forks_count,
-          });
-        } else {
-          const lastForksCount = repoEntry.forks.data[forksDataLen - 1].count;
-          repoentry.forks.data.push({
-            timestamp: today.toisostring(),
-            count: githubrepo.forks_count - lastforkscount,
+        
+        const forks_sum = repoEntry.forks.data.reduce((total, currentValue) => total + currentValue.count, 0);
+        if(forks_sum !== githubRepo.forks_count){
+          repoEntry.forks.data.push({
+            timestamp: today.toISOString(),
+            count: githubRepo.forks_count - forks_sum,
           });
         }
 

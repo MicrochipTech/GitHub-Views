@@ -67,7 +67,7 @@ async function checkForNewRepos(user, token) {
   if (githubRepos.success === false) {
     console.log(
       "ERROR: UserCtrl.js: GitHubApiCtrl.getUserRepos failed with code ",
-      githubRepos.code
+      githubRepos.status
     );
     return;
   }
