@@ -199,12 +199,14 @@ async function updateRepositories() {
             );
           });
 
-          if (newRepo.success === false) {
-            console.log(`Fild cretig new repo ${githubRepo.full_name}`);
-            return;
+          if(newRepo !== undefined) {
+            if (newRepo.success === false) {
+                console.log(`Fild cretig new repo ${githubRepo.full_name}`);
+                return;
+              }
+    
+              newRepoRequests[githubRepo.full_name] = newRepo.data;
           }
-
-          newRepoRequests[githubRepo.full_name] = newRepo.data;
         } else {
           newRepoRequests[githubRepo.full_name].users.push(user._id);
         }
