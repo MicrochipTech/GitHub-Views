@@ -127,15 +127,10 @@ async function runGenerator(g, retry = false) {
 async function updateRepositories() {
   console.log(`Updating local database`);
 
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-
   const repos = await RepositoryModel.find({ not_found: false });
 
-  /*
-   * Before updating, repos mark them as not updated.
-   * After update, if it is still marked as not updated, it means it was deleted.
-   */
+  /* Before updating, repos mark them as not updated.
+  After update, if it is still marked as not updated, it means it was deleted. */
   repos.forEach((repo) => {
     repo.not_found = true;
   });
@@ -145,44 +140,34 @@ async function updateRepositories() {
     token_ref: { $exists: true },
   }).populate("token_ref");
 
-  //const userPromises = users.map(async (user) =>
-
   const newRepoRequests = {};
 
   const userPromises = users.map(async (user) => {
-    // for (let i = 0; i < users.length; i += 1) {
-    // const user = users[i];
-
+    /* For each user update the repos which contains its id in the users list */
     const token = user.token_ref.value;
     const githubRepos = await GitHubApiCtrl.getUserRepos(token);
 
     if (githubRepos.success === false) {
+      /* If the request to get the repos of the user with traffic details fails,
+      then return */
       console.log(`Could not get repos for ${user.username}`);
       return;
     }
 
-    // const userRepos = repos.filter(
-    //   (r) => r.users !== undefined && r.users.indexOf(user._id) !== -1
-    // );
-    // console.log(
-    //   `User ${user.username} has ${userRepos.length} in db and ${githubRepos.data.length} on Github.`
-    // );
-
     console.log(`User ${user.username} has ${githubRepos.data.length} repos.`);
 
     const updateReposPromises = githubRepos.data.map(async (githubRepo, j) => {
-      // for (let j = 0; j < githubRepos.data.length; j += 1) {
-      //   const githubRepo = githubRepos.data[j];
-
+      /* For each repo which is included in the request, update the latest traffic infos */
       console.log(`Checking ${githubRepo.full_name}, ${j}`);
 
-      // const repoEntry = userRepos.find(
-      //   (userRepo) => String(userRepo.github_repo_id) === String(githubRepo.id)
-      // );
-
-      const repoEntry = repos.find((r) => r.reponame === githubRepo.full_name);
+      /* Search in the database the repository which will be updated */
+      const repoEntry = repos.find((r) => String(r.github_repo_id) === String(githubRepo.id));
+      
 
       if (repoEntry === undefined) {
+        /* If repoEntry is undefined, it means that there is no repository in the database
+        with the remote repository name, so it will be created */
+        
         if (newRepoRequests[githubRepo.full_name] === undefined) {
           console.log(
             `Repos ${githubRepo.full_name}, ${githubRepo.id} does not exist in db. Creating.`
@@ -204,7 +189,7 @@ async function updateRepositories() {
                 console.log(`Fild cretig new repo ${githubRepo.full_name}`);
                 return;
               }
-    
+
               newRepoRequests[githubRepo.full_name] = newRepo.data;
           }
         } else {
@@ -214,7 +199,7 @@ async function updateRepositories() {
         /* The repository still exists on GitHub */
         repoEntry.not_found = false;
 
-        /* Update repository name if changed */
+        /* Update repository name, if changed */
         if (repoEntry.reponame !== githubRepo.full_name) {
           repoEntry.nameHistory.push({
             date: new Date(),
@@ -226,6 +211,12 @@ async function updateRepositories() {
         /* Update forks */
         repoEntry.forks.tree_updated = false;
         
+        /* today variable is used to store the timestamp */
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+        /* Details from githubRepo variable, contains also the current forks count number.
+        forks.data contains the variation of the forks, when the forks number is changed. */
         const forks_sum = repoEntry.forks.data.reduce((total, currentValue) => total + currentValue.count, 0);
         if(forks_sum !== githubRepo.forks_count){
           repoEntry.forks.data.push({
