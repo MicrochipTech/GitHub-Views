@@ -107,6 +107,13 @@ function updateRepoTraffic(repo, traffic) {
 
       return false;
     });
+  } else if (
+    viewsToUpdate.length !== 0 &&
+    new Date(viewsToUpdate[viewsToUpdate.length - 1].timestamp).getTime() ===
+      today.getTime()
+  ) {
+    /* If the views data is empty, check only the last timestamp. If it includes data from today, remove it */
+    viewsToUpdate.pop();
   }
 
   repo.views.push(...viewsToUpdate);
@@ -128,6 +135,13 @@ function updateRepoTraffic(repo, traffic) {
 
       return false;
     });
+  } else if (
+    clonesToUpdate.length !== 0 &&
+    new Date(clonesToUpdate[clonesToUpdate.length - 1].timestamp).getTime() ===
+      today.getTime()
+  ) {
+    /* If the clones data is empty, check only the last timestamp. If it includes data from today, remove it */
+    clonesToUpdate.pop();
   }
 
   repo.clones.total_count += clonesToUpdate.reduce(
