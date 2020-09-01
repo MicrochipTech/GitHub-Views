@@ -308,7 +308,7 @@ async function getRepoTraffic(reponame, token) {
   return {
     status: true,
     data: {
-      ...viewsResponseJson,
+      views: viewsResponseJson.views || [],
       clones: cloneResponseJson.clones || [],
       referrers: referrerResponseJson || [],
       contents: pathResponseJson || [],
