@@ -20,7 +20,7 @@ async function unfollowSharedRepo(req, res) {
   if (updateRes.ok) {
     res.json({ status: "ok" });
   } else {
-    res.json({ status: "notok:(" });
+    res.json({ status: "not ok" });
   }
 }
 
