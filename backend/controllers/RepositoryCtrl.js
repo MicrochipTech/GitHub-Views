@@ -18,11 +18,11 @@ async function nameContains(req, res) {
   const reposList = repos
     .filter((r) => {
       if (req.user.sharedRepos.indexOf(r._id) !== -1) return 0;
-      return (
-        r.reponame.startsWith("microchip-pic-avr-examples") ||
-        r.reponame.startsWith("microchip-pic-avr-solutions") ||
-        r.reponame.startsWith("MicrochipTech")
-      );
+      const publicRepoOwners = process.env.PUBLIC_REPO_OWNERS.split(" ");
+      for (let i = 0; i < publicRepoOwners.length; i++) {
+        if (r.reponame.startsWith(publicRepoOwners[i])) return true;
+      }
+      return false;
     })
     .map((r) => ({ reponame: r.reponame, _id: r._id }));
 

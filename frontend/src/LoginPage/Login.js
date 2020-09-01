@@ -1,10 +1,10 @@
 import React from "react";
 import axios from "axios";
 import { useHistory } from "react-router-dom";
-import { AuthContext } from "./Auth";
+import { AuthContext } from "../Auth";
 import { Grid, Button, TextField } from "@material-ui/core";
 import GitHubIcon from "@material-ui/icons/GitHub";
-import { VERSION } from "./VERSION";
+import { VERSION } from "../VERSION";
 
 import "./Login.css";
 
@@ -26,14 +26,14 @@ function Login({ authenticated }) {
   const styles = {
     smallIcon: {
       width: 60,
-      height: 60
+      height: 60,
     },
     small: {
       marginTop: "50px",
       width: 120,
       height: 120,
-      padding: 16
-    }
+      padding: 16,
+    },
   };
 
   if (authenticated) {
@@ -49,9 +49,10 @@ function Login({ authenticated }) {
         <Button
           className="loginBtn"
           color="primary"
-          onClick={_ => window.location.replace("/api/auth/github")}
+          variant="outlined"
+          onClick={(_) => window.location.replace("/api/auth/github")}
         >
-          Login With GitHub Account
+          Click Here to Login With GitHub
         </Button>
         <br />
         <br />
@@ -72,8 +73,8 @@ function Login({ authenticated }) {
               label="Username"
               variant="outlined"
               style={{ width: "100%" }}
-              onChange={e => setUsername(e.target.value)}
-              onKeyPress={e => {
+              onChange={(e) => setUsername(e.target.value)}
+              onKeyPress={(e) => {
                 if (e.key === "Enter") {
                   login(username, password);
                 }
@@ -87,8 +88,8 @@ function Login({ authenticated }) {
               type="password"
               variant="outlined"
               style={{ width: "100%" }}
-              onChange={e => setPassword(e.target.value)}
-              onKeyPress={e => {
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={(e) => {
                 if (e.key === "Enter") {
                   login(username, password);
                 }
@@ -98,14 +99,14 @@ function Login({ authenticated }) {
           <div align="center" style={{ background: "transparent" }}>
             <Button
               color="primary"
-              onClick={_ => login(username, password)}
+              onClick={(_) => login(username, password)}
               disabled={username === "" || password === ""}
             >
               Login
             </Button>
             <Button
               color="primary"
-              onClick={_ => register(username, password)}
+              onClick={(_) => register(username, password)}
               disabled={username === "" || password === ""}
             >
               Register

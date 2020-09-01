@@ -1,8 +1,8 @@
 import React from "react";
-import { AuthContext } from "./Auth";
-import { DataContext } from "./Data";
 import { Button, Typography, TextField } from "@material-ui/core";
 import Autocomplete from "@material-ui/lab/Autocomplete";
+import { AuthContext } from "../Auth";
+import { DataContext } from "../Data";
 
 function SelfShare({ onRepoAdded }) {
   const { user } = React.useContext(AuthContext);
@@ -21,29 +21,29 @@ function SelfShare({ onRepoAdded }) {
         id="free-solo-demo"
         freeSolo
         options={options}
-        getOptionLabel={o => o.reponame}
+        getOptionLabel={(o) => o.reponame}
         onChange={(e, value, reason) => setSelected(value)}
         onInputChange={(e, val) => {
           if (e.target.value && e.target.value.length > 0) {
             setQ(e.target.value);
             fetch(`/api/repo/nameContains?q=${e.target.value}`, {
-              method: "GET"
+              method: "GET",
             })
-              .then(r => r.json())
-              .then(r => setOptions(r));
+              .then((r) => r.json())
+              .then((r) => setOptions(r));
           } else {
             setOptions([]);
           }
         }}
-        renderOption={option => (
+        renderOption={(option) => (
           <Typography
             noWrap
             dangerouslySetInnerHTML={{
-              __html: option.reponame.replace(q, `<b>${q}</b>`)
+              __html: option.reponame.replace(q, `<b>${q}</b>`),
             }}
           />
         )}
-        renderInput={params => (
+        renderInput={(params) => (
           <TextField
             {...params}
             label="Repository"
@@ -55,19 +55,24 @@ function SelfShare({ onRepoAdded }) {
       />
       <Button
         onClick={async () => {
-          const res = await fetch("/api/repo/share", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              repoId: selected._id,
-              username: user.username
-            })
-          });
-          const resData = await res.json();
-          addSharedRepo(resData.repo);
-          if (onRepoAdded) onRepoAdded();
+          if (selected) {
+            const res = await fetch("/api/repo/share", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                repoId: selected._id,
+                username: user.username,
+              }),
+            });
+            const resData = await res.json();
+            console.log("resData: ", resData);
+            addSharedRepo(resData.repo);
+            if (onRepoAdded) onRepoAdded();
+          } else {
+            alert("Please choose a valid repo.");
+          }
         }}
       >
         Add

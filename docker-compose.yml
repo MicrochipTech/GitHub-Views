@@ -32,6 +32,7 @@ services:
       - 8000:3000
     environment:
       API_HOST: http://backend:8000/
+      REACT_APP_FEEDBACK_MODAL_CONTENT: ${REACT_APP_FEEDBACK_MODAL_CONTENT}
     depends_on:
       - backend
 
@@ -55,3 +56,4 @@ services:
       GH_CLIENT_SECRET: ${GH_CLIENT_SECRET}
       TOKEN_ENC_KEY: ${TOKEN_ENC_KEY}
       TOKEN_SIG_KEY: ${TOKEN_SIG_KEY}
+      PUBLIC_REPO_OWNERS: ${PUBLIC_REPO_OWNERS}

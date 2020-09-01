@@ -1,5 +1,5 @@
 import React from "react";
-import { AuthContext } from "./Auth";
+import { AuthContext } from "../Auth";
 import { Grid } from "@material-ui/core";
 
 function Header() {

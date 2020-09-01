@@ -1,13 +1,12 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { AuthContext } from "./Auth";
-import { DataContext } from "./Data";
+import { DataContext } from "../Data";
 import { Grid } from "@material-ui/core";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import NewAggregateChartButton from "./NewAggregateChartButton";
 import SearchBar from "./SearchBar";
-import Header from "./Header";
-import { Navigation, PAGES } from "./Navigation";
+import Header from "../common/Header";
+import Navigation from "./Navigation";
 import Pagination from "react-js-pagination";
 import Repository from "./Repository";
 import SelfShare from "./SelfShare";
@@ -18,14 +17,12 @@ const ITEMS_PER_PAGE = 15;
 function Dashboard() {
   const { page } = useParams();
   const { repos, loadingData } = React.useContext(DataContext);
-  const { user } = React.useContext(AuthContext);
   const [searchValue, setSearchValue] = React.useState("");
   const [activePage, setActivePage] = React.useState(1);
-  // const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
 
   console.log(repos, page);
   const reposMatchingSerach = repos[page].filter(
-    d =>
+    (d) =>
       !d.reponame || d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
   );
   const totalCount = reposMatchingSerach.length;
@@ -50,7 +47,7 @@ function Dashboard() {
       <Grid item md={10}>
         <SearchBar
           show={!loadingData && page !== "aggregateCharts"}
-          onSearch={q => {
+          onSearch={(q) => {
             setActivePage(1);
             setSearchValue(q);
           }}
@@ -75,7 +72,7 @@ function Dashboard() {
                 index={idx}
                 data={{
                   page,
-                  visibleRepos
+                  visibleRepos,
                 }}
               />
             ))}

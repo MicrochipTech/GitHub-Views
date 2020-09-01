@@ -1,16 +1,16 @@
 import React from "react";
 import { useHistory } from "react-router-dom";
-import { AuthContext } from "./Auth";
-import { DataContext } from "./Data";
+import { AuthContext } from "../Auth";
+import { DataContext } from "../Data";
 import DownloadButton from "./DownloadButton";
 
 const PAGES = [
   { title: "My Repositories", key: "userRepos" },
   { title: "Shared Repositories", key: "sharedRepos" },
-  { title: "Aggregate Charts", key: "aggregateCharts" }
+  { title: "Aggregate Charts", key: "aggregateCharts" },
 ];
 
-function Navigation({ setPage }) {
+function Navigation() {
   const history = useHistory();
   const { user } = React.useContext(AuthContext);
   const { syncRepos } = React.useContext(DataContext);
@@ -23,8 +23,8 @@ function Navigation({ setPage }) {
             return user.githubId != null;
           }
           return true;
-        }).map(p => (
-          <li key={p.key} onClick={_ => history.push(`/dashboard/${p.key}`)}>
+        }).map((p) => (
+          <li key={p.key} onClick={(_) => history.push(`/dashboard/${p.key}`)}>
             {p.title}
           </li>
         ))}
@@ -36,4 +36,4 @@ function Navigation({ setPage }) {
   );
 }
 
-export { Navigation, PAGES };
+export default Navigation;
