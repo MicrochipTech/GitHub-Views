@@ -14,14 +14,14 @@ module.exports = {
     try {
       aggChart = await new AggregateChart({
         user: req.user._id,
-        repo_list
+        repo_list,
       }).save();
-    } catch(err) {
+    } catch (err) {
       // TODO
     }
 
     res.send({
-      aggChart
+      aggChart,
     });
   },
 
@@ -29,12 +29,12 @@ module.exports = {
     const { chartId } = req.body;
     try {
       await AggregateChart.deleteOne({ _id: chartId });
-    } catch(err) {
+    } catch (err) {
       // TODO
     }
 
     res.send({
-      msg: "Chart deleted."
+      msg: "Chart deleted.",
     });
   },
 
@@ -44,18 +44,18 @@ module.exports = {
     try {
       await AggregateChart.update(
         {
-          _id: chartId
+          _id: chartId,
         },
         {
-          repo_list: repoList
+          repo_list: repoList,
         }
       );
-    } catch(err) {
+    } catch (err) {
       // TODO
     }
 
     res.send({
-      msg: "Repo added to chart."
+      msg: "Repo added to chart.",
     });
-  }
+  },
 };

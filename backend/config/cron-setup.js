@@ -130,8 +130,8 @@ async function updateRepositories() {
   let repos;
   try {
     repos = await RepositoryModel.find({ not_found: false });
-  } catch(err) {
-      // TODO
+  } catch (err) {
+    // TODO
   }
 
   /* Before updating, repos mark them as not updated.
@@ -146,7 +146,7 @@ async function updateRepositories() {
       githubId: { $ne: null },
       token_ref: { $exists: true },
     }).populate("token_ref");
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -155,11 +155,11 @@ async function updateRepositories() {
   const userPromises = users.map(async (user) => {
     /* For each user update the repos which contains its id in the users list */
     const token = user.token_ref.value;
-    
+
     let githubRepos;
     try {
       githubRepos = await GitHubApiCtrl.getUserRepos(token);
-    } catch(err) {
+    } catch (err) {
       // TODO
     }
 
@@ -177,13 +177,14 @@ async function updateRepositories() {
       console.log(`Checking ${githubRepo.full_name}, ${j}`);
 
       /* Search in the database the repository which will be updated */
-      const repoEntry = repos.find((r) => String(r.github_repo_id) === String(githubRepo.id));
-      
+      const repoEntry = repos.find(
+        (r) => String(r.github_repo_id) === String(githubRepo.id)
+      );
 
       if (repoEntry === undefined) {
         /* If repoEntry is undefined, it means that there is no repository in the database
         with the remote repository name, so it will be created */
-        
+
         if (newRepoRequests[githubRepo.full_name] === undefined) {
           console.log(
             `Repos ${githubRepo.full_name}, ${githubRepo.id} does not exist in db. Creating.`
@@ -195,7 +196,7 @@ async function updateRepositories() {
               user._id,
               token
             );
-          } catch(err) {
+          } catch (err) {
             // TODO
             console.log(
               err,
@@ -203,13 +204,15 @@ async function updateRepositories() {
             );
           }
 
-          if(newRepo !== undefined) {
+          if (newRepo !== undefined) {
             if (newRepo.success === false) {
-                console.log(`Fail creating new repo with name ${githubRepo.full_name}`);
-                return;
-              }
+              console.log(
+                `Fail creating new repo with name ${githubRepo.full_name}`
+              );
+              return;
+            }
 
-              newRepoRequests[githubRepo.full_name] = newRepo.data;
+            newRepoRequests[githubRepo.full_name] = newRepo.data;
           }
         } else {
           newRepoRequests[githubRepo.full_name].users.push(user._id);
@@ -229,15 +232,18 @@ async function updateRepositories() {
 
         /* Update forks */
         repoEntry.forks.tree_updated = false;
-        
+
         /* today variable is used to store the timestamp */
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
 
         /* Details from githubRepo variable, contains also the current forks count number.
         forks.data contains the variation of the forks, when the forks number is changed. */
-        const forks_sum = repoEntry.forks.data.reduce((total, currentValue) => total + currentValue.count, 0);
-        if(forks_sum !== githubRepo.forks_count){
+        const forks_sum = repoEntry.forks.data.reduce(
+          (total, currentValue) => total + currentValue.count,
+          0
+        );
+        if (forks_sum !== githubRepo.forks_count) {
           repoEntry.forks.data.push({
             timestamp: today.toISOString(),
             count: githubRepo.forks_count - forks_sum,
@@ -254,8 +260,8 @@ async function updateRepositories() {
             repoEntry.reponame,
             token
           );
-        } catch(err) {
-          // TODO 
+        } catch (err) {
+          // TODO
         }
 
         const { status, data: traffic } = repoTraffic;
@@ -269,17 +275,17 @@ async function updateRepositories() {
         }
       }
     });
-    
+
     try {
       await Promise.all(updateReposPromises);
-    } catch(err) {
+    } catch (err) {
       // TODO
     }
   });
-  
+
   try {
     await Promise.all(userPromises);
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -288,14 +294,14 @@ async function updateRepositories() {
   );
   try {
     await Promise.all(saveNewRepos);
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
   const updateRepos = repos.map((repo) => repo.save());
   try {
     await Promise.all(updateRepos);
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -310,7 +316,7 @@ async function setCron() {
     } else {
       try {
         await updateRepositories();
-      } catch(err) {
+      } catch (err) {
         // TODO
       }
     }
@@ -329,7 +335,7 @@ module.exports = {
     } else {
       try {
         await updateRepositories();
-      } catch(err) {
+      } catch (err) {
         // TODO
       }
     }

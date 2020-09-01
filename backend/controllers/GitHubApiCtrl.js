@@ -11,10 +11,10 @@ async function getUserRepos(token) {
       `https://api.github.com/user/repos?type=${type}&per_page=${perPage}&page=${page}`,
       {
         method: "get",
-        headers: { Authorization: `token ${token}` }
+        headers: { Authorization: `token ${token}` },
       }
     );
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -23,9 +23,9 @@ async function getUserRepos(token) {
   }
 
   let resJson;
-  try{
+  try {
     resJson = await res.json();
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -41,10 +41,10 @@ async function getUserRepos(token) {
         `https://api.github.com/user/repos?type=${type}&per_page=${perPage}&page=${page}`,
         {
           method: "get",
-          headers: { Authorization: `token ${token}` }
+          headers: { Authorization: `token ${token}` },
         }
       );
-    } catch(err) {
+    } catch (err) {
       // TODO
     }
     if (res.status !== 200) {
@@ -53,7 +53,7 @@ async function getUserRepos(token) {
     // eslint-disable-next-line no-await-in-loop
     try {
       resJson = await res.json();
-    } catch(err) {
+    } catch (err) {
       // TODO
     }
   }
@@ -63,16 +63,14 @@ async function getUserRepos(token) {
 async function getRepoDetailsById(repoid, token) {
   let response;
   try {
-    response = await fetch(
-      `https://api.github.com/repositories/${repoid}`,
-      {
-        method: "get",
-        redirect: "manual",
-        headers: {
-          Authorization: `token ${token}`
-        }
-      });
-  } catch(err) {
+    response = await fetch(`https://api.github.com/repositories/${repoid}`, {
+      method: "get",
+      redirect: "manual",
+      headers: {
+        Authorization: `token ${token}`,
+      },
+    });
+  } catch (err) {
     // TODO
     console.log(`getRpoDetailsById ${repoid}: error`);
   }
@@ -80,7 +78,7 @@ async function getRepoDetailsById(repoid, token) {
   let responseJson;
   try {
     responseJson = await response.json();
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -96,10 +94,11 @@ async function getRepoViews(reponame, token) {
         method: "get",
         redirect: "manual",
         headers: {
-          Authorization: `token ${token}`
-        }
-      });
-  } catch(err) {
+          Authorization: `token ${token}`,
+        },
+      }
+    );
+  } catch (err) {
     // TODO
     console.log(`getRepoViews repo ${reponame}: error`);
   }
@@ -107,7 +106,7 @@ async function getRepoViews(reponame, token) {
   let responseJson;
   try {
     responseJson = await response.json();
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -123,10 +122,11 @@ async function getRepoClones(reponame, token) {
         method: "get",
         redirect: "manual",
         headers: {
-          Authorization: `token ${token}`
-        }
-      });
-  } catch(err) {
+          Authorization: `token ${token}`,
+        },
+      }
+    );
+  } catch (err) {
     // TODO
     console.log(`getRepoClones repo ${reponame}: error`);
   }
@@ -134,7 +134,7 @@ async function getRepoClones(reponame, token) {
   let responseJson;
   try {
     responseJson = await response.json();
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -150,10 +150,11 @@ async function getRepoPopularPaths(reponame, token) {
         method: "get",
         redirect: "manual",
         headers: {
-          Authorization: `token ${token}`
-        }
-      });
-  } catch(err) {
+          Authorization: `token ${token}`,
+        },
+      }
+    );
+  } catch (err) {
     // TODO
     console.log(`getRepoPopularPaths repo ${reponame}: error`);
   }
@@ -161,7 +162,7 @@ async function getRepoPopularPaths(reponame, token) {
   let responseJson;
   try {
     responseJson = await response.json();
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -177,10 +178,11 @@ async function getRepoPopularReferrers(reponame, token) {
         method: "get",
         redirect: "manual",
         headers: {
-          Authorization: `token ${token}`
-        }
-      });
-  } catch(err) {
+          Authorization: `token ${token}`,
+        },
+      }
+    );
+  } catch (err) {
     // TODO
     console.log(`getRepoPopularReferrers repo ${reponame}: error`);
   }
@@ -188,7 +190,7 @@ async function getRepoPopularReferrers(reponame, token) {
   let responseJson;
   try {
     responseJson = await response.json();
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -198,13 +200,14 @@ async function getRepoPopularReferrers(reponame, token) {
 async function getRepoForks(github_repo_id) {
   let response;
   try {
-      response = await fetch(
+    response = await fetch(
       `https://api.github.com/repositories/${github_repo_id}/forks`,
       {
         method: "get",
-        redirect: "manual"
-      });
-  } catch(err) {
+        redirect: "manual",
+      }
+    );
+  } catch (err) {
     // TODO
     console.log(`getRepoForks repo ${github_repo_id}: error`);
   }
@@ -212,7 +215,7 @@ async function getRepoForks(github_repo_id) {
   let responseJson;
   try {
     responseJson = await response.json();
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -223,7 +226,7 @@ async function updateForksTree(github_repo_id) {
   let repoForks;
   try {
     repoForks = await getRepoForks(github_repo_id);
-  } catch(err) {
+  } catch (err) {
     // TODO
     console.log(
       `updateForksTree : Error building fork tree for ${github_repo_id}`
@@ -238,7 +241,7 @@ async function updateForksTree(github_repo_id) {
   ) {
     return {
       status: false,
-      data: response.headers.get("x-ratelimit-reset")
+      data: response.headers.get("x-ratelimit-reset"),
     };
   }
 
@@ -248,7 +251,7 @@ async function updateForksTree(github_repo_id) {
     let forksTree;
     try {
       forksTree = await updateForksTree(responseJson[i].id);
-    } catch(err) {
+    } catch (err) {
       // TODO
     }
 
@@ -261,7 +264,7 @@ async function updateForksTree(github_repo_id) {
       github_repo_id: responseJson[i].id,
       reponame: responseJson[i].full_name,
       count: responseJson[i].forks_count,
-      children: data
+      children: data,
     });
   }
 
@@ -275,9 +278,10 @@ async function getRepoCommits(github_repo_id) {
       `https://api.github.com/repositories/${github_repo_id}/commits`,
       {
         method: "get",
-        redirect: "manual"
-      });
-  } catch(err) {
+        redirect: "manual",
+      }
+    );
+  } catch (err) {
     // TODO
     console.log(`getRepoCommits repo ${github_repo_id}: error`);
   }
@@ -285,7 +289,7 @@ async function getRepoCommits(github_repo_id) {
   let responseJson;
   try {
     responseJson = await response.json();
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -301,5 +305,5 @@ module.exports = {
   getRepoPopularReferrers,
   getRepoForks,
   updateForksTree,
-  getRepoCommits
+  getRepoCommits,
 };

@@ -14,7 +14,7 @@ async function nameContains(req, res) {
       },
       { reponame: 1, createAt: 1, _id: 1 }
     );
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -67,15 +67,12 @@ async function createRepository(repoDetails, userId, token) {
 
   let repoTraffic;
   try {
-    repoTraffic = await getRepoTraffic(
-      newRepo.reponame,
-      token
-    );
-  } catch(err) {
+    repoTraffic = await getRepoTraffic(newRepo.reponame, token);
+  } catch (err) {
     // TODO
   }
   const { status, data: traffic } = repoTraffic;
-  
+
   if (status === false) {
     console.log(`Fail getting traffic data for repo ${newRepo.reponame}`);
     return { success: false };
@@ -210,12 +207,12 @@ async function getRepoTraffic(reponame, token) {
   let repoViews;
   try {
     repoViews = await GitHubApiCtrl.getRepoViews(reponame, token);
-  } catch(err) {
+  } catch (err) {
     // TODO
     console.log(
       `getRepoTraffic : Error getting repo views for repo ${reponame}`
     );
-  };
+  }
 
   const {
     response: viewsResponse,
@@ -235,7 +232,7 @@ async function getRepoTraffic(reponame, token) {
   let repoClones;
   try {
     repoClones = await GitHubApiCtrl.getRepoClones(reponame, token);
-  } catch(err) {
+  } catch (err) {
     // TODO
     console.log(
       `getRepoTraffic : Error getting repo clones for repo ${reponame}`
@@ -257,8 +254,11 @@ async function getRepoTraffic(reponame, token) {
   }
 
   try {
-    repoPopularReferrers = await GitHubApiCtrl.getRepoPopularReferrers(reponame, token);
-  } catch(err) {
+    repoPopularReferrers = await GitHubApiCtrl.getRepoPopularReferrers(
+      reponame,
+      token
+    );
+  } catch (err) {
     // TODO
     console.log(
       `getRepoPopularReferrers : Error getting repo referrers for repo ${reponame}`
@@ -283,7 +283,7 @@ async function getRepoTraffic(reponame, token) {
   let repoPopularPaths;
   try {
     repoPopularPaths = await GitHubApiCtrl.getRepoPopularPaths(reponame, token);
-  } catch(err) {
+  } catch (err) {
     // TODO
     console.log(
       `getRepoPopularPaths : Error getting repo referrers for repo ${reponame}`
@@ -321,22 +321,19 @@ async function updateForksTree(req, res) {
   let repoEntry;
   try {
     repoEntry = await RepositoryModel.findOne({ _id: repo_id });
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
   let forksTree;
   try {
     forksTree = await GitHubApiCtrl.updateForksTree(repoEntry.github_repo_id);
-  } catch(err) {
+  } catch (err) {
     // TODO
     console.log(`Error updateForksTree on repo: ${repoEntry.reponame}`);
   }
 
-  const {
-    status: treeStatus,
-    data: treeData,
-  } = forksTree;
+  const { status: treeStatus, data: treeData } = forksTree;
 
   if (treeStatus === false) {
     console.log(`Tree not updated for repo: ${repoEntry.reponame}`);
@@ -357,7 +354,7 @@ async function updateRepoCommits(req, res) {
   let repoEntry;
   try {
     repoEntry = await RepositoryModel.findOne({ _id: repo_id });
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
@@ -371,7 +368,7 @@ async function updateRepoCommits(req, res) {
 
   try {
     repoCommits = await GitHubApiCtrl.getRepoCommits(github_repo_id);
-  } catch(err) {
+  } catch (err) {
     // TODO
     console.log(
       `updateRepoCommits : Error getting commits for repository ${github_repo_id}`
@@ -418,15 +415,15 @@ async function share(req, res) {
     const user = await UserModel.findOne({ username });
     user.sharedRepos.push(repoId);
     await user.save();
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
 
   if (username === req.user.username) {
     let repo;
-    try{
+    try {
       repo = await RepositoryModel.findOne({ _id: repoId });
-    } catch(err) {
+    } catch (err) {
       // TODO
     }
     res.json({ repo });

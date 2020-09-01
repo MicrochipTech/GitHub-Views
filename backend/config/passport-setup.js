@@ -13,7 +13,7 @@ passport.deserializeUser(async (id, done) => {
   let user;
   try {
     user = await UserModel.findById(id);
-  } catch(err) {
+  } catch (err) {
     // TODO
   }
   done(null, user);
@@ -53,7 +53,7 @@ passport.use(
   new GitHubStrategy(
     {
       clientID: process.env.GH_CLIENT_ID,
-      clientSecret: process.env.GH_CLIENT_SECRET
+      clientSecret: process.env.GH_CLIENT_SECRET,
     },
     async (accessToken, refreshToken, profile, done) => {
       /* At the moment when this application was developed, the GitHub token generated for
@@ -64,20 +64,23 @@ passport.use(
       let currentUser;
       try {
         currentUser = await UserModel.findOne({ githubId: profile.id });
-      } catch(err) {
+      } catch (err) {
         // TODO
       }
 
       if (currentUser) {
-
         /* The GitHub user was found in the database, so we will update its latest token */
         let t;
         try {
-          await TokenModel.deleteOne({ _id: currentUser.token_ref }); /* Delete old token */
-          t = await new TokenModel({ value: accessToken }).save(); /* Create new token */
+          await TokenModel.deleteOne({
+            _id: currentUser.token_ref,
+          }); /* Delete old token */
+          t = await new TokenModel({
+            value: accessToken,
+          }).save(); /* Create new token */
           currentUser.token_ref = t._id; /* Update user */
           await currentUser.save();
-        } catch(err) {
+        } catch (err) {
           // TODO
         }
 
@@ -92,17 +95,17 @@ passport.use(
           t = await new TokenModel({ value: accessToken }).save();
         } catch (err) {
           // TODO
-          console.log("Error saveing token for new user.")
+          console.log("Error saveing token for new user.");
         }
 
-        let  newUser;
+        let newUser;
         try {
           newUser = await new UserModel({
             username: profile.username,
             githubId: profile.id,
-            token_ref: t._id
+            token_ref: t._id,
           }).save();
-        } catch(err) {
+        } catch (err) {
           // TODO
           console.log("Error saveing new user.");
         }
@@ -110,7 +113,7 @@ passport.use(
         /* Start tracking the user's repositories from the GitHub account. */
         try {
           await UserCtrl.checkForNewRepos(newUser, t.value);
-        } catch(err) {
+        } catch (err) {
           // TODO
         }
 
