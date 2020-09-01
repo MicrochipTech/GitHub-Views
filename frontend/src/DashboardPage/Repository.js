@@ -2,12 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import moment from "moment";
 import _ from "lodash";
-import { DataContext } from "./Data";
-import { Grid, Button } from "@material-ui/core";
+import { Grid } from "@material-ui/core";
 import DeleteIcon from "@material-ui/icons/Delete";
-import ShareButton from "./ShareButton";
 import ChoseReposModal from "./ChoseReposModal";
-import LineChart from "./LineChart";
+import { DataContext } from "../Data";
+import ShareButton from "./ShareButton";
+import LineChart from "../Chart/LineChart";
 
 function generateRandomColour(total, idx) {
   return `#${(0x1000000 + Math.random() * 0xffffff).toString(16).substr(1, 6)}`;
@@ -18,7 +18,7 @@ function Repository({ index, style, data }) {
     repos,
     updateAggregateChart,
     deleteAggregateChart,
-    unfollowSharedRepo
+    unfollowSharedRepo,
   } = React.useContext(DataContext);
   const { page, visibleRepos } = data;
   const d = visibleRepos[index];
@@ -28,10 +28,10 @@ function Repository({ index, style, data }) {
   let plotData = null;
   if (page === "aggregateCharts") {
     dataD = d.repo_list.map(
-      r =>
+      (r) =>
         repos["userRepos"]
           .concat(repos["sharedRepos"])
-          .filter(m => m._id === r)[0]
+          .filter((m) => m._id === r)[0]
     );
 
     const maximumTimetamp = new Date();
@@ -63,8 +63,8 @@ function Repository({ index, style, data }) {
       timestamp: labels,
       data: dataD.reduce((acc, e, idx) => {
         const repo = e;
-        let views = repo.views.map(h => h.count);
-        let uniques = repo.views.map(h => h.uniques);
+        let views = repo.views.map((h) => h.count);
+        let uniques = repo.views.map((h) => h.uniques);
 
         const limitTimestamp = new Date(repo.views[0].timestamp);
 
@@ -82,39 +82,39 @@ function Repository({ index, style, data }) {
             label: `${repo.reponame} - Views`,
             dataset: views,
             color: generateRandomColour(),
-            _id: e._id
+            _id: e._id,
           },
           {
             label: `${repo.reponame} - Unique Views`,
             dataset: uniques,
             _id: e._id,
-            color: generateRandomColour()
+            color: generateRandomColour(),
           }
         );
         return acc;
-      }, [])
+      }, []),
     };
   } else {
     dataD.push(d);
 
     plotData = {
-      timestamp: d.views.map(h => moment(h.timestamp).format("DD MMM YYYY")),
+      timestamp: d.views.map((h) => moment(h.timestamp).format("DD MMM YYYY")),
       data: dataD.reduce((acc, e) => {
         const repo = e;
-        const views = repo.views.map(h => h.count);
-        const uniques = repo.views.map(h => h.uniques);
+        const views = repo.views.map((h) => h.count);
+        const uniques = repo.views.map((h) => h.uniques);
         acc.push({
           label: `Views`,
           dataset: views,
-          color: "#603A8B"
+          color: "#603A8B",
         });
         acc.push({
           label: `Unique Views`,
           dataset: uniques,
-          color: "#FDCB00"
+          color: "#FDCB00",
         });
         return acc;
-      }, [])
+      }, []),
     };
   }
 
@@ -124,7 +124,7 @@ function Repository({ index, style, data }) {
         <h1>
           <Link
             to={{
-              pathname: `/repo/${d._id}`
+              pathname: `/repo/${d._id}`,
             }}
           >
             {d.reponame}
@@ -135,21 +135,21 @@ function Repository({ index, style, data }) {
             <ChoseReposModal
               chartToEdit={d._id}
               allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
-              selectedRepos={plotData.data.map(r => r._id)}
+              selectedRepos={plotData.data.map((r) => r._id)}
               onChange={(id, state) => {
                 updateAggregateChart(d._id, id, state);
               }}
-              onClose={repo_list => {
+              onClose={(repo_list) => {
                 const dataJSON = {
                   chartId: d._id,
-                  repoList: _.uniq(repo_list)
+                  repoList: _.uniq(repo_list),
                 };
                 fetch("/api/aggCharts/update", {
                   method: "POST",
                   headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                   },
-                  body: JSON.stringify(dataJSON)
+                  body: JSON.stringify(dataJSON),
                 });
               }}
             />
@@ -160,15 +160,15 @@ function Repository({ index, style, data }) {
                 deleteAggregateChart(d._id);
 
                 const dataJSON = {
-                  chartId: d._id
+                  chartId: d._id,
                 };
 
                 fetch("/api/aggCharts/delete", {
                   method: "POST",
                   headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                   },
-                  body: JSON.stringify(dataJSON)
+                  body: JSON.stringify(dataJSON),
                 });
               }}
             >

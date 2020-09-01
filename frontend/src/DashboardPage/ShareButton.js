@@ -4,14 +4,14 @@ import Modal from "@material-ui/core/Modal";
 import Backdrop from "@material-ui/core/Backdrop";
 import Fade from "@material-ui/core/Fade";
 import ShareIcon from "@material-ui/icons/Share";
-import Autocomplete from "./Autocomplete";
+import UsernameAutocomplete from "./UsernameAutocomplete";
 import { Button } from "@material-ui/core";
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme) => ({
   modal: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
   },
   paper: {
     position: "absolute",
@@ -19,8 +19,8 @@ const useStyles = makeStyles(theme => ({
     top: "50px",
     outline: 0,
     backgroundColor: theme.palette.background.paper,
-    borderRadius: "5px"
-  }
+    borderRadius: "5px",
+  },
 }));
 
 function ShareButton({ repoId }) {
@@ -52,7 +52,7 @@ function ShareButton({ repoId }) {
         closeAfterTransition
         BackdropComponent={Backdrop}
         BackdropProps={{
-          timeout: 500
+          timeout: 500,
         }}
       >
         <Fade in={open}>
@@ -62,22 +62,22 @@ function ShareButton({ repoId }) {
             </div>
             <hr />
             <div className="padding20">
-              <Autocomplete onChange={setUsername} />
+              <UsernameAutocomplete onChange={setUsername} />
             </div>
             <hr />
             <div className="padding20">
               <Button onClick={handleClose}>Close</Button>
               <Button
-                onClick={_ => {
+                onClick={(_) => {
                   fetch("/api/repo/share", {
                     method: "POST",
                     headers: {
-                      "Content-Type": "application/json"
+                      "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
                       repoId,
-                      username
-                    })
+                      username,
+                    }),
                   });
                   handleClose();
                 }}

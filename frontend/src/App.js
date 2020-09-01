@@ -3,15 +3,15 @@ import {
   BrowserRouter as Router,
   Route,
   Switch,
-  Redirect
+  Redirect,
 } from "react-router-dom";
 import { AuthContext, AuthProvider } from "./Auth";
 import { DataProvider } from "./Data";
 import LinearProgress from "@material-ui/core/LinearProgress";
-import Dashboard from "./Dashboard";
-import Login from "./Login";
-import SingleRepo from "./SingleRepo";
-import FeedbackBtn from "./FeedbackBtn";
+import Dashboard from "./DashboardPage/Dashboard";
+import Login from "./LoginPage/Login";
+import SingleRepo from "./SingleRepoPage/SingleRepo";
+import FeedbackBtn from "./common/FeedbackButton";
 
 import "./App.css";
 
@@ -19,14 +19,14 @@ function PrivateRoute({ component: Component, authenticated, ...rest }) {
   return (
     <Route
       {...rest}
-      render={props =>
+      render={(props) =>
         authenticated ? (
           <Component {...props} />
         ) : (
           <Redirect
             to={{
               pathname: "/login",
-              state: { from: props.location }
+              state: { from: props.location },
             }}
           />
         )
