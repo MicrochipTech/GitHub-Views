@@ -5,7 +5,7 @@ const transporter = nodemailer.createTransport({
   auth: {
     type: process.env.MAIL_AUTH_TYPE,
     user: process.env.MAIL_AUTH_USER,
-    clientId: process.env.MAIL_AUTH,
+    clientId: process.env.MAIL_AUTH_CLIENT_ID,
     clientSecret: process.env.MAIL_AUTH_CLIENT_SECRET,
     refreshToken: process.env.MAIL_AUTH_REFRESH_TOKEN,
     accessToken: process.env.MAIL_AUTH_ACCESS_TOKEN,
@@ -25,7 +25,7 @@ function logger(msg, err) {
 
   transporter.sendMail(mailOptions, function(err, info) {
     if (err) console.log(err);
-    else console.log(info);
+    // TO LOG in FILE: else console.log(info);
   });
 }
 
