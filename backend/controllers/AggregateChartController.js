@@ -23,7 +23,8 @@ async function createChart(req, res) {
     });
     ErrorHandler.logger(
       `${arguments.callee.name}: Error caught when creating new aggregateCharts.`,
-      err
+      err,
+      fasle
     );
   }
 
@@ -43,7 +44,8 @@ async function deleteChart(req, res) {
     });
     ErrorHandler.logger(
       `${arguments.callee.name}: Error caught when deleting aggregateCharts with chartId ${chartId}.`,
-      err
+      err,
+      false
     );
   }
 
@@ -71,7 +73,8 @@ async function updateRepoList(req, res) {
     });
     ErrorHandler.logger(
       `${arguments.callee.name}: Error caught when updating aggregateCharts with chartId ${chartId}.`,
-      err
+      err,
+      false
     );
   }
 

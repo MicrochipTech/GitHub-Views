@@ -1,4 +1,5 @@
 var nodemailer = require("nodemailer");
+const winston = require("winston");
 
 const transporter = nodemailer.createTransport({
   service: process.env.MAIL_SERVICE,
@@ -13,20 +14,52 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-function logger(msg, err) {
-  console.log(msg);
+const winstonLogger = winston.createLogger({
+  level: "info",
+  format: winston.format.json(),
+  defaultMeta: { service: "user-service" },
+  transports: [
+    new winston.transports.File({ filename: "error.log", level: "error" }),
+    new winston.transports.File({ filename: "info.log", level: "info" }),
+  ],
+});
+
+function logger(msg, err, email = true) {
+  winstonLogger.log({
+    level: "error",
+    message: msg,
+    stack: err.stack,
+  });
+
+  winstonLogger.log({
+    level: "info",
+    message: msg,
+  });
 
   const mailOptions = {
     from: process.env.MAIL_AUTH_USER,
     to: process.env.MAIL_ADMINS.split(" "),
     subject: "Report from GitHub Views",
-    html: `<p>${msg}<br><br>${err}</p>`,
+    html: `<p>${msg}<br><br>${err.message}<br><br>${err.stack}</p>`,
   };
 
-  transporter.sendMail(mailOptions, function(err, info) {
-    if (err) console.log(err);
-    // TO LOG in FILE: else console.log(info);
-  });
+  if (email) {
+    transporter.sendMail(mailOptions, function(err, info) {
+      if (err) {
+        console.log(err);
+        winstonLogger.log({
+          level: "error",
+          message: err,
+        });
+      } else {
+        console.log(info);
+        winstonLogger.log({
+          level: "info",
+          message: info,
+        });
+      }
+    });
+  }
 }
 
 module.exports = {
