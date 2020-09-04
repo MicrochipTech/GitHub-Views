@@ -1,8 +1,8 @@
 import React from "react";
-import { DataContext } from "../Data";
 import { Select, MenuItem } from "@material-ui/core";
 import moment from "moment";
 import { compareDate, searchDate, downloadExcelFile } from "../utils";
+import DownloadFileConfigure from "./DownloadFileConfigure";
 
 function viewsCsv(concatRepos) {
   let minimumTimetamp = new Date();
@@ -151,19 +151,29 @@ function forksCsv(concatRepos) {
   return rows;
 }
 
-function downlaodDaily({ userRepos, sharedRepos }) {
-  const concatRepos = [...userRepos, ...sharedRepos];
-  const viewsTable = viewsCsv(concatRepos);
-  const clonesTable = clonesCsv(concatRepos);
-  const forksTable = forksCsv(concatRepos);
-  const rows = [["views"]]
-    .concat(viewsTable)
-    .concat([["clones"]])
-    .concat(clonesTable)
-    .concat([["forks"]])
-    .concat(forksTable);
+function downlaodDaily(concatRepos, sheets) {
+  const sheetsDict = {};
+  sheets.forEach((s) => (sheetsDict[s.name] = s.checked));
 
-  console.log(rows);
+  let rows = [];
+
+  if (sheetsDict["Views"]) {
+    const viewsTable = viewsCsv(concatRepos);
+    rows = rows.concat([["Views"]]).concat(viewsTable);
+  }
+
+  if (sheetsDict["Clones"]) {
+    const clonesTable = clonesCsv(concatRepos);
+    rows = rows.concat([["Clones"]]).concat(clonesTable);
+  }
+
+  if (sheetsDict["Forks"]) {
+    const forksTable = forksCsv(concatRepos);
+    rows = rows.concat([["Forks"]]).concat(forksTable);
+  }
+
+  console.log("rows: ", rows);
+
   downloadExcelFile(rows);
 }
 
@@ -228,19 +238,31 @@ function reduceToMonthly(rows) {
   return rowsMapReduced;
 }
 
-function downlaodMonthly({ userRepos, sharedRepos }) {
-  const concatRepos = [...userRepos, ...sharedRepos];
+function downlaodMonthly(concatRepos, sheets) {
+  const sheetsDict = {};
+  sheets.forEach((s) => (sheetsDict[s.name] = s.checked));
 
-  const viewsTable = viewsCsv(concatRepos);
-  const reducedViewsTable = [["views"]].concat(reduceToMonthly(viewsTable));
-  const clonesTable = clonesCsv(concatRepos);
-  const reducedClonesTable = [["clones"]].concat(reduceToMonthly(clonesTable));
-  const forksTable = forksCsv(concatRepos);
-  const reducedForksTable = [["forks"]].concat(reduceToMonthly(forksTable));
+  let trafficCSV = [];
 
-  const trafficCSV = reducedViewsTable
-    .concat(reducedClonesTable)
-    .concat(reducedForksTable);
+  if (sheetsDict["Views"]) {
+    const viewsTable = viewsCsv(concatRepos);
+    const reducedViewsTable = [["Views"]].concat(reduceToMonthly(viewsTable));
+    trafficCSV = trafficCSV.concat(reducedViewsTable);
+  }
+
+  if (sheetsDict["Clones"]) {
+    const clonesTable = clonesCsv(concatRepos);
+    const reducedClonesTable = [["Clones"]].concat(
+      reduceToMonthly(clonesTable)
+    );
+    trafficCSV = trafficCSV.concat(reducedClonesTable);
+  }
+
+  if (sheetsDict["Forks"]) {
+    const forksTable = forksCsv(concatRepos);
+    const reducedForksTable = [["Forks"]].concat(reduceToMonthly(forksTable));
+    trafficCSV = trafficCSV.concat(reducedForksTable);
+  }
 
   console.log(trafficCSV);
   downloadExcelFile(trafficCSV);
@@ -248,7 +270,6 @@ function downlaodMonthly({ userRepos, sharedRepos }) {
 
 function DownloadButton() {
   const [downloadSelectOpen, setDownloadSelectOpen] = React.useState(false);
-  const { repos } = React.useContext(DataContext);
 
   const handleClose = () => {
     setDownloadSelectOpen(false);
@@ -258,8 +279,31 @@ function DownloadButton() {
     setDownloadSelectOpen(true);
   };
 
+  const [isModalOpened, setIsModalOpened] = React.useState(false);
+  const [viewToDownload, setViewToDownload] = React.useState();
+
   return (
     <div>
+      {isModalOpened && (
+        <DownloadFileConfigure
+          open={isModalOpened}
+          onDownload={(selectedRepos, sheets) => {
+            switch (viewToDownload) {
+              case "monthly":
+                downlaodMonthly(selectedRepos, sheets);
+                break;
+              case "daily":
+                downlaodDaily(selectedRepos, sheets);
+                break;
+              default:
+                throw Error("Unknown downlaod type requested.");
+            }
+          }}
+          onClose={() => {
+            setIsModalOpened(false);
+          }}
+        />
+      )}
       <li onClick={handleOpen}>Download as Excel</li>
       {downloadSelectOpen && (
         <Select
@@ -267,16 +311,8 @@ function DownloadButton() {
           onClose={handleClose}
           onOpen={handleOpen}
           onChange={(e) => {
-            switch (e.target.value) {
-              case "monthly":
-                downlaodMonthly(repos);
-                break;
-              case "daily":
-                downlaodDaily(repos);
-                break;
-              default:
-                throw Error("Unknown downlaod type requested.");
-            }
+            setIsModalOpened(true);
+            setViewToDownload(e.target.value);
           }}
         >
           <MenuItem value="monthly">Monthly view</MenuItem>
