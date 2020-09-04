@@ -18,7 +18,7 @@ mongoose.connect(
     useNewUrlParser: true,
     useCreateIndex: true,
     useFindAndModify: false,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
   }
 );
 
@@ -36,7 +36,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(
   cookieSession({
     maxAge: 24 * 60 * 60 * 1000,
-    keys: ["encrypt_cookie_key"]
+    keys: ["encrypt_cookie_key"],
   })
 );
 app.use(passport.initialize());

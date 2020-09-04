@@ -127,7 +127,12 @@ async function runGenerator(g, retry = false) {
 async function updateRepositories() {
   console.log(`Updating local database`);
 
-  const repos = await RepositoryModel.find({ not_found: false });
+  let repos;
+  try {
+    repos = await RepositoryModel.find({ not_found: false });
+  } catch (err) {
+    // TODO
+  }
 
   /* Before updating, repos mark them as not updated.
   After update, if it is still marked as not updated, it means it was deleted. */
@@ -135,17 +140,28 @@ async function updateRepositories() {
     repo.not_found = true;
   });
 
-  const users = await UserModel.find({
-    githubId: { $ne: null },
-    token_ref: { $exists: true },
-  }).populate("token_ref");
+  let users;
+  try {
+    users = await UserModel.find({
+      githubId: { $ne: null },
+      token_ref: { $exists: true },
+    }).populate("token_ref");
+  } catch (err) {
+    // TODO
+  }
 
   const newRepoRequests = {};
 
   const userPromises = users.map(async (user) => {
     /* For each user update the repos which contains its id in the users list */
     const token = user.token_ref.value;
-    const githubRepos = await GitHubApiCtrl.getUserRepos(token);
+
+    let githubRepos;
+    try {
+      githubRepos = await GitHubApiCtrl.getUserRepos(token);
+    } catch (err) {
+      // TODO
+    }
 
     if (githubRepos.success === false) {
       /* If the request to get the repos of the user with traffic details fails,
@@ -161,36 +177,42 @@ async function updateRepositories() {
       console.log(`Checking ${githubRepo.full_name}, ${j}`);
 
       /* Search in the database the repository which will be updated */
-      const repoEntry = repos.find((r) => String(r.github_repo_id) === String(githubRepo.id));
-      
+      const repoEntry = repos.find(
+        (r) => String(r.github_repo_id) === String(githubRepo.id)
+      );
 
       if (repoEntry === undefined) {
         /* If repoEntry is undefined, it means that there is no repository in the database
         with the remote repository name, so it will be created */
-        
+
         if (newRepoRequests[githubRepo.full_name] === undefined) {
           console.log(
             `Repos ${githubRepo.full_name}, ${githubRepo.id} does not exist in db. Creating.`
           );
 
-          const newRepo = await RepositoryCtrl.createRepository(
-            githubRepo,
-            user._id,
-            token
-          ).catch((e) => {
+          try {
+            newRepo = await RepositoryCtrl.createRepository(
+              githubRepo,
+              user._id,
+              token
+            );
+          } catch (err) {
+            // TODO
             console.log(
-              e,
+              err,
               `updateRepositories ${user}: error creating a new repo`
             );
-          });
+          }
 
-          if(newRepo !== undefined) {
+          if (newRepo !== undefined) {
             if (newRepo.success === false) {
-                console.log(`Fild cretig new repo ${githubRepo.full_name}`);
-                return;
-              }
+              console.log(
+                `Fail creating new repo with name ${githubRepo.full_name}`
+              );
+              return;
+            }
 
-              newRepoRequests[githubRepo.full_name] = newRepo.data;
+            newRepoRequests[githubRepo.full_name] = newRepo.data;
           }
         } else {
           newRepoRequests[githubRepo.full_name].users.push(user._id);
@@ -210,15 +232,18 @@ async function updateRepositories() {
 
         /* Update forks */
         repoEntry.forks.tree_updated = false;
-        
+
         /* today variable is used to store the timestamp */
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
 
         /* Details from githubRepo variable, contains also the current forks count number.
         forks.data contains the variation of the forks, when the forks number is changed. */
-        const forks_sum = repoEntry.forks.data.reduce((total, currentValue) => total + currentValue.count, 0);
-        if(forks_sum !== githubRepo.forks_count){
+        const forks_sum = repoEntry.forks.data.reduce(
+          (total, currentValue) => total + currentValue.count,
+          0
+        );
+        if (forks_sum !== githubRepo.forks_count) {
           repoEntry.forks.data.push({
             timestamp: today.toISOString(),
             count: githubRepo.forks_count - forks_sum,
@@ -229,10 +254,17 @@ async function updateRepositories() {
         repoEntry.commits.updated = false;
 
         /* Update traffic (views, clones, referrers, contents) */
-        const { status, data: traffic } = await RepositoryCtrl.getRepoTraffic(
-          repoEntry.reponame,
-          token
-        );
+        let repoTraffic;
+        try {
+          repoTraffic = await RepositoryCtrl.getRepoTraffic(
+            repoEntry.reponame,
+            token
+          );
+        } catch (err) {
+          // TODO
+        }
+
+        const { status, data: traffic } = repoTraffic;
 
         if (status === true) {
           RepositoryCtrl.updateRepoTraffic(repoEntry, traffic);
@@ -243,17 +275,35 @@ async function updateRepositories() {
         }
       }
     });
-    await Promise.all(updateReposPromises);
+
+    try {
+      await Promise.all(updateReposPromises);
+    } catch (err) {
+      // TODO
+    }
   });
-  await Promise.all(userPromises);
+
+  try {
+    await Promise.all(userPromises);
+  } catch (err) {
+    // TODO
+  }
 
   const saveNewRepos = Object.keys(newRepoRequests).map((k) =>
     newRepoRequests[k].save()
   );
-  await Promise.all(saveNewRepos);
+  try {
+    await Promise.all(saveNewRepos);
+  } catch (err) {
+    // TODO
+  }
 
   const updateRepos = repos.map((repo) => repo.save());
-  await Promise.all(updateRepos);
+  try {
+    await Promise.all(updateRepos);
+  } catch (err) {
+    // TODO
+  }
 
   console.log(`Local database update finished`);
 }
@@ -264,7 +314,11 @@ async function setCron() {
     if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
       runGenerator(updateRepositoriesGenerator());
     } else {
-      await updateRepositories();
+      try {
+        await updateRepositories();
+      } catch (err) {
+        // TODO
+      }
     }
   });
 }
@@ -273,9 +327,17 @@ module.exports = {
   setCron,
   updateRepositories: async () => {
     if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
-      await runGenerator(updateRepositoriesGenerator());
+      try {
+        await runGenerator(updateRepositoriesGenerator());
+      } catch (err) {
+        // TODO
+      }
     } else {
-      await updateRepositories();
+      try {
+        await updateRepositories();
+      } catch (err) {
+        // TODO
+      }
     }
   },
 };

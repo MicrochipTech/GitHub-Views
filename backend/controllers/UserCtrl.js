@@ -7,29 +7,39 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 
 async function unfollowSharedRepo(req, res) {
   const { repoId } = req.body;
-  const updateRes = await UserModel.update(
-    { _id: req.user._id },
-    { $pull: { sharedRepos: repoId } }
-  );
+  let updateRes;
+  try {
+    updateRes = await UserModel.update(
+      { _id: req.user._id },
+      { $pull: { sharedRepos: repoId } }
+    );
+  } catch (err) {
+    // TODO
+  }
   console.log(updateRes);
   if (updateRes.ok) {
     res.json({ status: "ok" });
   } else {
-    res.json({ status: "notok:(" });
+    res.json({ status: "not ok" });
   }
 }
 
 async function getWhereUsernameStartsWith(req, res) {
   const { q } = req.query;
-  const users = await UserModel.find(
-    {
-      username: {
-        $regex: `${q}.*`
-      }
-    },
-    { username: 1, _id: 0 }
-  );
-  const usersList = users.map(u => u.username);
+  let users;
+  try {
+    users = await UserModel.find(
+      {
+        username: {
+          $regex: `${q}.*`,
+        },
+      },
+      { username: 1, _id: 0 }
+    );
+  } catch (err) {
+    // TODO
+  }
+  const usersList = users.map((u) => u.username);
   if (usersList.indexOf(req.user.username) !== -1) {
     usersList.splice(usersList.indexOf(req.user.username), 1);
   }
@@ -38,18 +48,26 @@ async function getWhereUsernameStartsWith(req, res) {
 
 async function getData(req, res) {
   if (req.isAuthenticated()) {
-    const userRepos = await RepoModel.find({ users: { $eq: req.user._id } });
-    const { sharedRepos, githubId } = await UserModel.findById(
-      req.user._id
-    ).populate("sharedRepos");
-    const aggregateCharts = await AggregateChartModel.find({
-      user: req.user._id
-    });
+    let userRepos, usersWithSharedRepos, aggregateCharts;
+    try {
+      userRepos = await RepoModel.find({ users: { $eq: req.user._id } });
+      usersWithSharedRepos = await UserModel.findById(req.user._id).populate(
+        "sharedRepos"
+      );
+
+      aggregateCharts = await AggregateChartModel.find({
+        user: req.user._id,
+      });
+    } catch (err) {
+      // TODO
+    }
+
+    const { sharedRepos, githubId } = usersWithSharedRepos;
     const dataToPlot = {
       userRepos,
       sharedRepos,
       aggregateCharts,
-      githubId
+      githubId,
     };
 
     res.json(dataToPlot);
@@ -62,7 +80,12 @@ async function checkForNewRepos(user, token) {
   let anyNewRepo = false;
 
   /* Get all repos for a user through GitHub API */
-  const githubRepos = await GitHubApiCtrl.getUserRepos(token);
+  let githubRepos;
+  try {
+    githubRepos = await GitHubApiCtrl.getUserRepos(token);
+  } catch (err) {
+    // TODO
+  }
 
   if (githubRepos.success === false) {
     console.log(
@@ -76,14 +99,18 @@ async function checkForNewRepos(user, token) {
     return;
   }
 
-  const updateReposPromises = githubRepos.data.map(async githubRepo => {
-    const repos = await RepoModel.find({
-      github_repo_id: String(githubRepo.id),
-      not_found: false
-    }).catch(() => {
+  const updateReposPromises = githubRepos.data.map(async (githubRepo) => {
+    let repos;
+    try {
+      repos = await RepoModel.find({
+        github_repo_id: String(githubRepo.id),
+        not_found: false,
+      });
+    } catch (err) {
+      // TODO
       console.log(`checkForNewRepos ${user}: Error getting repos`);
       success = false;
-    });
+    }
 
     if (repos === undefined) {
       return;
@@ -92,18 +119,27 @@ async function checkForNewRepos(user, token) {
     if (repos.length === 0) {
       anyNewRepo = true;
 
-      const newRepo = await RepositoryCtrl.createRepository(
-        githubRepo,
-        user._id,
-        token
-      );
+      let newRepo;
+      try {
+        newRepo = await RepositoryCtrl.createRepository(
+          githubRepo,
+          user._id,
+          token
+        );
+      } catch (err) {
+        // TODO
+      }
 
       if (!newRepo.success) {
         console.log("UserCtrl.js:checkForNewRepos error");
         return;
       }
 
-      await newRepo.data.save();
+      try {
+        await newRepo.data.save();
+      } catch (err) {
+        // TODO
+      }
     } else if (repos.length === 1) {
       const repo = repos[0];
 
@@ -111,7 +147,7 @@ async function checkForNewRepos(user, token) {
       if (repo.reponame !== githubRepo.full_name) {
         repo.nameHistory.push({
           date: new Date(),
-          change: `${repo.reponame} -> ${githubRepo.full_name}`
+          change: `${repo.reponame} -> ${githubRepo.full_name}`,
         });
         repo.reponame = githubRepo.full_name;
         anyNewRepo = true;
@@ -119,7 +155,7 @@ async function checkForNewRepos(user, token) {
 
       /* Update users list if needed */
       const foundedUserId = repo.users.find(
-        userId => String(userId) === String(user._id)
+        (userId) => String(userId) === String(user._id)
       );
 
       if (foundedUserId === undefined) {
@@ -127,29 +163,47 @@ async function checkForNewRepos(user, token) {
       }
 
       /* Save changes to the repo in database */
-      await repo.save();
+      try {
+        await repo.save();
+      } catch (err) {
+        // TODO
+      }
     } else {
       /* More than one element was found -> log an error */
-      logList = repos.map(r => [r.reponame, user.username, r.github_repo_id]);
+      logList = repos.map((r) => [r.reponame, user.username, r.github_repo_id]);
       console.log(`Found more repos with the same name in database ${logList}`);
     }
   });
-  await Promise.all(updateReposPromises);
+  try {
+    await Promise.all(updateReposPromises);
+  } catch (err) {
+    // TODO
+  }
 
-  return anyNewRepo; 
+  return anyNewRepo;
 }
 
 async function sync(req, res) {
   const { user } = req;
-  const t = await TokenModel.findOne({ _id: user.token_ref });
+  let t;
+  try {
+    t = await TokenModel.findOne({ _id: user.token_ref });
+  } catch (err) {
+    // TODO
+  }
 
-  const success = await checkForNewRepos(user, t.value);
+  let success;
+  try {
+    success = await checkForNewRepos(user, t.value);
+  } catch (err) {
+    // TODO
+  }
 
   if (success) {
     getData(req, {
-      json: data => {
+      json: (data) => {
         res.json({ status: "ok", data });
-      }
+      },
     });
   } else {
     res.json({ status: "ok" });
@@ -161,5 +215,5 @@ module.exports = {
   getData,
   sync,
   unfollowSharedRepo,
-  checkForNewRepos
+  checkForNewRepos,
 };

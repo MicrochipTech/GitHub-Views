@@ -4,16 +4,19 @@ const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 
 async function nameContains(req, res) {
   const { q } = req.query;
-  const repos = await RepositoryModel.find(
-    {
-      reponame: {
-        $regex: `${q}.*`,
-        // highligting the matched text is more complex on the frontend, for case insensitive match
-        // $options: "i"
+  let repos;
+  try {
+    repos = await RepositoryModel.find(
+      {
+        reponame: {
+          $regex: `${q}.*`,
+        },
       },
-    },
-    { reponame: 1, createAt: 1, _id: 1 }
-  );
+      { reponame: 1, createAt: 1, _id: 1 }
+    );
+  } catch (err) {
+    // TODO
+  }
 
   const reposList = repos
     .filter((r) => {
@@ -62,13 +65,13 @@ async function createRepository(repoDetails, userId, token) {
     not_found: false,
   });
 
-  const { status, data: traffic } = await getRepoTraffic(
-    newRepo.reponame,
-    token
-  );
-  // .catch(e => {
-  //     console.log(e, `createRepository ${user}: error getting repoTraffic for a new repo`);
-  //   });
+  let repoTraffic;
+  try {
+    repoTraffic = await getRepoTraffic(newRepo.reponame, token);
+  } catch (err) {
+    // TODO
+  }
+  const { status, data: traffic } = repoTraffic;
 
   if (status === false) {
     console.log(`Fail getting traffic data for repo ${newRepo.reponame}`);
@@ -101,6 +104,13 @@ function updateRepoTraffic(repo, traffic) {
 
       return false;
     });
+  } else if (
+    viewsToUpdate.length !== 0 &&
+    new Date(viewsToUpdate[viewsToUpdate.length - 1].timestamp).getTime() ===
+      today.getTime()
+  ) {
+    /* If the views data is empty, check only the last timestamp. If it includes data from today, remove it */
+    viewsToUpdate.pop();
   }
 
   repo.views.push(...viewsToUpdate);
@@ -122,6 +132,13 @@ function updateRepoTraffic(repo, traffic) {
 
       return false;
     });
+  } else if (
+    clonesToUpdate.length !== 0 &&
+    new Date(clonesToUpdate[clonesToUpdate.length - 1].timestamp).getTime() ===
+      today.getTime()
+  ) {
+    /* If the clones data is empty, check only the last timestamp. If it includes data from today, remove it */
+    clonesToUpdate.pop();
   }
 
   repo.clones.total_count += clonesToUpdate.reduce(
@@ -187,14 +204,20 @@ function updateRepoTraffic(repo, traffic) {
 }
 
 async function getRepoTraffic(reponame, token) {
-  const {
-    response: viewsResponse,
-    responseJson: viewsResponseJson,
-  } = await GitHubApiCtrl.getRepoViews(reponame, token).catch(() => {
+  let repoViews;
+  try {
+    repoViews = await GitHubApiCtrl.getRepoViews(reponame, token);
+  } catch (err) {
+    // TODO
     console.log(
       `getRepoTraffic : Error getting repo views for repo ${reponame}`
     );
-  });
+  }
+
+  const {
+    response: viewsResponse,
+    responseJson: viewsResponseJson,
+  } = repoViews;
 
   if (
     viewsResponse.status === 403 &&
@@ -206,14 +229,19 @@ async function getRepoTraffic(reponame, token) {
     };
   }
 
-  const {
-    response: cloneResponse,
-    responseJson: cloneResponseJson,
-  } = await GitHubApiCtrl.getRepoClones(reponame, token).catch(() => {
+  let repoClones;
+  try {
+    repoClones = await GitHubApiCtrl.getRepoClones(reponame, token);
+  } catch (err) {
+    // TODO
     console.log(
       `getRepoTraffic : Error getting repo clones for repo ${reponame}`
     );
-  });
+  }
+  const {
+    response: cloneResponse,
+    responseJson: cloneResponseJson,
+  } = repoClones;
 
   if (
     cloneResponse.status === 403 &&
@@ -225,14 +253,22 @@ async function getRepoTraffic(reponame, token) {
     };
   }
 
-  const {
-    response: referrerResponse,
-    responseJson: referrerResponseJson,
-  } = await GitHubApiCtrl.getRepoPopularReferrers(reponame, token).catch(() => {
+  try {
+    repoPopularReferrers = await GitHubApiCtrl.getRepoPopularReferrers(
+      reponame,
+      token
+    );
+  } catch (err) {
+    // TODO
     console.log(
       `getRepoPopularReferrers : Error getting repo referrers for repo ${reponame}`
     );
-  });
+  }
+
+  const {
+    response: referrerResponse,
+    responseJson: referrerResponseJson,
+  } = repoPopularReferrers;
 
   if (
     referrerResponse.status === 403 &&
@@ -244,14 +280,20 @@ async function getRepoTraffic(reponame, token) {
     };
   }
 
-  const {
-    response: pathResponse,
-    responseJson: pathResponseJson,
-  } = await GitHubApiCtrl.getRepoPopularPaths(reponame, token).catch(() => {
+  let repoPopularPaths;
+  try {
+    repoPopularPaths = await GitHubApiCtrl.getRepoPopularPaths(reponame, token);
+  } catch (err) {
+    // TODO
     console.log(
       `getRepoPopularPaths : Error getting repo referrers for repo ${reponame}`
     );
-  });
+  }
+
+  const {
+    response: pathResponse,
+    responseJson: pathResponseJson,
+  } = repoPopularPaths;
 
   if (
     pathResponse.status === 403 &&
@@ -266,7 +308,7 @@ async function getRepoTraffic(reponame, token) {
   return {
     status: true,
     data: {
-      ...viewsResponseJson,
+      views: viewsResponseJson.views || [],
       clones: cloneResponseJson.clones || [],
       referrers: referrerResponseJson || [],
       contents: pathResponseJson || [],
@@ -276,16 +318,22 @@ async function getRepoTraffic(reponame, token) {
 
 async function updateForksTree(req, res) {
   const { repo_id } = req.body;
-  const repoEntry = await RepositoryModel.findOne({ _id: repo_id });
+  let repoEntry;
+  try {
+    repoEntry = await RepositoryModel.findOne({ _id: repo_id });
+  } catch (err) {
+    // TODO
+  }
 
-  const {
-    status: treeStatus,
-    data: treeData,
-  } = await GitHubApiCtrl.updateForksTree(repoEntry.github_repo_id).catch(
-    () => {
-      console.log(`Error updateForksTree on repo: ${repoEntry.reponame}`);
-    }
-  );
+  let forksTree;
+  try {
+    forksTree = await GitHubApiCtrl.updateForksTree(repoEntry.github_repo_id);
+  } catch (err) {
+    // TODO
+    console.log(`Error updateForksTree on repo: ${repoEntry.reponame}`);
+  }
+
+  const { status: treeStatus, data: treeData } = forksTree;
 
   if (treeStatus === false) {
     console.log(`Tree not updated for repo: ${repoEntry.reponame}`);
@@ -303,7 +351,12 @@ async function updateForksTree(req, res) {
 
 async function updateRepoCommits(req, res) {
   const { repo_id } = req.body;
-  const repoEntry = await RepositoryModel.findOne({ _id: repo_id });
+  let repoEntry;
+  try {
+    repoEntry = await RepositoryModel.findOne({ _id: repo_id });
+  } catch (err) {
+    // TODO
+  }
 
   if (repoEntry.commits.updated) {
     // TO REVIEW
@@ -313,13 +366,16 @@ async function updateRepoCommits(req, res) {
     };
   }
 
-  const { response, responseJson } = await GitHubApiCtrl.getRepoCommits(
-    github_repo_id
-  ).catch(() => {
+  try {
+    repoCommits = await GitHubApiCtrl.getRepoCommits(github_repo_id);
+  } catch (err) {
+    // TODO
     console.log(
       `updateRepoCommits : Error getting commits for repository ${github_repo_id}`
     );
-  });
+  }
+
+  const { response, responseJson } = repoCommits;
 
   if (
     response.status === 403 &&
@@ -355,12 +411,21 @@ async function updateRepoCommits(req, res) {
 async function share(req, res) {
   const { repoId, username } = req.body;
 
-  const user = await UserModel.findOne({ username });
-  user.sharedRepos.push(repoId);
-  await user.save();
+  try {
+    const user = await UserModel.findOne({ username });
+    user.sharedRepos.push(repoId);
+    await user.save();
+  } catch (err) {
+    // TODO
+  }
 
   if (username === req.user.username) {
-    const repo = await RepositoryModel.findOne({ _id: repoId });
+    let repo;
+    try {
+      repo = await RepositoryModel.findOne({ _id: repoId });
+    } catch (err) {
+      // TODO
+    }
     res.json({ repo });
   } else {
     res.send("Success sharing the repo!");

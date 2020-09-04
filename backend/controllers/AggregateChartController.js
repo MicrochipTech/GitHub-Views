@@ -10,39 +10,52 @@ module.exports = {
 
   create: async (req, res) => {
     const { repo_list } = req.body;
-    const aggChart = await new AggregateChart({
-      user: req.user._id,
-      repo_list
-    }).save();
+    let aggChart;
+    try {
+      aggChart = await new AggregateChart({
+        user: req.user._id,
+        repo_list,
+      }).save();
+    } catch (err) {
+      // TODO
+    }
 
     res.send({
-      aggChart
+      aggChart,
     });
   },
 
   delete: async (req, res) => {
     const { chartId } = req.body;
-    await AggregateChart.deleteOne({ _id: chartId });
+    try {
+      await AggregateChart.deleteOne({ _id: chartId });
+    } catch (err) {
+      // TODO
+    }
 
     res.send({
-      msg: "Chart deleted."
+      msg: "Chart deleted.",
     });
   },
 
   updateRepoList: async (req, res) => {
     const { chartId, repoList } = req.body;
 
-    await AggregateChart.update(
-      {
-        _id: chartId
-      },
-      {
-        repo_list: repoList
-      }
-    );
+    try {
+      await AggregateChart.update(
+        {
+          _id: chartId,
+        },
+        {
+          repo_list: repoList,
+        }
+      );
+    } catch (err) {
+      // TODO
+    }
 
     res.send({
-      msg: "Repo added to chart."
+      msg: "Repo added to chart.",
     });
-  }
+  },
 };
