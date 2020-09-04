@@ -125,7 +125,7 @@ async function runGenerator(g, retry = false) {
   }
 }
 
-async function updateRepositories() {
+async function updateAllRepositories() {
   console.log(`${arguments.callee.name}: Updating local database...`);
 
   let repos;
