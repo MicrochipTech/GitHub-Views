@@ -31,11 +31,6 @@ function logger(msg, err, email = true) {
     stack: err.stack,
   });
 
-  winstonLogger.log({
-    level: "info",
-    message: msg,
-  });
-
   const mailOptions = {
     from: process.env.MAIL_AUTH_USER,
     to: process.env.MAIL_ADMINS.split(" "),

@@ -358,9 +358,7 @@ async function setCron() {
   });
 }
 
-module.exports = {
-  setCron,
-  updateRepositories: async () => {
+async function updateRepositories() {
     if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
       try {
         await runGenerator(updateRepositoriesGenerator());
@@ -372,7 +370,7 @@ module.exports = {
       }
     } else {
       try {
-        await updateRepositories();
+      await updateAllRepositories();
       } catch (err) {
         ErrorHandler.logger(
           `${arguments.callee.name}: Error caught in daily repositories update.`,
@@ -380,5 +378,9 @@ module.exports = {
         );
       }
     }
-  },
+}
+
+module.exports = {
+  setCron,
+  updateRepositories,
 };
