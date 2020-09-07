@@ -1,7 +1,7 @@
 import React from "react";
 import { Select, MenuItem } from "@material-ui/core";
 import moment from "moment";
-import { compareDate, searchDate, downloadExcelFile } from "../utils";
+import { add0s, compareDate, searchDate, downloadExcelFile } from "../utils";
 import DownloadFileConfigure from "./DownloadFileConfigure";
 
 function viewsCsv(concatRepos) {
@@ -151,6 +151,188 @@ function forksCsv(concatRepos) {
   return rows;
 }
 
+function referrersCsv(concatRepos) {
+  /* Prepare repo data series */
+  const processedRepos = concatRepos.map((cr) => {
+    return {
+      reponame: cr.reponame,
+      referrers: cr.referrers.map((r) => {
+        // remove duplicates from r.data based on r.data[i].timestamp
+        // add0s in the sparse array
+        let uniq = {};
+        return {
+          name: r.name,
+          data: add0s(
+            r.data.filter(
+              (obj) => !uniq[obj.timestamp] && (uniq[obj.timestamp] = true)
+            )
+          ),
+        };
+      }),
+    };
+  });
+
+  let minimumTimetamp = new Date();
+  minimumTimetamp.setUTCHours(0, 0, 0, 0);
+  const maximumTimetamp = new Date();
+  maximumTimetamp.setUTCHours(0, 0, 0, 0);
+
+  const tableHead = ["reponame", "referrer"];
+
+  /* Find minimum date from the data */
+  for (let i = 0; i < processedRepos.length; i += 1) {
+    const referrers = processedRepos[i].referrers;
+
+    for (let j = 0; j < referrers.length; j += 1) {
+      if (referrers[j].data === undefined || referrers[j].data.length === 0) {
+        continue;
+      }
+
+      const referrerFirstTimestamp = new Date(referrers[j].data[0].timestamp);
+      if (referrerFirstTimestamp < minimumTimetamp) {
+        minimumTimetamp = referrerFirstTimestamp;
+      }
+    }
+  }
+  let timeIndex = new Date(minimumTimetamp.getTime());
+
+  /* Add in the table head the dates */
+  while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
+    tableHead.push(moment(timeIndex).format("DD MMM YYYY"));
+    timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+  }
+  const rows = [tableHead];
+
+  /* Add data in the table */
+  for (let i = 0; i < processedRepos.length; i += 1) {
+    const referrers = processedRepos[i].referrers;
+
+    for (let j = 0; j < referrers.length; j += 1) {
+      if (referrers[j].data === undefined || referrers[j].data.length === 0) {
+        continue;
+      }
+
+      let countsCSV = [processedRepos[i].reponame, referrers[j].name];
+      let uniquesCSV = [processedRepos[i].reponame, referrers[j].name];
+
+      const limitTimestamp = new Date(referrers[j].data[0].timestamp);
+      timeIndex = new Date(minimumTimetamp.getTime());
+
+      while (timeIndex.getTime() < limitTimestamp.getTime()) {
+        countsCSV.push(0);
+        uniquesCSV.push(0);
+
+        timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+      }
+
+      const counts = referrers[j].data.map((d) => d.count);
+      const uniques = referrers[j].data.map((d) => d.uniques);
+
+      countsCSV = countsCSV.concat(counts);
+      uniquesCSV = uniquesCSV.concat(uniques);
+      rows.push(countsCSV);
+      rows.push(uniquesCSV);
+    }
+  }
+
+  return rows;
+}
+
+function contentsCsv(concatRepos) {
+  /* Prepare repo data series */
+  const processedRepos = concatRepos.map((cr) => {
+    return {
+      reponame: cr.reponame,
+      contents: cr.contents.map((c) => {
+        // remove duplicates from r.data based on r.data[i].timestamp
+        // add0s in the sparse array
+        let uniq = {};
+        return {
+          path: c.path,
+          title: c.title,
+          data: add0s(
+            c.data.filter(
+              (obj) => !uniq[obj.timestamp] && (uniq[obj.timestamp] = true)
+            )
+          ),
+        };
+      }),
+    };
+  });
+
+  let minimumTimetamp = new Date();
+  minimumTimetamp.setUTCHours(0, 0, 0, 0);
+  const maximumTimetamp = new Date();
+  maximumTimetamp.setUTCHours(0, 0, 0, 0);
+
+  const tableHead = ["reponame", "path", "title"];
+
+  /* Find minimum date from the data */
+  for (let i = 0; i < processedRepos.length; i += 1) {
+    const contents = processedRepos[i].contents;
+
+    for (let j = 0; j < contents.length; j += 1) {
+      if (contents[j].data === undefined || contents[j].data.length === 0) {
+        continue;
+      }
+      const referrerFirstTimestamp = new Date(contents[j].data[0].timestamp);
+      if (referrerFirstTimestamp.getTime() < minimumTimetamp.getTime()) {
+        minimumTimetamp = referrerFirstTimestamp;
+      }
+    }
+  }
+  let timeIndex = new Date(minimumTimetamp.getTime());
+
+  /* Add in the table head the dates */
+  while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
+    tableHead.push(moment(timeIndex).format("DD MMM YYYY"));
+    timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+  }
+  const rows = [tableHead];
+
+  /* Add data in the table */
+  for (let i = 0; i < processedRepos.length; i += 1) {
+    const contents = processedRepos[i].contents;
+
+    for (let j = 0; j < contents.length; j += 1) {
+      if (contents[j].data === undefined || contents[j].data.length === 0) {
+        continue;
+      }
+
+      let countsCSV = [
+        processedRepos[i].reponame,
+        contents[j].path,
+        contents[j].title,
+      ];
+      let uniquesCSV = [
+        processedRepos[i].reponame,
+        contents[j].path,
+        contents[j].title,
+      ];
+
+      const limitTimestamp = new Date(contents[j].data[0].timestamp);
+      timeIndex = new Date(minimumTimetamp.getTime());
+
+      while (timeIndex.getTime() < limitTimestamp.getTime()) {
+        countsCSV.push(0);
+        uniquesCSV.push(0);
+
+        timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+      }
+
+      const counts = contents[j].data.map((d) => d.count);
+      const uniques = contents[j].data.map((d) => d.uniques);
+
+      countsCSV = countsCSV.concat(counts);
+      uniquesCSV = uniquesCSV.concat(uniques);
+      rows.push(countsCSV);
+      rows.push(uniquesCSV);
+    }
+  }
+
+  return rows;
+}
+
 function downlaodDaily(concatRepos, sheets) {
   const sheetsDict = {};
   sheets.forEach((s) => (sheetsDict[s.name] = s.checked));
@@ -170,6 +352,16 @@ function downlaodDaily(concatRepos, sheets) {
   if (sheetsDict["Forks"]) {
     const forksTable = forksCsv(concatRepos);
     rows = rows.concat([["Forks"]]).concat(forksTable);
+  }
+
+  if (sheetsDict["Referring Sites"]) {
+    const referrersTable = referrersCsv(concatRepos);
+    rows = rows.concat([["Referring Sites"]]).concat(referrersTable);
+  }
+
+  if (sheetsDict["Popular Content"]) {
+    const contentTable = contentsCsv(concatRepos);
+    rows = rows.concat([["Popular Content"]]).concat(contentTable);
   }
 
   console.log("rows: ", rows);
