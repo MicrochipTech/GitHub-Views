@@ -359,25 +359,25 @@ async function setCron() {
 }
 
 async function updateRepositories() {
-    if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
-      try {
-        await runGenerator(updateRepositoriesGenerator());
-      } catch (err) {
-        ErrorHandler.logger(
-          `${arguments.callee.name}: Error caught in daily repositories update.`,
-          err
-        );
-      }
-    } else {
-      try {
-      await updateAllRepositories();
-      } catch (err) {
-        ErrorHandler.logger(
-          `${arguments.callee.name}: Error caught in daily repositories update.`,
-          err
-        );
-      }
+  if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
+    try {
+      await runGenerator(updateRepositoriesGenerator());
+    } catch (err) {
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught in daily repositories update.`,
+        err
+      );
     }
+  } else {
+    try {
+      await updateAllRepositories();
+    } catch (err) {
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught in daily repositories update.`,
+        err
+      );
+    }
+  }
 }
 
 module.exports = {
