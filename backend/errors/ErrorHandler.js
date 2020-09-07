@@ -41,13 +41,11 @@ function logger(msg, err, email = true) {
   if (email) {
     transporter.sendMail(mailOptions, function(err, info) {
       if (err) {
-        console.log(err);
         winstonLogger.log({
           level: "error",
           message: err,
         });
       } else {
-        console.log(info);
         winstonLogger.log({
           level: "info",
           message: info,
