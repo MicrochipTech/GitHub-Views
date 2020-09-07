@@ -1,27 +1,28 @@
 import React from "react";
-import { AuthContext } from "./Auth";
-import { DataContext } from "./Data";
+import { useParams } from "react-router-dom";
+import { DataContext } from "../Data";
 import { Grid } from "@material-ui/core";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import NewAggregateChartButton from "./NewAggregateChartButton";
 import SearchBar from "./SearchBar";
-import Header from "./Header";
-import { Navigation, PAGES } from "./Navigation";
+import Header from "../common/Header";
+import Navigation from "./Navigation";
 import Pagination from "react-js-pagination";
 import Repository from "./Repository";
+import SelfShare from "./SelfShare";
 import "./Dashboard.css";
 
 const ITEMS_PER_PAGE = 15;
 
 function Dashboard() {
+  const { page } = useParams();
   const { repos, loadingData } = React.useContext(DataContext);
-  const { user } = React.useContext(AuthContext);
   const [searchValue, setSearchValue] = React.useState("");
   const [activePage, setActivePage] = React.useState(1);
-  const [page, setPage] = React.useState(user.githubId ? PAGES[0] : PAGES[1]);
 
-  const reposMatchingSerach = repos[page.key].filter(
-    d =>
+  console.log(repos, page);
+  const reposMatchingSerach = repos[page].filter(
+    (d) =>
       !d.reponame || d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
   );
   const totalCount = reposMatchingSerach.length;
@@ -40,13 +41,13 @@ function Dashboard() {
       <Header />
 
       <Grid item md={2}>
-        <Navigation setPage={setPage} />
+        <Navigation />
       </Grid>
 
       <Grid item md={10}>
         <SearchBar
-          show={!loadingData && page.key !== "aggregateCharts"}
-          onSearch={q => {
+          show={!loadingData && page !== "aggregateCharts"}
+          onSearch={(q) => {
             setActivePage(1);
             setSearchValue(q);
           }}
@@ -71,8 +72,7 @@ function Dashboard() {
                 index={idx}
                 data={{
                   page,
-                  repos,
-                  visibleRepos
+                  visibleRepos,
                 }}
               />
             ))}
@@ -84,12 +84,12 @@ function Dashboard() {
           )}
 
           {!loadingData &&
-            (repos[page.key].length === 0 || visibleRepos.length === 0) && (
+            (repos[page].length === 0 || visibleRepos.length === 0) && (
               <div>
                 <br />
                 <div className="nothing">
                   Nothing to show here.
-                  {page.key === "aggregateCharts" && (
+                  {page === "aggregateCharts" && (
                     <div>
                       <NewAggregateChartButton text="Create First Aggregate Chart" />
                     </div>
@@ -98,9 +98,18 @@ function Dashboard() {
               </div>
             )}
 
+          {!loadingData && page === "sharedRepos" && (
+            <SelfShare
+              onRepoAdded={() => {
+                setSearchValue("");
+                setActivePage(repos[page].length / ITEMS_PER_PAGE + 1);
+              }}
+            />
+          )}
+
           {!loadingData &&
-            page.key === "aggregateCharts" &&
-            repos[page.key].length > 0 && (
+            page === "aggregateCharts" &&
+            repos[page].length > 0 && (
               <center>
                 <NewAggregateChartButton text="Create New Aggregate Chart" />
               </center>

@@ -1,8 +1,8 @@
 import React from "react";
-import { DataContext } from "./Data";
-import ChoseReposModal from "./ChoseReposModal";
 import { Button } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
+import { DataContext } from "../Data";
+import ChoseReposModal from "./ChoseReposModal";
 
 function NewAggregateChartButton({ text }) {
   const { repos, addAggregateChart } = React.useContext(DataContext);
@@ -28,15 +28,15 @@ function NewAggregateChartButton({ text }) {
       }}
       onDone={async () => {
         const dataJSON = {
-          repo_list: newChartRepos
+          repo_list: newChartRepos,
         };
         setNewChartRepos([]);
         const res = await fetch("/api/aggCharts/create", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify(dataJSON)
+          body: JSON.stringify(dataJSON),
         });
 
         const body = await res.json();

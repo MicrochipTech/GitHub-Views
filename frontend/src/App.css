@@ -1,0 +1,29 @@
+.feebackBtn {
+  background-color: gray;
+  position: fixed;
+  letter-spacing: -5px;
+  left: 0;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  padding: 5px;
+  padding-bottom: 10px;
+  top: 40%;
+  font-size: 12px;
+  color: white;
+  cursor: pointer;
+  border-radius: 0px 5px 5px 0px;
+}
+
+.bareModal {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  position: absolute;
+  outline: none;
+  border-radius: 5px;
+  width: 50%;
+  background-color: white;
+  max-height: 95%;
+  overflow-y: auto;
+}
+

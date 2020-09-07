@@ -38,6 +38,7 @@ nav ul li:hover {
   background-color: #dfdfdf;
   padding: 100px;
   border-radius: 5px;
+  margin-bottom: 20px;
 }
 
 ul.pagination {

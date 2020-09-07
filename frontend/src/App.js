@@ -1,36 +1,84 @@
 import React from "react";
-
+import {
+  BrowserRouter as Router,
+  Route,
+  Switch,
+  Redirect,
+} from "react-router-dom";
 import { AuthContext, AuthProvider } from "./Auth";
 import { DataProvider } from "./Data";
 import LinearProgress from "@material-ui/core/LinearProgress";
-import Dashboard from "./Dashboard";
-import Login from "./Login";
+import Dashboard from "./DashboardPage/Dashboard";
+import Login from "./LoginPage/Login";
+import SingleRepo from "./SingleRepoPage/SingleRepo";
+import FeedbackBtn from "./common/FeedbackButton";
 
 import "./App.css";
 
-function Router() {
-  const { authenticated, resolving } = React.useContext(AuthContext);
+function PrivateRoute({ component: Component, authenticated, ...rest }) {
+  return (
+    <Route
+      {...rest}
+      render={(props) =>
+        authenticated ? (
+          <Component {...props} />
+        ) : (
+          <Redirect
+            to={{
+              pathname: "/login",
+              state: { from: props.location },
+            }}
+          />
+        )
+      }
+    />
+  );
+}
 
+function AppRouter() {
+  const { authenticated, resolving } = React.useContext(AuthContext);
+  const { user } = React.useContext(AuthContext);
   if (resolving) {
     return <LinearProgress />;
   }
   return (
-    <div>
-      {authenticated ? (
-        <DataProvider>
-          <Dashboard />
-        </DataProvider>
-      ) : (
-        <Login />
-      )}
-    </div>
+    <Router>
+      <FeedbackBtn />
+      <Switch>
+        {user && user.githubId ? (
+          <Redirect exact from="/" to="/dashboard/userRepos" />
+        ) : (
+          <Redirect exact from="/" to="/dashboard/sharedRepos" />
+        )}
+
+        <PrivateRoute
+          path="/dashboard/:page"
+          component={Dashboard}
+          authenticated={authenticated}
+        />
+
+        <PrivateRoute
+          path="/repo/:repoId"
+          component={SingleRepo}
+          authenticated={authenticated}
+        />
+
+        <Route
+          exact
+          path="/login"
+          component={() => <Login authenticated={authenticated} />}
+        />
+      </Switch>
+    </Router>
   );
 }
 
 function App() {
   return (
     <AuthProvider>
-      <Router />
+      <DataProvider>
+        <AppRouter />
+      </DataProvider>
     </AuthProvider>
   );
 }

@@ -1,62 +1,36 @@
 import React from "react";
 import produce from "immer";
 import axios from "axios";
+import { add0s } from "./utils";
 
 const DataContext = React.createContext();
 
-function prepareRepo(repo) {
-  let firstTimestamp = new Date();
-  firstTimestamp.setUTCHours(0, 0, 0, 0);
-  firstTimestamp.setUTCDate(firstTimestamp.getUTCDate() - 14);
+function prepareRepo(r) {
+  return {
+    ...r,
+    views: add0s(r.views),
+    clones: { ...r.clones, data: add0s(r.clones.data) },
+    forks: { ...r.forks, data: add0s(r.forks.data) },
+  };
+}
 
-  let lastTimestamp = new Date();
-  lastTimestamp.setUTCHours(0, 0, 0, 0);
-  lastTimestamp.setUTCDate(lastTimestamp.getUTCDate() - 1);
+function prepareData(data) {
+  data.zombieRepos = data.userRepos
+    .filter((r) => r.not_found)
+    .map(prepareRepo)
+    .concat(data.sharedRepos.filter((r) => r.not_found).map(prepareRepo));
 
-  if (repo.views.length !== 0) {
-    const first = new Date(repo.views[0].timestamp);
-    const last = new Date(repo.views[repo.views.length - 1].timestamp);
+  data.userRepos = data.userRepos.filter((r) => !r.not_found).map(prepareRepo);
 
-    if (first.getTime() < firstTimestamp.getTime()) {
-      firstTimestamp = first;
-    }
+  data.sharedRepos = data.sharedRepos
+    .filter((r) => !r.not_found)
+    .map(prepareRepo);
 
-    if (last.getTime() > lastTimestamp.getTime()) {
-      lastTimestamp = last;
-    }
-  }
-
-  let index = 0;
-  const timeIndex = firstTimestamp;
-
-  while (timeIndex.getTime() <= lastTimestamp.getTime()) {
-    if (repo.views[index] === undefined) {
-      repo.views.push({
-        timestamp: timeIndex.toISOString(),
-        count: 0,
-        uniques: 0
-      });
-    } else {
-      const currentTimestamp = new Date(repo.views[index].timestamp);
-
-      if (timeIndex.getTime() < currentTimestamp.getTime()) {
-        repo.views.splice(index, 0, {
-          timestamp: timeIndex.toISOString(),
-          count: 0,
-          uniques: 0
-        });
-      }
-    }
-
-    index += 1;
-    timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
-  }
-
-  return repo;
+  return data;
 }
 
 const reducer = (state, action) =>
-  produce(state, draft => {
+  produce(state, (draft) => {
     switch (action.type) {
       case "START_LOADING":
         draft.loadingData = true;
@@ -107,6 +81,19 @@ const reducer = (state, action) =>
         draft.repos.aggregateCharts.splice(indexToRemove, 1);
 
         return draft;
+
+      case "ADD_SHARED_REPO":
+        const { repo } = action.payload;
+        draft.repos.sharedRepos.push({ ...repo, views: add0s(repo.views) });
+        return draft;
+
+      case "REMOVE_SHARED_REPO":
+        const { repoId } = action.payload;
+        draft.repos.sharedRepos = draft.repos.sharedRepos.filter(
+          (r) => r._id !== repoId
+        );
+        return draft;
+
       default:
         throw Error("Dispatch unknown data action");
     }
@@ -115,24 +102,22 @@ const reducer = (state, action) =>
 const reposInit = {
   userRepos: [],
   sharedRepos: [],
-  aggregateCharts: []
+  aggregateCharts: [],
+  zombieRepos: [],
 };
 
 function DataProvider({ children }) {
   const [data, dispatch] = React.useReducer(reducer, {
     repos: reposInit,
-    loadingData: true
+    loadingData: true,
   });
 
   React.useEffect(
-    _ => {
-      const getData = async _ => {
-        const res = await axios.get("/api/user/getData").catch(e => {});
+    (_) => {
+      const getData = async (_) => {
+        const res = await axios.get("/api/user/getData").catch((e) => {});
         if (res != null) {
-          res.data.userRepos = res.data.userRepos.map(r => prepareRepo(r));
-          res.data.sharedRepos = res.data.sharedRepos.map(r => prepareRepo(r));
-
-          dispatch({ type: "DATA_READY", payload: res.data });
+          dispatch({ type: "DATA_READY", payload: prepareData(res.data) });
         } else {
           dispatch({ type: "DATA_READY", payload: reposInit });
         }
@@ -142,15 +127,13 @@ function DataProvider({ children }) {
     [dispatch]
   );
 
-  const syncRepos = async _ => {
+  const syncRepos = async (_) => {
     dispatch({ type: "START_LOADING" });
-    const res = await fetch("/api/repo/sync");
+    const res = await fetch("/api/user/sync");
     const json = await res.json();
     console.log(json);
     if (json.data) {
-      json.data.userRepos = json.data.userRepos.map(r => prepareRepo(r));
-      json.data.sharedRepos = json.data.sharedRepos.map(r => prepareRepo(r));
-      dispatch({ type: "DATA_READY", payload: json.data });
+      dispatch({ type: "DATA_READY", payload: prepareData(json.data) });
     } else {
       dispatch({ type: "STOP_LOADING" });
     }
@@ -160,13 +143,31 @@ function DataProvider({ children }) {
     dispatch({ type: "UPDATE_CHART", payload: { id, idToUpdate, state } });
   };
 
-  const addAggregateChart = async aggChart => {
+  const addAggregateChart = async (aggChart) => {
     dispatch({ type: "ADD_CHART", payload: { aggChart } });
   };
 
-  const deleteAggregateChart = async id => {
+  const deleteAggregateChart = async (id) => {
     dispatch({ type: "DELETE_CHART", payload: { id } });
   };
+
+  const addSharedRepo = (repo) => {
+    dispatch({ type: "ADD_SHARED_REPO", payload: { repo: prepareRepo(repo) } });
+  };
+
+  async function unfollowSharedRepo(repoId) {
+    const res = await fetch("/api/user/unfollowSharedRepo", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ repoId }),
+    });
+    const resJson = await res.json();
+    if (resJson.status === "ok") {
+      dispatch({ type: "REMOVE_SHARED_REPO", payload: { repoId } });
+    }
+  }
 
   return (
     <DataContext.Provider
@@ -175,7 +176,9 @@ function DataProvider({ children }) {
         updateAggregateChart,
         syncRepos,
         addAggregateChart,
-        deleteAggregateChart
+        deleteAggregateChart,
+        addSharedRepo,
+        unfollowSharedRepo,
       }}
     >
       {children}

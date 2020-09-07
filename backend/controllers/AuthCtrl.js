@@ -13,7 +13,7 @@ module.exports = {
   },
 
   github: passport.authenticate("github", {
-    scope: ["user", "repo"]
+    scope: ["user", "repo"],
   }),
 
   githubCallback: passport.authenticate("github"),
@@ -49,5 +49,5 @@ module.exports = {
     } catch (error) {
       res.send({ success: false, error });
     }
-  }
+  },
 };
