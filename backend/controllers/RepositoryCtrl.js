@@ -432,6 +432,19 @@ async function share(req, res) {
   }
 }
 
+async function getPublicRepos(req, res) {
+  // TODO: use regex in query
+  const allRepos = await RepositoryModel.find({});
+  const allPublicRepos = allRepos.filter((r) => {
+    const publicRepoOwners = process.env.PUBLIC_REPO_OWNERS.split(" ");
+    for (let i = 0; i < publicRepoOwners.length; i++) {
+      if (r.reponame.startsWith(publicRepoOwners[i])) return true;
+    }
+    return true;
+  });
+  res.send(allPublicRepos);
+}
+
 module.exports = {
   createRepository,
   updateRepoTraffic,
@@ -440,4 +453,5 @@ module.exports = {
   updateRepoCommits,
   share,
   nameContains,
+  getPublicRepos,
 };
