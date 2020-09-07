@@ -133,7 +133,6 @@ function Repository({ index, style, data }) {
         {page === "aggregateCharts" && (
           <div style={{ display: "flex" }}>
             <ChoseReposModal
-              chartToEdit={d._id}
               allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
               selectedRepos={plotData.data.map((r) => r._id)}
               onChange={(id, state) => {
