@@ -125,7 +125,7 @@ async function runGenerator(g, retry = false) {
   }
 }
 
-async function updateRepositories() {
+async function updateAllRepositories() {
   console.log(`${arguments.callee.name}: Updating local database...`);
 
   let repos;
@@ -358,27 +358,29 @@ async function setCron() {
   });
 }
 
+async function updateRepositories() {
+  if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
+    try {
+      await runGenerator(updateRepositoriesGenerator());
+    } catch (err) {
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught in daily repositories update.`,
+        err
+      );
+    }
+  } else {
+    try {
+      await updateAllRepositories();
+    } catch (err) {
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught in daily repositories update.`,
+        err
+      );
+    }
+  }
+}
+
 module.exports = {
   setCron,
-  updateRepositories: async () => {
-    if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
-      try {
-        await runGenerator(updateRepositoriesGenerator());
-      } catch (err) {
-        ErrorHandler.logger(
-          `${arguments.callee.name}: Error caught in daily repositories update.`,
-          err
-        );
-      }
-    } else {
-      try {
-        await updateRepositories();
-      } catch (err) {
-        ErrorHandler.logger(
-          `${arguments.callee.name}: Error caught in daily repositories update.`,
-          err
-        );
-      }
-    }
-  },
+  updateRepositories,
 };

@@ -19,7 +19,8 @@ async function nameContains(req, res) {
     res.send({ success: false, error: `Error getting data from database.` });
     ErrorHandler.logger(
       `${arguments.callee.name}: Error caught when getting from database repos with the name containing ${q} sequence.`,
-      err
+      err,
+      fasle
     );
   }
 
@@ -336,7 +337,8 @@ async function updateForksTree(req, res) {
     res.send({ success: false, error: `Error getting data from database.` });
     ErrorHandler.logger(
       `${arguments.callee.name}: Error caught when getting repo from database with id ${repo_id}.`,
-      err
+      err,
+      false
     );
   }
 
@@ -350,7 +352,8 @@ async function updateForksTree(req, res) {
     });
     ErrorHandler.logger(
       `${arguments.callee.name}: Error caught when updating forks tree for repo ${repoEntry.reponame}.`,
-      err
+      err,
+      false
     );
   }
 
@@ -381,7 +384,8 @@ async function updateRepoCommits(req, res) {
     res.send({ success: false, error: `Error getting repo from database.` });
     ErrorHandler.logger(
       `${arguments.callee.name}: Error caught when getting from database repo with id ${repo_id}.`,
-      err
+      err,
+      false
     );
   }
 
@@ -398,7 +402,8 @@ async function updateRepoCommits(req, res) {
     res.send({ success: false, error: `Error getting commits data.` });
     ErrorHandler.logger(
       `${arguments.callee.name}: Error caught when getting commits for repository with GitHub repo id ${repoEntry.github_repo_id}.`,
-      err
+      err,
+      false
     );
   }
 
@@ -449,7 +454,8 @@ async function share(req, res) {
     });
     ErrorHandler.logger(
       `${arguments.callee.name}: Error caught when getting updating the sharedRepos list for the user ${username}.`,
-      err
+      err,
+      false
     );
   }
 
@@ -464,7 +470,8 @@ async function share(req, res) {
       });
       ErrorHandler.logger(
         `${arguments.callee.name}: Error caught when getting from database the repo with id ${repoId}.`,
-        err
+        err,
+        false
       );
     }
     res.json({ repo });
