@@ -1,6 +1,7 @@
 const UserModel = require("../models/User");
 const RepositoryModel = require("../models/Repository");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
+const ErrorHandler = require("../errors/ErrorHandler");
 
 async function nameContains(req, res) {
   const { q } = req.query;
@@ -15,7 +16,12 @@ async function nameContains(req, res) {
       { reponame: 1, createAt: 1, _id: 1 }
     );
   } catch (err) {
-    // TODO
+    res.send({ success: false, error: `Error getting data from database.` });
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when getting from database repos with the name containing ${q} sequence.`,
+      err,
+      fasle
+    );
   }
 
   const reposList = repos
@@ -33,6 +39,7 @@ async function nameContains(req, res) {
 }
 
 async function createRepository(repoDetails, userId, token) {
+  /* TODO comments */
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
@@ -69,12 +76,17 @@ async function createRepository(repoDetails, userId, token) {
   try {
     repoTraffic = await getRepoTraffic(newRepo.reponame, token);
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when getting traffic data for the new repo ${newRepo.reponame}.`,
+      err
+    );
   }
   const { status, data: traffic } = repoTraffic;
 
   if (status === false) {
-    console.log(`Fail getting traffic data for repo ${newRepo.reponame}`);
+    console.log(
+      `${arguments.callee.name}: Fail getting traffic data for repo ${newRepo.reponame}`
+    );
     return { success: false };
   }
 
@@ -208,9 +220,9 @@ async function getRepoTraffic(reponame, token) {
   try {
     repoViews = await GitHubApiCtrl.getRepoViews(reponame, token);
   } catch (err) {
-    // TODO
-    console.log(
-      `getRepoTraffic : Error getting repo views for repo ${reponame}`
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when getting views traffic data for the repo ${reponame}.`,
+      err
     );
   }
 
@@ -233,9 +245,9 @@ async function getRepoTraffic(reponame, token) {
   try {
     repoClones = await GitHubApiCtrl.getRepoClones(reponame, token);
   } catch (err) {
-    // TODO
-    console.log(
-      `getRepoTraffic : Error getting repo clones for repo ${reponame}`
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when getting clones traffic data for the repo ${reponame}.`,
+      err
     );
   }
   const {
@@ -259,9 +271,9 @@ async function getRepoTraffic(reponame, token) {
       token
     );
   } catch (err) {
-    // TODO
-    console.log(
-      `getRepoPopularReferrers : Error getting repo referrers for repo ${reponame}`
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when getting referrers traffic data for the repo ${reponame}.`,
+      err
     );
   }
 
@@ -284,9 +296,9 @@ async function getRepoTraffic(reponame, token) {
   try {
     repoPopularPaths = await GitHubApiCtrl.getRepoPopularPaths(reponame, token);
   } catch (err) {
-    // TODO
-    console.log(
-      `getRepoPopularPaths : Error getting repo referrers for repo ${reponame}`
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when getting popular paths traffic data for the repo ${reponame}.`,
+      err
     );
   }
 
@@ -322,21 +334,35 @@ async function updateForksTree(req, res) {
   try {
     repoEntry = await RepositoryModel.findOne({ _id: repo_id });
   } catch (err) {
-    // TODO
+    res.send({ success: false, error: `Error getting data from database.` });
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when getting repo from database with id ${repo_id}.`,
+      err,
+      false
+    );
   }
 
   let forksTree;
   try {
     forksTree = await GitHubApiCtrl.updateForksTree(repoEntry.github_repo_id);
   } catch (err) {
-    // TODO
-    console.log(`Error updateForksTree on repo: ${repoEntry.reponame}`);
+    res.send({
+      success: false,
+      error: `Error caught when updating forks tree.`,
+    });
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when updating forks tree for repo ${repoEntry.reponame}.`,
+      err,
+      false
+    );
   }
 
   const { status: treeStatus, data: treeData } = forksTree;
 
   if (treeStatus === false) {
-    console.log(`Tree not updated for repo: ${repoEntry.reponame}`);
+    console.log(
+      `${arguments.callee.name}: Tree not updated for repo: ${repoEntry.reponame}`
+    );
   } else {
     repoEntry.forks.tree_updated = true;
     repoEntry.forks.children = treeData;
@@ -355,11 +381,15 @@ async function updateRepoCommits(req, res) {
   try {
     repoEntry = await RepositoryModel.findOne({ _id: repo_id });
   } catch (err) {
-    // TODO
+    res.send({ success: false, error: `Error getting repo from database.` });
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when getting from database repo with id ${repo_id}.`,
+      err,
+      false
+    );
   }
 
   if (repoEntry.commits.updated) {
-    // TO REVIEW
     return {
       status: true,
       data: repoEntry.commits.data,
@@ -367,11 +397,13 @@ async function updateRepoCommits(req, res) {
   }
 
   try {
-    repoCommits = await GitHubApiCtrl.getRepoCommits(github_repo_id);
+    repoCommits = await GitHubApiCtrl.getRepoCommits(repoEntry.github_repo_id);
   } catch (err) {
-    // TODO
-    console.log(
-      `updateRepoCommits : Error getting commits for repository ${github_repo_id}`
+    res.send({ success: false, error: `Error getting commits data.` });
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when getting commits for repository with GitHub repo id ${repoEntry.github_repo_id}.`,
+      err,
+      false
     );
   }
 
@@ -416,7 +448,15 @@ async function share(req, res) {
     user.sharedRepos.push(repoId);
     await user.save();
   } catch (err) {
-    // TODO
+    res.send({
+      success: false,
+      error: `Error updating the sharedRepos list.`,
+    });
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when getting updating the sharedRepos list for the user ${username}.`,
+      err,
+      false
+    );
   }
 
   if (username === req.user.username) {
@@ -424,7 +464,15 @@ async function share(req, res) {
     try {
       repo = await RepositoryModel.findOne({ _id: repoId });
     } catch (err) {
-      // TODO
+      res.send({
+        success: false,
+        error: `Error getting repo from database.`,
+      });
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught when getting from database the repo with id ${repoId}.`,
+        err,
+        false
+      );
     }
     res.json({ repo });
   } else {

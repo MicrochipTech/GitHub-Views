@@ -4,6 +4,7 @@ const AggregateChartModel = require("../models/AggregateChart");
 const TokenModel = require("../models/Token");
 const GitHubApiCtrl = require("./GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
+const ErrorHandler = require("../errors/ErrorHandler");
 
 async function unfollowSharedRepo(req, res) {
   const { repoId } = req.body;
@@ -14,7 +15,14 @@ async function unfollowSharedRepo(req, res) {
       { $pull: { sharedRepos: repoId } }
     );
   } catch (err) {
-    // TODO
+    res.send({
+      success: false,
+      error: `Error updating user in database.`,
+    });
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when updating the shadedRepos list for user with id ${req.user._id}.`,
+      err
+    );
   }
   console.log(updateRes);
   if (updateRes.ok) {
@@ -37,7 +45,14 @@ async function getWhereUsernameStartsWith(req, res) {
       { username: 1, _id: 0 }
     );
   } catch (err) {
-    // TODO
+    res.send({
+      success: false,
+      error: `Error getting repos from database.`,
+    });
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when getting from database repos which has the reponame starting with ${q}.`,
+      err
+    );
   }
   const usersList = users.map((u) => u.username);
   if (usersList.indexOf(req.user.username) !== -1) {
@@ -59,7 +74,14 @@ async function getData(req, res) {
         user: req.user._id,
       });
     } catch (err) {
-      // TODO
+      res.send({
+        success: false,
+        error: `Error getting data from database.`,
+      });
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error getting repos, shared repos and aggregate charts from database for user with id ${req.user._id}.`,
+        err
+      );
     }
 
     const { sharedRepos, githubId } = usersWithSharedRepos;
@@ -84,13 +106,15 @@ async function checkForNewRepos(user, token) {
   try {
     githubRepos = await GitHubApiCtrl.getUserRepos(token);
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught while getting repository details with GitHub API for user ${user.username}.`,
+      err
+    );
   }
 
   if (githubRepos.success === false) {
     console.log(
-      "ERROR: UserCtrl.js: GitHubApiCtrl.getUserRepos failed with code ",
-      githubRepos.status
+      `${arguments.callee.name}: GitHubApiCtrl.getUserRepos failed with code ${githubRepos.status}`
     );
     return;
   }
@@ -107,8 +131,10 @@ async function checkForNewRepos(user, token) {
         not_found: false,
       });
     } catch (err) {
-      // TODO
-      console.log(`checkForNewRepos ${user}: Error getting repos`);
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught while getting repo from database with GitHub repo id ${githubRepo.id}.`,
+        err
+      );
       success = false;
     }
 
@@ -127,18 +153,26 @@ async function checkForNewRepos(user, token) {
           token
         );
       } catch (err) {
-        // TODO
+        ErrorHandler.logger(
+          `${arguments.callee.name}: Error caught while creating new repository in database with GitHub repo id ${githubRepo.id}.`,
+          err
+        );
       }
 
       if (!newRepo.success) {
-        console.log("UserCtrl.js:checkForNewRepos error");
+        console.log(
+          `${arguments.callee.name}: Fail creating new repository in database with GitHub repo id ${githubRepo.id}`
+        );
         return;
       }
 
       try {
         await newRepo.data.save();
       } catch (err) {
-        // TODO
+        ErrorHandler.logger(
+          `${arguments.callee.name}: Error caught while saving the new repository in database with GitHub repo id ${githubRepo.id}.`,
+          err
+        );
       }
     } else if (repos.length === 1) {
       const repo = repos[0];
@@ -166,7 +200,10 @@ async function checkForNewRepos(user, token) {
       try {
         await repo.save();
       } catch (err) {
-        // TODO
+        ErrorHandler.logger(
+          `${arguments.callee.name}: Error caught while updating repository in database with GitHub repo id ${repo.github_repo_id}.`,
+          err
+        );
       }
     } else {
       /* More than one element was found -> log an error */
@@ -177,7 +214,10 @@ async function checkForNewRepos(user, token) {
   try {
     await Promise.all(updateReposPromises);
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught while updating repositories for user ${user.username}.`,
+      err
+    );
   }
 
   return anyNewRepo;
@@ -189,14 +229,28 @@ async function sync(req, res) {
   try {
     t = await TokenModel.findOne({ _id: user.token_ref });
   } catch (err) {
-    // TODO
+    res.send({
+      success: false,
+      error: `Error getting data from database.`,
+    });
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught while getting token for user ${user.username}.`,
+      err
+    );
   }
 
   let success;
   try {
     success = await checkForNewRepos(user, t.value);
   } catch (err) {
-    // TODO
+    res.send({
+      success: false,
+      error: `Error sync.`,
+    });
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught while checking for new repos for user ${user.username}.`,
+      err
+    );
   }
 
   if (success) {

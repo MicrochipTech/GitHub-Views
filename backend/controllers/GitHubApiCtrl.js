@@ -1,4 +1,5 @@
 const fetch = require("node-fetch");
+const ErrorHandler = require("../errors/ErrorHandler");
 
 async function getUserRepos(token) {
   const userRepos = [];
@@ -15,7 +16,10 @@ async function getUserRepos(token) {
       }
     );
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught in GET from GitHub API.`,
+      err
+    );
   }
 
   if (res.status !== 200) {
@@ -26,7 +30,10 @@ async function getUserRepos(token) {
   try {
     resJson = await res.json();
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when processing the reponse from GitHub API.`,
+      err
+    );
   }
 
   while (resJson.length > 0) {
@@ -45,7 +52,10 @@ async function getUserRepos(token) {
         }
       );
     } catch (err) {
-      // TODO
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught in GET from GitHub API.`,
+        err
+      );
     }
     if (res.status !== 200) {
       return { success: false, status: res.status };
@@ -54,32 +64,43 @@ async function getUserRepos(token) {
     try {
       resJson = await res.json();
     } catch (err) {
-      // TODO
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught when processing the reponse from GitHub API.`,
+        err
+      );
     }
   }
   return { success: true, data: userRepos };
 }
 
-async function getRepoDetailsById(repoid, token) {
+async function getRepoDetailsById(github_repo_id, token) {
   let response;
   try {
-    response = await fetch(`https://api.github.com/repositories/${repoid}`, {
-      method: "get",
-      redirect: "manual",
-      headers: {
-        Authorization: `token ${token}`,
-      },
-    });
+    response = await fetch(
+      `https://api.github.com/repositories/${github_repo_id}`,
+      {
+        method: "get",
+        redirect: "manual",
+        headers: {
+          Authorization: `token ${token}`,
+        },
+      }
+    );
   } catch (err) {
-    // TODO
-    console.log(`getRpoDetailsById ${repoid}: error`);
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught in GET repo details from GitHub API for repo with GitHub repo id ${github_repo_id}.`,
+      err
+    );
   }
 
   let responseJson;
   try {
     responseJson = await response.json();
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo with GitHub repo id ${github_repo_id}.`,
+      err
+    );
   }
 
   return { response, responseJson };
@@ -99,15 +120,20 @@ async function getRepoViews(reponame, token) {
       }
     );
   } catch (err) {
-    // TODO
-    console.log(`getRepoViews repo ${reponame}: error`);
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught in GET repo views from GitHub API for repo ${reponame}.`,
+      err
+    );
   }
 
   let responseJson;
   try {
     responseJson = await response.json();
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo ${reponame}.`,
+      err
+    );
   }
 
   return { response: response, responseJson };
@@ -127,15 +153,20 @@ async function getRepoClones(reponame, token) {
       }
     );
   } catch (err) {
-    // TODO
-    console.log(`getRepoClones repo ${reponame}: error`);
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught in GET repo clones from GitHub API for repo ${reponame}.`,
+      err
+    );
   }
 
   let responseJson;
   try {
     responseJson = await response.json();
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo ${reponame}.`,
+      err
+    );
   }
 
   return { response: response, responseJson };
@@ -155,15 +186,20 @@ async function getRepoPopularPaths(reponame, token) {
       }
     );
   } catch (err) {
-    // TODO
-    console.log(`getRepoPopularPaths repo ${reponame}: error`);
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught in GET repo popular paths from GitHub API for repo ${reponame}.`,
+      err
+    );
   }
 
   let responseJson;
   try {
     responseJson = await response.json();
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo ${reponame}.`,
+      err
+    );
   }
 
   return { response: response, responseJson };
@@ -183,15 +219,20 @@ async function getRepoPopularReferrers(reponame, token) {
       }
     );
   } catch (err) {
-    // TODO
-    console.log(`getRepoPopularReferrers repo ${reponame}: error`);
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught in GET repo popular referrers from GitHub API for repo ${reponame}.`,
+      err
+    );
   }
 
   let responseJson;
   try {
     responseJson = await response.json();
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo ${reponame}.`,
+      err
+    );
   }
 
   return { response: response, responseJson };
@@ -208,15 +249,20 @@ async function getRepoForks(github_repo_id) {
       }
     );
   } catch (err) {
-    // TODO
-    console.log(`getRepoForks repo ${github_repo_id}: error`);
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught in GET repo forks from GitHub API for repo with GitHub repo id${github_repo_id}.`,
+      err
+    );
   }
 
   let responseJson;
   try {
     responseJson = await response.json();
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo with GitHub repo id${github_repo_id}.`,
+      err
+    );
   }
 
   return { response: response, responseJson };
@@ -227,9 +273,9 @@ async function updateForksTree(github_repo_id) {
   try {
     repoForks = await getRepoForks(github_repo_id);
   } catch (err) {
-    // TODO
-    console.log(
-      `updateForksTree : Error building fork tree for ${github_repo_id}`
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when trying to update the forks tree for repo with GitHub repo id ${github_repo_id}.`,
+      err
     );
   }
 
@@ -252,7 +298,10 @@ async function updateForksTree(github_repo_id) {
     try {
       forksTree = await updateForksTree(responseJson[i].id);
     } catch (err) {
-      // TODO
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught in the recursive call for the repo with GitHub repo id ${github_repo_id}.`,
+        err
+      );
     }
 
     const { status, data } = forksTree;
@@ -282,15 +331,20 @@ async function getRepoCommits(github_repo_id) {
       }
     );
   } catch (err) {
-    // TODO
-    console.log(`getRepoCommits repo ${github_repo_id}: error`);
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught in GET repo commits from GitHub API for repo with GitHub repo id ${github_repo_id}.`,
+      err
+    );
   }
 
   let responseJson;
   try {
     responseJson = await response.json();
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo with GitHub repo id ${github_repo_id}.`,
+      err
+    );
   }
 
   return { response: response, responseJson };

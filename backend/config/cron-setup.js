@@ -3,6 +3,7 @@ const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
+const ErrorHandler = require("../errors/ErrorHandler");
 
 /*
 Using back off is way slower because requests are made sequential.
@@ -11,7 +12,7 @@ Still, being slower actually reduces the chance of making 5000+ requests per hou
 const UPDATE_WITH_BACK_OFF_ON_ERROR = false;
 
 async function* updateRepositoriesGenerator() {
-  console.log(`Updating local database`);
+  console.log(`${arguments.callee.name}: Updating local database`);
 
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
@@ -115,7 +116,7 @@ async function* updateRepositoriesGenerator() {
 async function runGenerator(g, retry = false) {
   for (let r = await g.next(retry); !r.done; r = await g.next(false)) {
     if (!r.value) {
-      console.log("Generator returned error.");
+      console.log(`${arguments.callee.name}: Generator returned error.`);
       setTimeout(() => {
         runGenerator(g, true);
       }, 1000 * 60 * 60);
@@ -124,14 +125,17 @@ async function runGenerator(g, retry = false) {
   }
 }
 
-async function updateRepositories() {
-  console.log(`Updating local database`);
+async function updateAllRepositories() {
+  console.log(`${arguments.callee.name}: Updating local database...`);
 
   let repos;
   try {
     repos = await RepositoryModel.find({ not_found: false });
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught while getting all repos from database.`,
+      err
+    );
   }
 
   /* Before updating, repos mark them as not updated.
@@ -147,7 +151,10 @@ async function updateRepositories() {
       token_ref: { $exists: true },
     }).populate("token_ref");
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught while getting all users from database.`,
+      err
+    );
   }
 
   const newRepoRequests = {};
@@ -160,21 +167,30 @@ async function updateRepositories() {
     try {
       githubRepos = await GitHubApiCtrl.getUserRepos(token);
     } catch (err) {
-      // TODO
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught while getting repository details with GitHub API for user ${user.username}.`,
+        err
+      );
     }
 
     if (githubRepos.success === false) {
       /* If the request to get the repos of the user with traffic details fails,
       then return */
-      console.log(`Could not get repos for ${user.username}`);
+      console.log(
+        `${arguments.callee.name}: Could not get repos for user ${user.username}.`
+      );
       return;
     }
 
-    console.log(`User ${user.username} has ${githubRepos.data.length} repos.`);
+    console.log(
+      `${arguments.callee.name}: User ${user.username} has ${githubRepos.data.length} repos.`
+    );
 
     const updateReposPromises = githubRepos.data.map(async (githubRepo, j) => {
       /* For each repo which is included in the request, update the latest traffic infos */
-      console.log(`Checking ${githubRepo.full_name}, ${j}`);
+      console.log(
+        `${arguments.callee.name}: Checking ${githubRepo.full_name}, ${j}`
+      );
 
       /* Search in the database the repository which will be updated */
       const repoEntry = repos.find(
@@ -187,7 +203,7 @@ async function updateRepositories() {
 
         if (newRepoRequests[githubRepo.full_name] === undefined) {
           console.log(
-            `Repos ${githubRepo.full_name}, ${githubRepo.id} does not exist in db. Creating.`
+            `${arguments.callee.name}: Repos ${githubRepo.full_name}, ${githubRepo.id} does not exist in db. Creating.`
           );
 
           try {
@@ -197,17 +213,16 @@ async function updateRepositories() {
               token
             );
           } catch (err) {
-            // TODO
-            console.log(
-              err,
-              `updateRepositories ${user}: error creating a new repo`
+            ErrorHandler.logger(
+              `${arguments.callee.name}: Error caught while creating new repository in database with name ${githubRepo.full_name}.`,
+              err
             );
           }
 
           if (newRepo !== undefined) {
             if (newRepo.success === false) {
               console.log(
-                `Fail creating new repo with name ${githubRepo.full_name}`
+                `${arguments.callee.name}: Fail creating new repo with name ${githubRepo.full_name}.`
               );
               return;
             }
@@ -261,7 +276,10 @@ async function updateRepositories() {
             token
           );
         } catch (err) {
-          // TODO
+          ErrorHandler.logger(
+            `${arguments.callee.name}: Error caught while geting repository traffic for repo: ${repoEntry.reponame}.`,
+            err
+          );
         }
 
         const { status, data: traffic } = repoTraffic;
@@ -270,7 +288,7 @@ async function updateRepositories() {
           RepositoryCtrl.updateRepoTraffic(repoEntry, traffic);
         } else {
           console.log(
-            `updateRepositories: Fail getting traffic data for repo ${repoEntry.reponame}`
+            `${arguments.callee.name}: Fail getting traffic data for repo ${repoEntry.reponame}.`
           );
         }
       }
@@ -279,14 +297,20 @@ async function updateRepositories() {
     try {
       await Promise.all(updateReposPromises);
     } catch (err) {
-      // TODO
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught while updating repositories for user: ${user.username}.`,
+        err
+      );
     }
   });
 
   try {
     await Promise.all(userPromises);
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught while updating repositories in database.`,
+      err
+    );
   }
 
   const saveNewRepos = Object.keys(newRepoRequests).map((k) =>
@@ -295,21 +319,29 @@ async function updateRepositories() {
   try {
     await Promise.all(saveNewRepos);
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught while saving new rpos in database.`,
+      err
+    );
   }
 
   const updateRepos = repos.map((repo) => repo.save());
   try {
     await Promise.all(updateRepos);
   } catch (err) {
-    // TODO
+    ErrorHandler.logger(
+      `${arguments.callee.name}: Error caught while saving repository updates in database.`,
+      err
+    );
   }
 
-  console.log(`Local database update finished`);
+  console.log(`${arguments.callee.name}: Local database update finished.`);
 }
 
 async function setCron() {
-  console.log("Setting a cronjob every day, to update repositories.");
+  console.log(
+    `${arguments.callee.name}: Setting a cronjob every day, to update repositories.`
+  );
   cron.schedule("25 12 * * *", async () => {
     if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
       runGenerator(updateRepositoriesGenerator());
@@ -317,27 +349,38 @@ async function setCron() {
       try {
         await updateRepositories();
       } catch (err) {
-        // TODO
+        ErrorHandler.logger(
+          `${arguments.callee.name}: Error caught in daily repositories update.`,
+          err
+        );
       }
     }
   });
 }
 
+async function updateRepositories() {
+  if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
+    try {
+      await runGenerator(updateRepositoriesGenerator());
+    } catch (err) {
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught in daily repositories update.`,
+        err
+      );
+    }
+  } else {
+    try {
+      await updateAllRepositories();
+    } catch (err) {
+      ErrorHandler.logger(
+        `${arguments.callee.name}: Error caught in daily repositories update.`,
+        err
+      );
+    }
+  }
+}
+
 module.exports = {
   setCron,
-  updateRepositories: async () => {
-    if (UPDATE_WITH_BACK_OFF_ON_ERROR) {
-      try {
-        await runGenerator(updateRepositoriesGenerator());
-      } catch (err) {
-        // TODO
-      }
-    } else {
-      try {
-        await updateRepositories();
-      } catch (err) {
-        // TODO
-      }
-    }
-  },
+  updateRepositories,
 };
