@@ -177,7 +177,7 @@ function referrersCsv(concatRepos) {
   const maximumTimetamp = new Date();
   maximumTimetamp.setUTCHours(0, 0, 0, 0);
 
-  const tableHead = ["reponame", "referrer"];
+  const tableHead = ["reponame", "type", "referrer"];
 
   /* Find minimum date from the data */
   for (let i = 0; i < processedRepos.length; i += 1) {
@@ -212,8 +212,12 @@ function referrersCsv(concatRepos) {
         continue;
       }
 
-      let countsCSV = [processedRepos[i].reponame, referrers[j].name];
-      let uniquesCSV = [processedRepos[i].reponame, referrers[j].name];
+      let countsCSV = [processedRepos[i].reponame, "counts", referrers[j].name];
+      let uniquesCSV = [
+        processedRepos[i].reponame,
+        "uniques",
+        referrers[j].name,
+      ];
 
       const limitTimestamp = new Date(referrers[j].data[0].timestamp);
       timeIndex = new Date(minimumTimetamp.getTime());
@@ -265,7 +269,7 @@ function contentsCsv(concatRepos) {
   const maximumTimetamp = new Date();
   maximumTimetamp.setUTCHours(0, 0, 0, 0);
 
-  const tableHead = ["reponame", "path", "title"];
+  const tableHead = ["reponame", "type", "path", "title"];
 
   /* Find minimum date from the data */
   for (let i = 0; i < processedRepos.length; i += 1) {
@@ -301,11 +305,13 @@ function contentsCsv(concatRepos) {
 
       let countsCSV = [
         processedRepos[i].reponame,
+        "counts",
         contents[j].path,
         contents[j].title,
       ];
       let uniquesCSV = [
         processedRepos[i].reponame,
+        "uniques",
         contents[j].path,
         contents[j].title,
       ];
@@ -369,9 +375,9 @@ function downlaodDaily(concatRepos, sheets) {
   downloadExcelFile(rows);
 }
 
-function reduceToMonthly(rows) {
+function reduceToMonthly(rows, dateIndex) {
   function reducer(total, currentValue, currentIndex) {
-    if (currentIndex > 1) {
+    if (currentIndex >= dateIndex) {
       if (searchDate(total, currentValue) === false) {
         total.push(currentValue);
       }
@@ -380,11 +386,11 @@ function reduceToMonthly(rows) {
   }
 
   const reducerHof = (th) => (total, currentValue, currentIndex) => {
-    if (currentIndex > 1) {
+    if (currentIndex >= dateIndex) {
       let acc = total.pop();
 
       if (
-        currentIndex === 2 ||
+        currentIndex === dateIndex ||
         compareDate(th[currentIndex], th[currentIndex - 1]) === false
       ) {
         total.push(acc);
@@ -399,10 +405,11 @@ function reduceToMonthly(rows) {
   };
 
   let rowsMapReduced = rows.map((element, index) => {
+    console.log(element.slice(0, dateIndex));
     if (index === 0) {
-      let months = element.reduce(reducer, [element[0], element[1]]);
+      let months = element.reduce(reducer, element.slice(0, dateIndex));
       months = months.map((innerE, innerI) => {
-        if (innerI > 1) {
+        if (innerI >= dateIndex) {
           console.log(innerE);
           return moment(innerE).format("MMM YYYY");
         }
@@ -411,13 +418,15 @@ function reduceToMonthly(rows) {
 
       return months;
     } else {
-      let reducedCounts = element.reduce(reducerHof(rows[0]), [
-        element[0],
-        element[1],
-      ]);
+      let reducedCounts = element.reduce(
+        reducerHof(rows[0]),
+        element.slice(0, dateIndex)
+      );
+
+      console.log("debug: ", reducedCounts);
 
       reducedCounts = reducedCounts.map((innerE, innerI) => {
-        if (innerI > 1) {
+        if (innerI >= dateIndex) {
           return innerE[1];
         }
 
@@ -438,22 +447,42 @@ function downlaodMonthly(concatRepos, sheets) {
 
   if (sheetsDict["Views"]) {
     const viewsTable = viewsCsv(concatRepos);
-    const reducedViewsTable = [["Views"]].concat(reduceToMonthly(viewsTable));
+    const reducedViewsTable = [["Views"]].concat(
+      reduceToMonthly(viewsTable, 2)
+    );
     trafficCSV = trafficCSV.concat(reducedViewsTable);
   }
 
   if (sheetsDict["Clones"]) {
     const clonesTable = clonesCsv(concatRepos);
     const reducedClonesTable = [["Clones"]].concat(
-      reduceToMonthly(clonesTable)
+      reduceToMonthly(clonesTable, 2)
     );
     trafficCSV = trafficCSV.concat(reducedClonesTable);
   }
 
   if (sheetsDict["Forks"]) {
     const forksTable = forksCsv(concatRepos);
-    const reducedForksTable = [["Forks"]].concat(reduceToMonthly(forksTable));
+    const reducedForksTable = [["Forks"]].concat(
+      reduceToMonthly(forksTable, 2)
+    );
     trafficCSV = trafficCSV.concat(reducedForksTable);
+  }
+
+  if (sheetsDict["Referring Sites"]) {
+    const referrersTable = referrersCsv(concatRepos);
+    const reducedReferrersTable = [["Referring Sites"]].concat(
+      reduceToMonthly(referrersTable, 3)
+    );
+    trafficCSV = trafficCSV.concat(reducedReferrersTable);
+  }
+
+  if (sheetsDict["Popular Content"]) {
+    const contentsTable = contentsCsv(concatRepos);
+    const reducedContentsTable = [["Popular Content"]].concat(
+      reduceToMonthly(contentsTable, 4)
+    );
+    trafficCSV = trafficCSV.concat(reducedContentsTable);
   }
 
   console.log(trafficCSV);
