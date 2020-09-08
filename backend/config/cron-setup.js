@@ -5,10 +5,8 @@ const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 const ErrorHandler = require("../errors/ErrorHandler");
 
-/*
-Using back off is way slower because requests are made sequential.
-Still, being slower actually reduces the chance of making 5000+ requests per hour.
-*/
+/* Using back off is way slower because requests are made sequential.
+Still, being slower actually reduces the chance of making 5000+ requests per hour. */
 const UPDATE_WITH_BACK_OFF_ON_ERROR = false;
 
 async function* updateRepositoriesGenerator() {
@@ -382,5 +380,6 @@ async function updateRepositories() {
 
 module.exports = {
   setCron,
+  updateAllRepositories,
   updateRepositories,
 };
