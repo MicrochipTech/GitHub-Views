@@ -10,10 +10,9 @@ module.exports.connect = async () => {
   const uri = await mongod.getConnectionString();
 
   const mongooseOpts = {
+    useCreateIndex: true,
     useNewUrlParser: true,
-    autoReconnect: true,
-    reconnectTries: Number.MAX_VALUE,
-    reconnectInterval: 1000,
+    useUnifiedTopology: true,
   };
 
   await mongoose.connect(uri, mongooseOpts);
