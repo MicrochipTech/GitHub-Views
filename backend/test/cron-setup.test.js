@@ -26,6 +26,7 @@ after(async () => await dbHandler.closeDatabase());
 describe(`cron-setup`, () => {
   describe(`updateAllRepositories`, () => {
     it(`#empty`, async () => {
+      /* Ensure database is mocked: no users and repositories stored */
       await UserModel.countDocuments({}, (err, count) => {
         if (err) console.log(err);
         else expect(count).to.be.equal(0);
@@ -37,6 +38,8 @@ describe(`cron-setup`, () => {
     });
 
     it(`#still empty`, async () => {
+      /* When database is empty, updateAllRepositories 
+      should not add any data in database or crash */
       await updateAllRepositories();
       await UserModel.countDocuments({}, (err, count) => {
         if (err) console.log(err);
@@ -48,8 +51,12 @@ describe(`cron-setup`, () => {
       });
     });
 
-    it(`#one user with no local and remote repos`, async () => {
-      /* Adding one user in the database */
+    it(`#one user with no local and no remote repos`, async () => {
+      /* 
+       - 1 user with no repository in database
+       - no repositories on GitHub
+      
+       After the update the database should have 0 repositories. */
 
       const t = await new TokenModel({ value: `dummy_token` }).save();
 
@@ -78,6 +85,11 @@ describe(`cron-setup`, () => {
     });
 
     it(`#simple not_found`, async () => {
+      /* 
+       - 1 user exists with 1 repository in the database
+       - the same repository does not exists anymore on GitHub
+      
+       After the update it should be marked with not_found: true */
       const t = await new TokenModel({ value: `dummy_token` }).save();
 
       const u = await new UserModel({
@@ -119,6 +131,13 @@ describe(`cron-setup`, () => {
     });
 
     it(`#simple rename`, async () => {
+      /* 
+       - 1 user exists with 1 repository, 
+       - the same repository is available on GitHub but it was renamed
+
+       After the update the change should be visible in the database 
+      and the name change should also be visible in the nameHistory field.
+       */
       const t = await new TokenModel({ value: `dummy_token` }).save();
 
       const u = await new UserModel({
@@ -196,6 +215,13 @@ describe(`cron-setup`, () => {
     });
 
     it(`#simple no duplicates`, async () => {
+      /* 
+        - 2 users with no repos in database
+        - Both users have access on GitHub to the same repository
+
+        After update, one single repository should be added,
+        with both users id in the users field.
+      */
       const t1 = await new TokenModel({ value: `dummy_token1` }).save();
       const t2 = await new TokenModel({ value: `dummy_token2` }).save();
 
@@ -252,6 +278,13 @@ describe(`cron-setup`, () => {
     });
 
     it(`#simple create`, async () => {
+      /* 
+       - 1 user with no repos in database
+       - 1 repository on GitHub
+
+       After update it should appear in database with all repository
+       traffic: views, clones, forks, contents, referrers, etc.
+      */
       const t = await new TokenModel({ value: `dummy_token` }).save();
 
       const u = await new UserModel({
