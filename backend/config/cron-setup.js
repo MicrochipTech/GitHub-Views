@@ -198,24 +198,24 @@ async function updateAllRepositories() {
       if (repoEntry === undefined) {
         /* If repoEntry is undefined, it means that there is no repository in the database
         with the remote repository name, so it will be created */
+        let newRepo;
+        try {
+          newRepo = await RepositoryCtrl.createRepository(
+            githubRepo,
+            user._id,
+            token
+          );
+        } catch (err) {
+          ErrorHandler.logger(
+            `${arguments.callee.name}: Error caught while creating new repository in database with name ${githubRepo.full_name}.`,
+            err
+          );
+        }
 
         if (newRepoRequests[githubRepo.full_name] === undefined) {
           console.log(
-            `${arguments.callee.name}: Repos ${githubRepo.full_name}, ${githubRepo.id} does not exist in db. Creating.`
+            `${arguments.callee.name}: Repo ${githubRepo.full_name}, ${githubRepo.id} does not exist in db. Creating.`
           );
-
-          try {
-            newRepo = await RepositoryCtrl.createRepository(
-              githubRepo,
-              user._id,
-              token
-            );
-          } catch (err) {
-            ErrorHandler.logger(
-              `${arguments.callee.name}: Error caught while creating new repository in database with name ${githubRepo.full_name}.`,
-              err
-            );
-          }
 
           if (newRepo !== undefined) {
             if (newRepo.success === false) {
