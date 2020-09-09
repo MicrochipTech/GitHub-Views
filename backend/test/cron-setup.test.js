@@ -132,6 +132,23 @@ describe(`cron-setup`, () => {
         users: [u._id],
         github_repo_id: `134574268`,
         reponame: `mock_user/mock_repo`,
+        views: [],
+        clones: {
+          total_count: 0,
+          total_uniques: 0,
+          data: [],
+        },
+        forks: {
+          tree_updated: false,
+          data: [],
+          children: [],
+        },
+        referrers: [],
+        contents: [],
+        commits: {
+          updated: false,
+          data: [],
+        },
       }).save();
 
       sinon.stub(GitHubApiCtrl, "getUserRepos").callsFake(function() {
@@ -143,7 +160,7 @@ describe(`cron-setup`, () => {
 
       sinon.stub(RepositoryCtrl, "getRepoTraffic").callsFake(function() {
         const rawdata = fs.readFileSync(
-          `./test/mocks/rename/getUserRepos.json`
+          `./test/mocks/rename/getRepoTraffic.json`
         );
         return JSON.parse(rawdata);
       });
