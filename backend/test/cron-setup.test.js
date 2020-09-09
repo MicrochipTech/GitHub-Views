@@ -199,13 +199,13 @@ describe(`cron-setup`, () => {
       const t1 = await new TokenModel({ value: `dummy_token1` }).save();
       const t2 = await new TokenModel({ value: `dummy_token2` }).save();
 
-      await new UserModel({
+      const u1 = await new UserModel({
         username: `mock_user1`,
         githubId: `19477518`,
         token_ref: t1._id,
       }).save();
 
-      await new UserModel({
+      const u2 = await new UserModel({
         username: `mock_user2`,
         githubId: `19477519`,
         token_ref: t2._id,
@@ -234,7 +234,18 @@ describe(`cron-setup`, () => {
 
       repos = await RepositoryModel.find({});
       expect(repos.length).to.be.equal(1);
-      expect(repos[0].users.length).to.be.equal(2);
+      const mockRepo = repos[0];
+      expect(mockRepo.users.length).to.be.equal(2);
+      expect(
+        mockRepo.users
+          .map((u) => String(u))
+          .find((u) => u === String(u1._id)) !== -1
+      ).to.be.equal(true);
+      expect(
+        mockRepo.users
+          .map((u) => String(u))
+          .find((u) => u === String(u2._id)) !== -1
+      ).to.be.equal(true);
 
       GitHubApiCtrl.getUserRepos.restore();
       RepositoryCtrl.getRepoTraffic.restore();
