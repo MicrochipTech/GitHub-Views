@@ -47,9 +47,7 @@ describe("AuthContext", () => {
         </AuthContext.Consumer>
       </AuthProvider>
     );
-    debug();
     await wait(() => getByTestId("done"));
-    debug();
     expect(getByTestId("error")).toHaveTextContent("not authenticated");
   });
 });
