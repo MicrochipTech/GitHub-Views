@@ -250,5 +250,54 @@ describe(`cron-setup`, () => {
       GitHubApiCtrl.getUserRepos.restore();
       RepositoryCtrl.getRepoTraffic.restore();
     });
+
+    it(`#simple create`, async () => {
+      const t = await new TokenModel({ value: `dummy_token` }).save();
+
+      const u = await new UserModel({
+        username: `mock_user`,
+        githubId: `19477518`,
+        token_ref: t._id,
+      }).save();
+
+      sinon.stub(GitHubApiCtrl, "getUserRepos").callsFake(function() {
+        const rawdata = fs.readFileSync(
+          `./test/mocks/create/getUserRepos.json`
+        );
+        return JSON.parse(rawdata);
+      });
+
+      sinon.stub(RepositoryCtrl, "getRepoTraffic").callsFake(function() {
+        const rawdata = fs.readFileSync(
+          `./test/mocks/create/getRepoTraffic.json`
+        );
+        return JSON.parse(rawdata);
+      });
+
+      await updateAllRepositories();
+
+      const repos = await RepositoryModel.find({});
+      expect(repos.length).to.be.equal(1);
+
+      const mockRepo = repos[0];
+      expect(mockRepo.not_found).to.be.equal(false);
+      expect(mockRepo.users.length).to.be.equal(1);
+      expect(mockRepo.users[0]).to.deep.equal(u._id);
+      expect(mockRepo.github_repo_id).to.be.equal(`134574268`);
+      expect(mockRepo.reponame).to.be.equal(`mock_user/mock_repo`);
+      expect(mockRepo.views.length).to.be.equal(14);
+      expect(mockRepo.clones.data.length).to.be.equal(1);
+      expect(mockRepo.forks.tree_updated).to.be.equal(false);
+      expect(mockRepo.forks.children.length).to.be.equal(0);
+      expect(mockRepo.forks.data.length).to.be.equal(1);
+      expect(mockRepo.referrers.length).to.be.equal(7);
+      expect(mockRepo.contents.length).to.be.equal(10);
+      expect(mockRepo.nameHistory.length).to.be.equal(0);
+      expect(mockRepo.commits.updated).to.be.equal(false);
+      expect(mockRepo.commits.data.length).to.be.equal(0);
+
+      GitHubApiCtrl.getUserRepos.restore();
+      RepositoryCtrl.getRepoTraffic.restore();
+    });
   });
 });
