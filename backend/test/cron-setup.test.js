@@ -194,5 +194,50 @@ describe(`cron-setup`, () => {
       GitHubApiCtrl.getUserRepos.restore();
       RepositoryCtrl.getRepoTraffic.restore();
     });
+
+    it(`#simple no duplicates`, async () => {
+      const t1 = await new TokenModel({ value: `dummy_token1` }).save();
+      const t2 = await new TokenModel({ value: `dummy_token2` }).save();
+
+      await new UserModel({
+        username: `mock_user1`,
+        githubId: `19477518`,
+        token_ref: t1._id,
+      }).save();
+
+      await new UserModel({
+        username: `mock_user2`,
+        githubId: `19477519`,
+        token_ref: t2._id,
+      }).save();
+
+      sinon.stub(GitHubApiCtrl, "getUserRepos").callsFake(function() {
+        const rawdata = fs.readFileSync(
+          `./test/mocks/no_duplicates/getUserRepos.json`
+        );
+        return JSON.parse(rawdata);
+      });
+
+      sinon.stub(RepositoryCtrl, "getRepoTraffic").callsFake(function() {
+        const rawdata = fs.readFileSync(
+          `./test/mocks/no_duplicates/getRepoTraffic.json`
+        );
+        return JSON.parse(rawdata);
+      });
+
+      await updateAllRepositories();
+
+      await UserModel.countDocuments({}, (err, count) => {
+        if (err) console.log(err);
+        else expect(count).to.be.equal(2);
+      });
+
+      repos = await RepositoryModel.find({});
+      expect(repos.length).to.be.equal(1);
+      expect(repos[0].users.length).to.be.equal(2);
+
+      GitHubApiCtrl.getUserRepos.restore();
+      RepositoryCtrl.getRepoTraffic.restore();
+    });
   });
 });

@@ -74,7 +74,7 @@ async function createRepository(repoDetails, userId, token) {
 
   let repoTraffic;
   try {
-    repoTraffic = await getRepoTraffic(newRepo.reponame, token);
+    repoTraffic = await module.exports.getRepoTraffic(newRepo.reponame, token);
   } catch (err) {
     ErrorHandler.logger(
       `${arguments.callee.name}: Error caught when getting traffic data for the new repo ${newRepo.reponame}.`,
