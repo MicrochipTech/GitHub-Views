@@ -1,7 +1,7 @@
 const UserModel = require("../models/User");
 const RepositoryModel = require("../models/Repository");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
-const ErrorHandler = require("../errors/ErrorHandler");
+const {logger, errorHandler} = require("../logs/logger");
 
 async function nameContains(req, res) {
   const { q } = req.query;
@@ -17,7 +17,7 @@ async function nameContains(req, res) {
     );
   } catch (err) {
     res.send({ success: false, error: `Error getting data from database.` });
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when getting from database repos with the name containing ${q} sequence.`,
       err,
       fasle
@@ -76,7 +76,7 @@ async function createRepository(repoDetails, userId, token) {
   try {
     repoTraffic = await module.exports.getRepoTraffic(newRepo.reponame, token);
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when getting traffic data for the new repo ${newRepo.reponame}.`,
       err
     );
@@ -84,7 +84,7 @@ async function createRepository(repoDetails, userId, token) {
   const { status, data: traffic } = repoTraffic;
 
   if (status === false) {
-    console.log(
+    logger.info(
       `${arguments.callee.name}: Fail getting traffic data for repo ${newRepo.reponame}`
     );
     return { success: false };
@@ -220,7 +220,7 @@ async function getRepoTraffic(reponame, token) {
   try {
     repoViews = await GitHubApiCtrl.getRepoViews(reponame, token);
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when getting views traffic data for the repo ${reponame}.`,
       err
     );
@@ -245,7 +245,7 @@ async function getRepoTraffic(reponame, token) {
   try {
     repoClones = await GitHubApiCtrl.getRepoClones(reponame, token);
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when getting clones traffic data for the repo ${reponame}.`,
       err
     );
@@ -271,7 +271,7 @@ async function getRepoTraffic(reponame, token) {
       token
     );
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when getting referrers traffic data for the repo ${reponame}.`,
       err
     );
@@ -296,7 +296,7 @@ async function getRepoTraffic(reponame, token) {
   try {
     repoPopularPaths = await GitHubApiCtrl.getRepoPopularPaths(reponame, token);
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when getting popular paths traffic data for the repo ${reponame}.`,
       err
     );
@@ -335,7 +335,7 @@ async function updateForksTree(req, res) {
     repoEntry = await RepositoryModel.findOne({ _id: repo_id });
   } catch (err) {
     res.send({ success: false, error: `Error getting data from database.` });
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when getting repo from database with id ${repo_id}.`,
       err,
       false
@@ -350,7 +350,7 @@ async function updateForksTree(req, res) {
       success: false,
       error: `Error caught when updating forks tree.`,
     });
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when updating forks tree for repo ${repoEntry.reponame}.`,
       err,
       false
@@ -360,7 +360,7 @@ async function updateForksTree(req, res) {
   const { status: treeStatus, data: treeData } = forksTree;
 
   if (treeStatus === false) {
-    console.log(
+    logger.info(
       `${arguments.callee.name}: Tree not updated for repo: ${repoEntry.reponame}`
     );
   } else {
@@ -382,7 +382,7 @@ async function updateRepoCommits(req, res) {
     repoEntry = await RepositoryModel.findOne({ _id: repo_id });
   } catch (err) {
     res.send({ success: false, error: `Error getting repo from database.` });
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when getting from database repo with id ${repo_id}.`,
       err,
       false
@@ -400,7 +400,7 @@ async function updateRepoCommits(req, res) {
     repoCommits = await GitHubApiCtrl.getRepoCommits(repoEntry.github_repo_id);
   } catch (err) {
     res.send({ success: false, error: `Error getting commits data.` });
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when getting commits for repository with GitHub repo id ${repoEntry.github_repo_id}.`,
       err,
       false
@@ -452,7 +452,7 @@ async function share(req, res) {
       success: false,
       error: `Error updating the sharedRepos list.`,
     });
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when getting updating the sharedRepos list for the user ${username}.`,
       err,
       false
@@ -468,7 +468,7 @@ async function share(req, res) {
         success: false,
         error: `Error getting repo from database.`,
       });
-      ErrorHandler.logger(
+      errorHandler(
         `${arguments.callee.name}: Error caught when getting from database the repo with id ${repoId}.`,
         err,
         false

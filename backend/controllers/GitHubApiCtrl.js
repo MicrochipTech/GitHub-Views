@@ -1,5 +1,5 @@
 const fetch = require("node-fetch");
-const ErrorHandler = require("../errors/ErrorHandler");
+const {logger, errorHandler} = require("../logs/logger");
 
 async function getUserRepos(token) {
   const userRepos = [];
@@ -16,7 +16,7 @@ async function getUserRepos(token) {
       }
     );
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught in GET from GitHub API.`,
       err
     );
@@ -30,7 +30,7 @@ async function getUserRepos(token) {
   try {
     resJson = await res.json();
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when processing the reponse from GitHub API.`,
       err
     );
@@ -52,7 +52,7 @@ async function getUserRepos(token) {
         }
       );
     } catch (err) {
-      ErrorHandler.logger(
+      errorHandler(
         `${arguments.callee.name}: Error caught in GET from GitHub API.`,
         err
       );
@@ -64,7 +64,7 @@ async function getUserRepos(token) {
     try {
       resJson = await res.json();
     } catch (err) {
-      ErrorHandler.logger(
+      errorHandler(
         `${arguments.callee.name}: Error caught when processing the reponse from GitHub API.`,
         err
       );
@@ -87,7 +87,7 @@ async function getRepoDetailsById(github_repo_id, token) {
       }
     );
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught in GET repo details from GitHub API for repo with GitHub repo id ${github_repo_id}.`,
       err
     );
@@ -97,7 +97,7 @@ async function getRepoDetailsById(github_repo_id, token) {
   try {
     responseJson = await response.json();
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo with GitHub repo id ${github_repo_id}.`,
       err
     );
@@ -120,7 +120,7 @@ async function getRepoViews(reponame, token) {
       }
     );
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught in GET repo views from GitHub API for repo ${reponame}.`,
       err
     );
@@ -130,7 +130,7 @@ async function getRepoViews(reponame, token) {
   try {
     responseJson = await response.json();
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo ${reponame}.`,
       err
     );
@@ -153,7 +153,7 @@ async function getRepoClones(reponame, token) {
       }
     );
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught in GET repo clones from GitHub API for repo ${reponame}.`,
       err
     );
@@ -163,7 +163,7 @@ async function getRepoClones(reponame, token) {
   try {
     responseJson = await response.json();
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo ${reponame}.`,
       err
     );
@@ -186,7 +186,7 @@ async function getRepoPopularPaths(reponame, token) {
       }
     );
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught in GET repo popular paths from GitHub API for repo ${reponame}.`,
       err
     );
@@ -196,7 +196,7 @@ async function getRepoPopularPaths(reponame, token) {
   try {
     responseJson = await response.json();
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo ${reponame}.`,
       err
     );
@@ -219,7 +219,7 @@ async function getRepoPopularReferrers(reponame, token) {
       }
     );
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught in GET repo popular referrers from GitHub API for repo ${reponame}.`,
       err
     );
@@ -229,7 +229,7 @@ async function getRepoPopularReferrers(reponame, token) {
   try {
     responseJson = await response.json();
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo ${reponame}.`,
       err
     );
@@ -249,7 +249,7 @@ async function getRepoForks(github_repo_id) {
       }
     );
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught in GET repo forks from GitHub API for repo with GitHub repo id${github_repo_id}.`,
       err
     );
@@ -259,7 +259,7 @@ async function getRepoForks(github_repo_id) {
   try {
     responseJson = await response.json();
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo with GitHub repo id${github_repo_id}.`,
       err
     );
@@ -273,7 +273,7 @@ async function updateForksTree(github_repo_id) {
   try {
     repoForks = await getRepoForks(github_repo_id);
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when trying to update the forks tree for repo with GitHub repo id ${github_repo_id}.`,
       err
     );
@@ -298,7 +298,7 @@ async function updateForksTree(github_repo_id) {
     try {
       forksTree = await updateForksTree(responseJson[i].id);
     } catch (err) {
-      ErrorHandler.logger(
+      errorHandler(
         `${arguments.callee.name}: Error caught in the recursive call for the repo with GitHub repo id ${github_repo_id}.`,
         err
       );
@@ -331,7 +331,7 @@ async function getRepoCommits(github_repo_id) {
       }
     );
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught in GET repo commits from GitHub API for repo with GitHub repo id ${github_repo_id}.`,
       err
     );
@@ -341,7 +341,7 @@ async function getRepoCommits(github_repo_id) {
   try {
     responseJson = await response.json();
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when processing the reponse from GitHub API for repo with GitHub repo id ${github_repo_id}.`,
       err
     );

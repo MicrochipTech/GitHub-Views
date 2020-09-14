@@ -4,7 +4,7 @@ const GitHubStrategy = require("passport-github").Strategy;
 const UserCtrl = require("../controllers/UserCtrl");
 const UserModel = require("../models/User");
 const TokenModel = require("../models/Token");
-const ErrorHandler = require("../errors/ErrorHandler");
+const {logger, errorHandler} = require("../logs/logger");
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -15,7 +15,7 @@ passport.deserializeUser(async (id, done) => {
   try {
     user = await UserModel.findById(id);
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when deserializing user with id ${id}.`,
       err
     );
@@ -69,7 +69,7 @@ passport.use(
       try {
         currentUser = await UserModel.findOne({ githubId: profile.id });
       } catch (err) {
-        ErrorHandler.logger(
+        errorHandler(
           `${arguments.callee.name}: Error caught while getting from database the user with githubId ${profile.id}.`,
           err
         );
@@ -77,7 +77,7 @@ passport.use(
 
       if (currentUser) {
         /* The GitHub user was found in the database, so we will update its latest token */
-        console.log(
+        logger.info(
           `${arguments.callee.name}: Updating token for user ${currentUser.username}...`
         );
         let t;
@@ -91,7 +91,7 @@ passport.use(
           currentUser.token_ref = t._id; /* Update user */
           await currentUser.save();
         } catch (err) {
-          ErrorHandler.logger(
+          errorHandler(
             `${arguments.callee.name}: Error caught while updating token for user ${currentUser.username}.`,
             err
           );
@@ -100,14 +100,14 @@ passport.use(
         done(null, currentUser);
       } else {
         /* The GitHub user was not found in the database, so we will create it */
-        console.log(`${arguments.callee.name}: Creating new user...`);
+        logger.info(`${arguments.callee.name}: Creating new user...`);
 
         /* Create new token */
         let t;
         try {
           t = await new TokenModel({ value: accessToken }).save();
         } catch (err) {
-          ErrorHandler.logger(
+          errorHandler(
             `${arguments.callee.name}: Error caught while saving token for the new user ${profile.username}.`,
             err
           );
@@ -121,7 +121,7 @@ passport.use(
             token_ref: t._id,
           }).save();
         } catch (err) {
-          ErrorHandler.logger(
+          errorHandler(
             `${arguments.callee.name}: Error caught while saving new user ${profile.username}.`,
             err
           );
@@ -131,7 +131,7 @@ passport.use(
         try {
           await UserCtrl.checkForNewRepos(newUser, t.value);
         } catch (err) {
-          ErrorHandler.logger(
+          errorHandler(
             `${arguments.callee.name}: Error caught while getting new repos for the new created user ${profile.username}.`,
             err
           );

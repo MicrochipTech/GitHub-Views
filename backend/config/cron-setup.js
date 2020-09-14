@@ -3,14 +3,14 @@ const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
-const ErrorHandler = require("../errors/ErrorHandler");
+const {logger, errorHandler} = require("../logs/logger");
 
 /* Using back off is way slower because requests are made sequential.
 Still, being slower actually reduces the chance of making 5000+ requests per hour. */
 const UPDATE_WITH_BACK_OFF_ON_ERROR = false;
 
 async function* updateRepositoriesGenerator() {
-  console.log(`${arguments.callee.name}: Updating local database`);
+  logger.info(`${arguments.callee.name}: Updating local database`);
 
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
@@ -27,7 +27,7 @@ async function* updateRepositoriesGenerator() {
   }).populate("token_ref");
 
   for (let i = 0; i < users.length; i += 1) {
-    console.log(`-----> User ${i}/${users.length}`);
+    logger.info(`\t\tUser ${i}/${users.length}`);
 
     const user = users[i];
     const token = user.token_ref.value;
@@ -42,7 +42,7 @@ async function* updateRepositoriesGenerator() {
       const userRepos = repos.filter((r) => r.users.indexOf(user._id) !== -1);
 
       for (let j = 0; j < githubRepos.data.length; j += 1) {
-        console.log(`--> Repo ${j}/${githubRepos.data.length}`);
+        logger.info(`\tRepo ${j}/${githubRepos.data.length}`);
         const githubRepo = githubRepos.data[j];
         const repoEntry = userRepos.find(
           (userRepo) => userRepo.github_repo_id === String(githubRepo.id)
@@ -114,7 +114,7 @@ async function* updateRepositoriesGenerator() {
 async function runGenerator(g, retry = false) {
   for (let r = await g.next(retry); !r.done; r = await g.next(false)) {
     if (!r.value) {
-      console.log(`${arguments.callee.name}: Generator returned error.`);
+      logger.info(`${arguments.callee.name}: Generator returned error.`);
       setTimeout(() => {
         runGenerator(g, true);
       }, 1000 * 60 * 60);
@@ -124,13 +124,13 @@ async function runGenerator(g, retry = false) {
 }
 
 async function updateAllRepositories() {
-  console.log(`${arguments.callee.name}: Updating local database...`);
+  logger.info(`${arguments.callee.name}: Updating local database...`);
 
   let repos;
   try {
     repos = await RepositoryModel.find({ not_found: false });
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught while getting all repos from database.`,
       err
     );
@@ -149,7 +149,7 @@ async function updateAllRepositories() {
       token_ref: { $exists: true },
     }).populate("token_ref");
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught while getting all users from database.`,
       err
     );
@@ -165,7 +165,7 @@ async function updateAllRepositories() {
     try {
       githubRepos = await GitHubApiCtrl.getUserRepos(token);
     } catch (err) {
-      ErrorHandler.logger(
+      errorHandler(
         `${arguments.callee.name}: Error caught while getting repository details with GitHub API for user ${user.username}.`,
         err
       );
@@ -174,19 +174,19 @@ async function updateAllRepositories() {
     if (githubRepos.success === false) {
       /* If the request to get the repos of the user with traffic details fails,
       then return */
-      console.log(
+      logger.info(
         `${arguments.callee.name}: Could not get repos for user ${user.username}.`
       );
       return;
     }
 
-    console.log(
+    logger.info(
       `${arguments.callee.name}: User ${user.username} has ${githubRepos.data.length} repos.`
     );
 
     const updateReposPromises = githubRepos.data.map(async (githubRepo, j) => {
       /* For each repo which is included in the request, update the latest traffic infos */
-      console.log(
+      logger.info(
         `${arguments.callee.name}: Checking ${githubRepo.full_name}, ${j}`
       );
 
@@ -206,20 +206,20 @@ async function updateAllRepositories() {
             token
           );
         } catch (err) {
-          ErrorHandler.logger(
+          errorHandler(
             `${arguments.callee.name}: Error caught while creating new repository in database with name ${githubRepo.full_name}.`,
             err
           );
         }
 
         if (newRepoRequests[githubRepo.full_name] === undefined) {
-          console.log(
+          logger.info(
             `${arguments.callee.name}: Repo ${githubRepo.full_name}, ${githubRepo.id} does not exist in db. Creating.`
           );
 
           if (newRepo !== undefined) {
             if (newRepo.success === false) {
-              console.log(
+              logger.info(
                 `${arguments.callee.name}: Fail creating new repo with name ${githubRepo.full_name}.`
               );
               return;
@@ -274,7 +274,7 @@ async function updateAllRepositories() {
             token
           );
         } catch (err) {
-          ErrorHandler.logger(
+          errorHandler(
             `${arguments.callee.name}: Error caught while geting repository traffic for repo: ${repoEntry.reponame}.`,
             err
           );
@@ -285,7 +285,7 @@ async function updateAllRepositories() {
         if (status === true) {
           RepositoryCtrl.updateRepoTraffic(repoEntry, traffic);
         } else {
-          console.log(
+          logger.info(
             `${arguments.callee.name}: Fail getting traffic data for repo ${repoEntry.reponame}.`
           );
         }
@@ -295,7 +295,7 @@ async function updateAllRepositories() {
     try {
       await Promise.all(updateReposPromises);
     } catch (err) {
-      ErrorHandler.logger(
+      errorHandler(
         `${arguments.callee.name}: Error caught while updating repositories for user: ${user.username}.`,
         err
       );
@@ -305,7 +305,7 @@ async function updateAllRepositories() {
   try {
     await Promise.all(userPromises);
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught while updating repositories in database.`,
       err
     );
@@ -317,7 +317,7 @@ async function updateAllRepositories() {
   try {
     await Promise.all(saveNewRepos);
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught while saving new rpos in database.`,
       err
     );
@@ -327,17 +327,17 @@ async function updateAllRepositories() {
   try {
     await Promise.all(updateRepos);
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught while saving repository updates in database.`,
       err
     );
   }
 
-  console.log(`${arguments.callee.name}: Local database update finished.`);
+  logger.info(`${arguments.callee.name}: Local database update finished.`);
 }
 
 async function setCron() {
-  console.log(
+  logger.info(
     `${arguments.callee.name}: Setting a cronjob every day, to update repositories.`
   );
   cron.schedule("25 12 * * *", async () => {
@@ -347,7 +347,7 @@ async function setCron() {
       try {
         await updateRepositories();
       } catch (err) {
-        ErrorHandler.logger(
+        errorHandler(
           `${arguments.callee.name}: Error caught in daily repositories update.`,
           err
         );
@@ -361,7 +361,7 @@ async function updateRepositories() {
     try {
       await runGenerator(updateRepositoriesGenerator());
     } catch (err) {
-      ErrorHandler.logger(
+      errorHandler(
         `${arguments.callee.name}: Error caught in daily repositories update.`,
         err
       );
@@ -370,7 +370,7 @@ async function updateRepositories() {
     try {
       await updateAllRepositories();
     } catch (err) {
-      ErrorHandler.logger(
+      errorHandler(
         `${arguments.callee.name}: Error caught in daily repositories update.`,
         err
       );
