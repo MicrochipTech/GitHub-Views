@@ -1,7 +1,7 @@
 const UserModel = require("../models/User");
 const RepositoryModel = require("../models/Repository");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
-const {logger, errorHandler} = require("../logs/logger");
+const { logger, errorHandler } = require("../logs/logger");
 
 async function nameContains(req, res) {
   const { q } = req.query;
@@ -84,7 +84,7 @@ async function createRepository(repoDetails, userId, token) {
   const { status, data: traffic } = repoTraffic;
 
   if (status === false) {
-    logger.info(
+    logger.warn(
       `${arguments.callee.name}: Fail getting traffic data for repo ${newRepo.reponame}`
     );
     return { success: false };
@@ -360,7 +360,7 @@ async function updateForksTree(req, res) {
   const { status: treeStatus, data: treeData } = forksTree;
 
   if (treeStatus === false) {
-    logger.info(
+    logger.warn(
       `${arguments.callee.name}: Tree not updated for repo: ${repoEntry.reponame}`
     );
   } else {

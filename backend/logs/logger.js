@@ -1,15 +1,18 @@
+const nodemailer = require("nodemailer");
+const winston = require("winston");
+
 let logger;
 let transporter;
 
-if(process.env.ENVIRONMENT === 'production') {
+if (process.env.ENVIRONMENT === "production") {
   logger = winston.createLogger({
     format: winston.format.combine(
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+      winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
       winston.format.json()
     ),
     transports: [
       new winston.transports.File({ filename: "error.log", level: "error" }),
-      new winston.transports.File({ filename: "info.log", level: "info" }),
+      new winston.transports.File({ filename: "all.log", level: "info" }),
     ],
   });
 
@@ -25,33 +28,21 @@ if(process.env.ENVIRONMENT === 'production') {
       expires: process.env.MAIL_AUTH_EXPIRES,
     },
   });
-} else if(process.env.ENVIRONMENT === 'development') {
+} else if (process.env.ENVIRONMENT === "development") {
   logger = winston.createLogger({
     format: winston.format.combine(
       winston.format.colorize({ all: true }),
       winston.format.simple()
     ),
-    transports: [
-      new winston.transports.Console()
-    ],
+    transports: [new winston.transports.Console()],
   });
-} else if(process.env.ENVIRONMENT === 'testing') {
-  logger = winston.createLogger({
-    format: winston.format.combine(
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      winston.format.json()
-    ),
-    transports: [
-      new winston.transports.File({ filename: "error.log", level: "error" }),
-      new winston.transports.File({ filename: "info.log", level: "info" }),
-    ],
-  });
+} else {
+  console.log(`ERROR: Set the ENVIRONMENT variable in .env file correctly.`);
 }
 
 function sendMail(msg, err) {
   /* Send mails only in production mode */
-  if(process.env.ENVIRONMENT !== 'production')
-    return;
+  if (process.env.ENVIRONMENT !== "production") return;
 
   const mailOptions = {
     from: process.env.MAIL_AUTH_USER,
@@ -87,5 +78,5 @@ function errorHandler(msg, err, email = true) {
 
 module.exports = {
   logger,
-  errorHandler
+  errorHandler,
 };

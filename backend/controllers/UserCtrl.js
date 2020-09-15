@@ -4,7 +4,7 @@ const AggregateChartModel = require("../models/AggregateChart");
 const TokenModel = require("../models/Token");
 const GitHubApiCtrl = require("./GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
-const {logger, errorHandler} = require("../logs/logger");
+const { logger, errorHandler } = require("../logs/logger");
 
 async function unfollowSharedRepo(req, res) {
   const { repoId } = req.body;
@@ -24,7 +24,7 @@ async function unfollowSharedRepo(req, res) {
       err
     );
   }
-  
+
   if (updateRes.ok) {
     res.json({ status: "ok" });
   } else {
@@ -113,7 +113,7 @@ async function checkForNewRepos(user, token) {
   }
 
   if (githubRepos.success === false) {
-    logger.info(
+    logger.warn(
       `${arguments.callee.name}: GitHubApiCtrl.getUserRepos failed with code ${githubRepos.status}`
     );
     return;
@@ -160,7 +160,7 @@ async function checkForNewRepos(user, token) {
       }
 
       if (!newRepo.success) {
-        logger.info(
+        logger.warn(
           `${arguments.callee.name}: Fail creating new repository in database with GitHub repo id ${githubRepo.id}`
         );
         return;
@@ -208,7 +208,7 @@ async function checkForNewRepos(user, token) {
     } else {
       /* More than one element was found -> log an error */
       logList = repos.map((r) => [r.reponame, user.username, r.github_repo_id]);
-      logger.info(`Found more repos with the same name in database ${logList}`);
+      logger.warn(`Found more repos with the same name in database ${logList}`);
     }
   });
   try {

@@ -3,7 +3,7 @@ const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
-const {logger, errorHandler} = require("../logs/logger");
+const { logger, errorHandler } = require("../logs/logger");
 
 /* Using back off is way slower because requests are made sequential.
 Still, being slower actually reduces the chance of making 5000+ requests per hour. */
@@ -114,7 +114,7 @@ async function* updateRepositoriesGenerator() {
 async function runGenerator(g, retry = false) {
   for (let r = await g.next(retry); !r.done; r = await g.next(false)) {
     if (!r.value) {
-      logger.info(`${arguments.callee.name}: Generator returned error.`);
+      logger.warn(`${arguments.callee.name}: Generator returned error.`);
       setTimeout(() => {
         runGenerator(g, true);
       }, 1000 * 60 * 60);
@@ -174,7 +174,7 @@ async function updateAllRepositories() {
     if (githubRepos.success === false) {
       /* If the request to get the repos of the user with traffic details fails,
       then return */
-      logger.info(
+      logger.warn(
         `${arguments.callee.name}: Could not get repos for user ${user.username}.`
       );
       return;
@@ -219,7 +219,7 @@ async function updateAllRepositories() {
 
           if (newRepo !== undefined) {
             if (newRepo.success === false) {
-              logger.info(
+              logger.warn(
                 `${arguments.callee.name}: Fail creating new repo with name ${githubRepo.full_name}.`
               );
               return;
@@ -285,7 +285,7 @@ async function updateAllRepositories() {
         if (status === true) {
           RepositoryCtrl.updateRepoTraffic(repoEntry, traffic);
         } else {
-          logger.info(
+          logger.warn(
             `${arguments.callee.name}: Fail getting traffic data for repo ${repoEntry.reponame}.`
           );
         }
