@@ -11,8 +11,11 @@ if (process.env.ENVIRONMENT === "production") {
       winston.format.json()
     ),
     transports: [
-      new winston.transports.File({ filename: "error.log", level: "error" }),
-      new winston.transports.File({ filename: "all.log", level: "info" }),
+      new winston.transports.File({
+        filename: "logs/error.log",
+        level: "error",
+      }),
+      new winston.transports.File({ filename: "logs/all.log", level: "info" }),
     ],
   });
 
@@ -31,8 +34,12 @@ if (process.env.ENVIRONMENT === "production") {
 } else if (process.env.ENVIRONMENT === "development") {
   logger = winston.createLogger({
     format: winston.format.combine(
+      winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
       winston.format.colorize({ all: true }),
-      winston.format.simple()
+      winston.format.printf(
+        ({ timestamp, level, message, stack }) =>
+          `${timestamp} ${level}: ${message} ${stack ? "\n" + stack : ""}`
+      )
     ),
     transports: [new winston.transports.Console()],
   });
