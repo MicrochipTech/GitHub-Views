@@ -3,8 +3,6 @@ import java.time.format.DateTimeFormatter
 
 def now = LocalDateTime.now()
 
-
-
 def artifactoryURL = "artifacts.microchip.com:7999/microchip"
 def dockerRepoPath = "default"
 def dockerImages = ["backend", "frontend"]
@@ -18,7 +16,10 @@ pipeline {
             label 'agent-build'
             yamlFile 'CI/k8s.yml'
         }
-    }
+    }	
+	environment {
+		VESION_PATTERN = '\\d+\\.\\d+\\.\\d+'
+	}	
     options {
         timestamps ()
         timeout(time: 20, unit: 'MINUTES')
@@ -56,7 +57,9 @@ pipeline {
                         for (String item : dockerImages) {
                             echo "running in script()"
                             dockerImage = item
-                            dockerImageRegistryPath = "$artifactoryURL/$dockerRepoPath/$dockerImage"
+                            dockerImageRegistryPath = "$artifactoryURL/$dockerRepoPath/$dockerImage"							
+							dockerVersion = getVersion(dockerImage)
+							
                             echo """
                             Using these variables
                             artifactoryURL: $artifactoryURL
@@ -95,6 +98,8 @@ pipeline {
                             echo "running in script()"
                             dockerImage = item
                             dockerImageRegistryPath = "$artifactoryURL/$dockerRepoPath/$dockerImage"
+							dockerVersion = getVersion(dockerImage)
+							
                             echo """
                             Building $dockerImage
                             The current WORKSPACE is: ${WORKSPACE}
@@ -128,6 +133,8 @@ pipeline {
                             echo "running in script()"
                             dockerImage = item
                             dockerImageRegistryPath = "$artifactoryURL/$dockerRepoPath/$dockerImage"
+							dockerVersion = getVersion(dockerImage)
+							
                             echo """
                             Building $dockerImage
                             The current WORKSPACE is: ${WORKSPACE}
@@ -140,6 +147,7 @@ pipeline {
                                 /kaniko/executor \
                                 --context ${WORKSPACE}/${dockerImage} \
                                 --dockerfile Dockerfile \
+								--destination=$dockerImageRegistryPath:latest \
                                 --destination=$dockerImageRegistryPath:prod \
                                 --destination=$dockerImageRegistryPath:$dockerVersion \
                                 --destination=$dockerImageRegistryPath:$BRANCH_NAME
@@ -152,4 +160,16 @@ pipeline {
             }
         }
     }
+}
+
+def getVersion(String dockerImage) {	
+	def versionFile = findFiles(glob: "${dockerImage}/**/VERSION.js")
+	def version = 'latest'
+	def versionString = null
+	for(String file : versionFile) {
+		versionString = readFile "${file}"
+		def versionList = (versionString =~ "$VESION_PATTERN")
+		version = versionList ? versionList[0]:'latest'
+	}
+	return version
 }
