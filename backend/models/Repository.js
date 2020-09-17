@@ -26,11 +26,13 @@ const repositorySchema = new mongoose.Schema({
   views: {
     total_count: Number,
     total_uniques: Number,
-    data: {
-      timestamp: Date,
-      count: Number,
-      uniques: Number,
-    },
+    data: [
+      {
+        timestamp: Date,
+        count: Number,
+        uniques: Number,
+      },
+    ],
   },
   clones: {
     total_count: Number,

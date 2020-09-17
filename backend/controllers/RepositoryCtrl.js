@@ -47,7 +47,11 @@ async function createRepository(repoDetails, userId, token) {
     users: [userId],
     github_repo_id: repoDetails.id,
     reponame: repoDetails.full_name,
-    views: [],
+    views: {
+      total_count: 0,
+      total_uniques: 0,
+      data: [],
+    },
     clones: {
       total_count: 0,
       total_uniques: 0,
@@ -101,8 +105,9 @@ function updateRepoTraffic(repo, traffic) {
 
   /* Update views */
   let viewsToUpdate = traffic.views;
-  if (repo.views.length !== 0) {
-    const lastViewTimestamp = repo.views[repo.views.length - 1].timestamp;
+  if (repo.views.data.length !== 0) {
+    const lastViewTimestamp =
+      repo.views.data[repo.views.data.length - 1].timestamp;
     viewsToUpdate = viewsToUpdate.filter((info) => {
       const timestampDate = new Date(info.timestamp);
       timestampDate.setUTCHours(0, 0, 0, 0);
@@ -125,7 +130,15 @@ function updateRepoTraffic(repo, traffic) {
     viewsToUpdate.pop();
   }
 
-  repo.views.push(...viewsToUpdate);
+  repo.views.total_count += viewsToUpdate.reduce(
+    (accumulator, currentView) => accumulator + currentView.count,
+    0
+  );
+  repo.views.total_uniques += viewsToUpdate.reduce(
+    (accumulator, currentView) => accumulator + currentView.uniques,
+    0
+  );
+  repo.views.data.push(...viewsToUpdate);
 
   /* Update clones */
   let clonesToUpdate = traffic.clones;
