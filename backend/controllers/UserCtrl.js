@@ -6,6 +6,54 @@ const GitHubApiCtrl = require("./GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const { logger, errorHandler } = require("../logs/logger");
 
+async function updateProfile(user) {
+  let userDetails, userEmails;
+
+  try {
+    userDetails = await GitHubApiCtrl.getUserProfile(user.token_ref.value);
+    userEmails = await GitHubApiCtrl.getUserEmails(user.token_ref.value);
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught when getting from GitHub API emails or details for user with _id ${user._id}.`,
+      err
+    );
+    return false;
+  }
+
+  if (userDetails === undefined || userEmails === undefined) {
+    logger.warning(
+      `Fail when getting from GitHub API emails or details for user with _id ${user._id}.`
+    );
+    return false;
+  }
+  if (!userDetails.success || !userEmails.success) {
+    logger.warning(
+      `Getting emails or details for user with _id ${user._id} was not completed successfully.`
+    );
+    return false;
+  }
+
+  try {
+    await UserModel.findOneAndUpdate(
+      { _id: user._id },
+      {
+        username: userDetails.data.login,
+        githubEmails: userEmails.data.filter(
+          (emails) => emails.visibility !== null
+        ),
+      }
+    );
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught when updating emails and details for user with _id ${user._id}.`,
+      err
+    );
+    return false;
+  }
+
+  return true;
+}
+
 async function unfollowSharedRepo(req, res) {
   const { repoId } = req.body;
   let updateRes;
@@ -265,6 +313,7 @@ async function sync(req, res) {
 }
 
 module.exports = {
+  updateProfile,
   getWhereUsernameStartsWith,
   getData,
   sync,
