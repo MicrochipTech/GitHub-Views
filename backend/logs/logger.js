@@ -47,15 +47,15 @@ if (process.env.ENVIRONMENT === "production") {
   console.log(`ERROR: Set the ENVIRONMENT variable in .env file correctly.`);
 }
 
-function sendMail(msg, err) {
+function sendMail(to, subject, html) {
   /* Send mails only in production mode */
   if (process.env.ENVIRONMENT !== "production") return;
 
   const mailOptions = {
     from: process.env.MAIL_AUTH_USER,
-    to: process.env.MAIL_ADMINS.split(" "),
-    subject: "Report from GitHub Views",
-    html: `<p>${msg}<br><br>${err.message}<br><br>${err.stack}</p>`,
+    to,
+    subject,
+    html,
   };
 
   transporter.sendMail(mailOptions, function(err, info) {
@@ -79,7 +79,11 @@ function errorHandler(msg, err, email = true) {
   });
 
   if (email) {
-    sendMail(msg, err);
+    sendMail(
+      process.env.MAIL_ADMINS.split(" ") /* email to send to */,
+      "Report from GitHub Views" /* subject */,
+      `<p>${msg}<br><br>${err.message}<br><br>${err.stack}</p>` /* html text */
+    );
   }
 }
 
