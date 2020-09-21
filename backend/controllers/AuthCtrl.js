@@ -40,11 +40,9 @@ module.exports = {
   },
 
   localRegister: async (req, res) => {
-    console.log("register....", req.body.username, req.body.password);
     const { username, password } = req.body;
     try {
       const user = await UserModel({ username, password }).save();
-      console.log(user);
       res.json({ success: true, user });
     } catch (error) {
       res.send({ success: false, error });

@@ -38,8 +38,9 @@
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-prettier": "^3.1.1",
     "mocha": "^8.1.0",
+    "mongodb-memory-server": "^6.6.9",
     "nock": "^13.0.3",
     "prettier": "^1.19.1",
-    "sinon": "^9.0.2"
+    "sinon": "^9.0.3"
   }
 }

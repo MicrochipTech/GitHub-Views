@@ -1,5 +1,5 @@
 const AggregateChart = require("../models/AggregateChart");
-const ErrorHandler = require("../errors/ErrorHandler");
+const {logger, errorHandler} = require("../logs/logger");
 
 async function getAllForCurrentUser(req, res) {
   const userAggCharts = AggregateChart.find({ user: req.user._id }).populate(
@@ -21,7 +21,7 @@ async function createChart(req, res) {
       success: false,
       error: `Error creating chart.`,
     });
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when creating new aggregateCharts.`,
       err,
       fasle
@@ -42,7 +42,7 @@ async function deleteChart(req, res) {
       success: false,
       error: `Error deleting chart.`,
     });
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when deleting aggregateCharts with chartId ${chartId}.`,
       err,
       false
@@ -71,7 +71,7 @@ async function updateRepoList(req, res) {
       success: false,
       error: `Error updating chart.`,
     });
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when updating aggregateCharts with chartId ${chartId}.`,
       err,
       false
