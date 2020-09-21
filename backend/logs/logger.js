@@ -44,7 +44,23 @@ if (process.env.ENVIRONMENT === "production") {
     transports: [new winston.transports.Console()],
   });
 } else {
-  console.log(`ERROR: Set the ENVIRONMENT variable in .env file correctly.`);
+  console.log(
+    `ERROR: Set the ENVIRONMENT variable in .env file correctly. Default logger will be set...`
+  );
+
+  logger = winston.createLogger({
+    format: winston.format.combine(
+      winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+      winston.format.json()
+    ),
+    transports: [
+      new winston.transports.File({
+        filename: "logs/error.log",
+        level: "error",
+      }),
+      new winston.transports.File({ filename: "logs/all.log", level: "info" }),
+    ],
+  });
 }
 
 function sendMail(to, subject, html) {

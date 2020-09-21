@@ -151,7 +151,11 @@ describe(`cron-setup`, () => {
         users: [u._id],
         github_repo_id: `134574268`,
         reponame: `mock_user/mock_repo`,
-        views: [],
+        views: {
+          total_count: 0,
+          total_uniques: 0,
+          data: [],
+        },
         clones: {
           total_count: 0,
           total_uniques: 0,
@@ -318,7 +322,7 @@ describe(`cron-setup`, () => {
       expect(mockRepo.users[0]).to.deep.equal(u._id);
       expect(mockRepo.github_repo_id).to.be.equal(`134574268`);
       expect(mockRepo.reponame).to.be.equal(`mock_user/mock_repo`);
-      expect(mockRepo.views.length).to.be.equal(14);
+      expect(mockRepo.views.data.length).to.be.equal(15);
       expect(mockRepo.clones.data.length).to.be.equal(1);
       expect(mockRepo.forks.tree_updated).to.be.equal(false);
       expect(mockRepo.forks.children.length).to.be.equal(0);

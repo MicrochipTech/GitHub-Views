@@ -50,7 +50,9 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
         {step === 0 && (
           <div>
             <div className="padding20">
-              <Typography variant="h6">Configure downlaoded file</Typography>
+              <Typography variant="h6">
+                Configure the file to download
+              </Typography>
               <Typography variant="subtitle1">
                 Select what repos to include
               </Typography>

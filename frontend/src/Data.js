@@ -8,7 +8,7 @@ const DataContext = React.createContext();
 function prepareRepo(r) {
   return {
     ...r,
-    views: add0s(r.views),
+    views: { ...r.views, data: add0s(r.views.data) },
     clones: { ...r.clones, data: add0s(r.clones.data) },
     forks: { ...r.forks, data: add0s(r.forks.data) },
   };
@@ -84,7 +84,10 @@ const reducer = (state, action) =>
 
       case "ADD_SHARED_REPO":
         const { repo } = action.payload;
-        draft.repos.sharedRepos.push({ ...repo, views: add0s(repo.views) });
+        draft.repos.sharedRepos.push({
+          ...repo,
+          views: { ...repo.views, data: add0s(repo.views.data) },
+        });
         return draft;
 
       case "REMOVE_SHARED_REPO":

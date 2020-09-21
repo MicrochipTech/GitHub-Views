@@ -43,7 +43,7 @@ function Repository({ index, style, data }) {
     minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
 
     minimumTimetamp = dataD.reduce((acc, repo) => {
-      const repoDate = new Date(repo.views[0].timestamp);
+      const repoDate = new Date(repo.views.data[0].timestamp);
 
       if (repoDate < acc) {
         acc = repoDate;
@@ -63,10 +63,10 @@ function Repository({ index, style, data }) {
       timestamp: labels,
       data: dataD.reduce((acc, e, idx) => {
         const repo = e;
-        let views = repo.views.map((h) => h.count);
-        let uniques = repo.views.map((h) => h.uniques);
+        let views = repo.views.data.map((h) => h.count);
+        let uniques = repo.views.data.map((h) => h.uniques);
 
-        const limitTimestamp = new Date(repo.views[0].timestamp);
+        const limitTimestamp = new Date(repo.views.data[0].timestamp);
 
         for (
           let timeIndex = new Date(minimumTimetamp.getTime());
@@ -98,11 +98,13 @@ function Repository({ index, style, data }) {
     dataD.push(d);
 
     plotData = {
-      timestamp: d.views.map((h) => moment(h.timestamp).format("DD MMM YYYY")),
+      timestamp: d.views.data.map((h) =>
+        moment(h.timestamp).format("DD MMM YYYY")
+      ),
       data: dataD.reduce((acc, e) => {
         const repo = e;
-        const views = repo.views.map((h) => h.count);
-        const uniques = repo.views.map((h) => h.uniques);
+        const views = repo.views.data.map((h) => h.count);
+        const uniques = repo.views.data.map((h) => h.uniques);
         acc.push({
           label: `Views`,
           dataset: views,
