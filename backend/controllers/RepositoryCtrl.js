@@ -494,16 +494,26 @@ async function share(req, res) {
 }
 
 async function getPublicRepos(req, res) {
-  // TODO: use regex in query
-  const allRepos = await RepositoryModel.find({});
-  const allPublicRepos = allRepos.filter((r) => {
-    const publicRepoOwners = process.env.PUBLIC_REPO_OWNERS.split(" ");
-    for (let i = 0; i < publicRepoOwners.length; i++) {
-      if (r.reponame.startsWith(publicRepoOwners[i])) return true;
+  const fields = {};
+  if (req.query.fields !== undefined) {
+    req.query.fields.split(",").forEach((f) => {
+      fields[f] = 1;
+    });
+  }
+
+  const repoOwners = process.env.PUBLIC_REPO_OWNERS.split(" ").join("|");
+  const reponameRegex = new RegExp(`^(${repoOwners})`);
+
+  const repos = await RepositoryModel.find(
+    { reponame: reponameRegex },
+    fields,
+    {
+      skip: Number(req.query.page_no) * Number(req.query.page_size),
+      limit: Number(req.query.page_size),
     }
-    return true;
-  });
-  res.send(allPublicRepos);
+  );
+
+  res.send(repos);
 }
 
 module.exports = {
