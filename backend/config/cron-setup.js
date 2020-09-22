@@ -4,6 +4,7 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 const { logger, errorHandler } = require("../logs/logger");
+const UserCtrl = require("../controllers/UserCtrl");
 
 /* Using back off is way slower because requests are made sequential.
 Still, being slower actually reduces the chance of making 5000+ requests per hour. */
@@ -377,6 +378,48 @@ async function updateRepositories() {
     }
   }
 }
+
+async function sendMonthlyReports() {
+  logger.info(`${arguments.callee.name}: Sending monthly reports...`);
+
+  let users;
+  try {
+    users = await UserModel.find({
+      // githubId: { $ne: null },
+      githubId: "57087036",
+      token_ref: { $exists: true },
+    }).populate("token_ref");
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught while getting all users from database.`,
+      err
+    );
+  }
+
+  usersReportPromises = users.map(async (user) => {
+    let email;
+    const emails = user.githubEmails.filter((e) => e.verified);
+    if (emails.length === 0) {
+      /* If there are no verified emails, then no email is send. */
+      return;
+    } else if (emails.length === 1) {
+      email = emails[0].email;
+    } else {
+      /* If there is more than one  */
+      const emailIndex = emails.find((e) => e.primary);
+      if (emailIndex === -1) {
+        email = emails[0].email;
+      } else {
+        email = emails[emailIndex].email;
+      }
+    }
+
+    logger.info(email);
+    UserCtrl.getLast30DaysData(user);
+  });
+}
+
+sendMonthlyReports();
 
 module.exports = {
   setCron,
