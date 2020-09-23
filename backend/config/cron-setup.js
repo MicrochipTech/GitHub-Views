@@ -414,8 +414,27 @@ async function sendMonthlyReports() {
       }
     }
 
+    /* Get data for the last 30 days continaing: sum of the views, clones and forks. */
+    const { success, data } = await UserCtrl.getLastXDaysData(user, 30);
+    if (success === false) return;
+
+    /* Compute a score for each user's repo and sort them. */
+    const dataWithScore = data
+      .map((d) => {
+        return {
+          ...d,
+          score:
+            d.forks_count * 10 +
+            d.clones_uniques * 8 +
+            d.clones_count * 3 +
+            d.views_uniques * 5 +
+            d.views_count * 2,
+        };
+      })
+      .sort((d1, d2) => d2.score - d1.score);
+
+    logger.info(dataWithScore);
     logger.info(email);
-    UserCtrl.getLast30DaysData(user);
   });
 }
 
