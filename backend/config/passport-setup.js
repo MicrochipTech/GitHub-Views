@@ -91,7 +91,7 @@ passport.use(
           }).save(); /* Create new token */
           currentUser.token_ref = t._id; /* Update user */
           currentUser = await currentUser.save();
-          await GitHubApiCtrl.updateProfile(currentUser);
+          await UserCtrl.updateProfile(currentUser);
         } catch (err) {
           errorHandler(
             `${arguments.callee.name}: Error caught while updating token for user ${currentUser.username}.`,
