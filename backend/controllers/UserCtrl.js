@@ -147,10 +147,10 @@ async function getData(req, res) {
   }
 }
 
-async function getLast30DaysData(user) {
+async function getLastXDaysData(user, xDays) {
   let oneMonthAgo = new Date();
   oneMonthAgo.setUTCHours(0, 0, 0, 0);
-  oneMonthAgo.setUTCDate(oneMonthAgo.getUTCDate() - 30);
+  oneMonthAgo.setUTCDate(oneMonthAgo.getUTCDate() - xDays);
 
   let repos;
   try {
@@ -162,42 +162,82 @@ async function getLast30DaysData(user) {
         },
       },
       {
-        $unwind: "$views.data",
-      },
-      {
-        $unwind: "$clones.data",
-      },
-      {
-        $unwind: "$forks.data",
-      },
-      {
-        $match: {
-          "views.data.timestamp": { $gte: oneMonthAgo },
-          "clones.data.timestamp": { $gte: oneMonthAgo },
-          "forks.data.timestamp": { $gte: oneMonthAgo },
-        },
-      },
-      // {
-      //   $match: {
-      //     "clones.data.timestamp": { $gte: oneMonthAgo },
-      //   },
-      // },
-      // {
-      //   $group: {
-      //     _id: "$_id",
-      //     views_count: { $sum: "$views.data.count" },
-      //     views_uniques: { $sum: "$views.data.uniques" },
-      //     clones_count: { $sum: "$clones.data.count" },
-      //     clones_uniques: { $sum: "$clones.data.uniques" },
-      //     forks_count: { $sum: "$forks.data.count" },
-      //   },
-      // },
-      {
         $project: {
           reponame: true,
-          views: { data: true },
-          clones: { data: true },
-          forks: { data: true },
+          views: {
+            data: {
+              $filter: {
+                input: "$views.data",
+                as: "view",
+                cond: {
+                  $gte: ["$$view.timestamp", oneMonthAgo],
+                },
+              },
+            },
+          },
+          clones: {
+            data: {
+              $filter: {
+                input: "$clones.data",
+                as: "clone",
+                cond: {
+                  $gte: ["$$clone.timestamp", oneMonthAgo],
+                },
+              },
+            },
+          },
+          forks: {
+            data: {
+              $filter: {
+                input: "$forks.data",
+                as: "fork",
+                cond: {
+                  $gte: ["$$fork.timestamp", oneMonthAgo],
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $unwind: { path: "$views.data", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          reponame: { $first: "$reponame" },
+          views_count: { $sum: "$views.data.count" },
+          views_uniques: { $sum: "$views.data.uniques" },
+          clones: { $first: "$clones" },
+          forks: { $first: "$forks" },
+        },
+      },
+      {
+        $unwind: { path: "$clones.data", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          reponame: { $first: "$reponame" },
+          views_count: { $first: "$views_count" },
+          views_uniques: { $first: "$views_uniques" },
+          clones_count: { $sum: "$clones.data.count" },
+          clones_uniques: { $sum: "$clones.data.uniques" },
+          forks: { $first: "$forks" },
+        },
+      },
+      {
+        $unwind: { path: "$forks.data", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          reponame: { $first: "$reponame" },
+          views_count: { $first: "$views_count" },
+          views_uniques: { $first: "$views_uniques" },
+          clones_count: { $first: "$clones_count" },
+          clones_uniques: { $first: "$clones_uniques" },
+          forks_count: { $sum: "$forks.data.count" },
         },
       },
     ]);
@@ -206,13 +246,10 @@ async function getLast30DaysData(user) {
       `${arguments.callee.name}: Error caught while getting all repos from database.`,
       err
     );
+    return { success: false, data: [] };
   }
 
-  // logger.warn(repos);
-  logger.warn(JSON.stringify(repos, null, 2));
-
-  // logger.warn(JSON.stringify(repos));
-  logger.warn(oneMonthAgo.toISOString());
+  return { success: true, data: repos };
 }
 
 async function checkForNewRepos(user, token) {
@@ -385,7 +422,7 @@ module.exports = {
   updateProfile,
   getWhereUsernameStartsWith,
   getData,
-  getLast30DaysData,
+  getLastXDaysData,
   sync,
   unfollowSharedRepo,
   checkForNewRepos,
