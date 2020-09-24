@@ -14,16 +14,16 @@ process.env.TOKEN_ENC_KEY = `W9fYNQnPD9Xw+S/lhJlJIoIVLIlYaN9VXuOKGNpleKY=`;
 process.env.TOKEN_SIG_KEY = `ET8V/w1JaNQrgRqeGzlFCoucarIrVktu1duJGnSVHlKzreSKQXLuoxEQhZYIGMdiVWfPmCZRBVeUALCgPjgPsw==`;
 const TokenModel = require("../models/Token");
 
-/* Connect to a new in-memory database before running any tests. */
-before(async () => await dbHandler.connect());
-
-/* Clear all test data after every test. */
-afterEach(async () => await dbHandler.clearDatabase());
-
-/* Remove and close the db and server. */
-after(async () => await dbHandler.closeDatabase());
-
 describe(`cron-setup`, () => {
+  /* Connect to a new in-memory database before running any tests. */
+  before(async () => await dbHandler.connect());
+
+  /* Clear all test data after every test. */
+  afterEach(async () => await dbHandler.clearDatabase());
+
+  /* Remove and close the db and server. */
+  after(async () => await dbHandler.closeDatabase());
+
   describe(`updateAllRepositories`, () => {
     it(`#empty`, async () => {
       /* Ensure database is mocked: no users and repositories stored */
