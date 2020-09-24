@@ -148,6 +148,10 @@ async function getData(req, res) {
 }
 
 async function getLastXDaysData(user, xDays) {
+  if (!user) {
+    return { success: false, data: [] };
+  }
+
   let oneMonthAgo = new Date();
   oneMonthAgo.setUTCHours(0, 0, 0, 0);
   oneMonthAgo.setUTCDate(oneMonthAgo.getUTCDate() - xDays);
