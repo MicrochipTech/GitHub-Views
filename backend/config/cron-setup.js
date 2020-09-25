@@ -4,7 +4,7 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 const { logger, errorHandler } = require("../logs/logger");
-const UserCtrl = require("../controllers/UserCtrl");
+const sendMonthlyReports = require("./montlyEmailReport");
 
 /* Using back off is way slower because requests are made sequential.
 Still, being slower actually reduces the chance of making 5000+ requests per hour. */
@@ -379,66 +379,7 @@ async function updateRepositories() {
   }
 }
 
-async function sendMonthlyReports() {
-  logger.info(`${arguments.callee.name}: Sending monthly reports...`);
-
-  let users;
-  try {
-    users = await UserModel.find({
-      // githubId: { $ne: null },
-      githubId: "57087036",
-      token_ref: { $exists: true },
-    }).populate("token_ref");
-  } catch (err) {
-    errorHandler(
-      `${arguments.callee.name}: Error caught while getting all users from database.`,
-      err
-    );
-  }
-
-  usersReportPromises = users.map(async (user) => {
-    let email;
-    const emails = user.githubEmails.filter((e) => e.verified);
-    if (emails.length === 0) {
-      /* If there are no verified emails, then no email is send. */
-      return;
-    } else if (emails.length === 1) {
-      email = emails[0].email;
-    } else {
-      /* If there is more than one  */
-      const emailIndex = emails.find((e) => e.primary);
-      if (emailIndex === -1) {
-        email = emails[0].email;
-      } else {
-        email = emails[emailIndex].email;
-      }
-    }
-
-    /* Get data for the last 30 days continaing: sum of the views, clones and forks. */
-    const { success, data } = await UserCtrl.getLastXDaysData(user, 30);
-    if (success === false) return;
-
-    /* Compute a score for each user's repo and sort them. */
-    const dataWithScore = data
-      .map((d) => {
-        return {
-          ...d,
-          score:
-            d.forks_count * 10 +
-            d.clones_uniques * 8 +
-            d.clones_count * 3 +
-            d.views_uniques * 5 +
-            d.views_count * 2,
-        };
-      })
-      .sort((d1, d2) => d2.score - d1.score);
-
-    logger.info(dataWithScore);
-    logger.info(email);
-  });
-}
-
-sendMonthlyReports();
+// sendMonthlyReports();
 
 module.exports = {
   setCron,

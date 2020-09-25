@@ -9,6 +9,7 @@ const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
 const { logger, errorHandler } = require("../logs/logger");
 const UserCtrl = require("../controllers/UserCtrl");
+const sendMonthlyReports = require("../config/montlyEmailReport");
 
 router.get("/VERSION", (req, res) => {
   res.send(VERSION);
@@ -17,6 +18,11 @@ router.get("/VERSION", (req, res) => {
 router.get("/forceUpdate", async (req, res) => {
   updateRepositories();
   res.send("ok started");
+});
+
+router.get("/sendReports", (req, res) => {
+  sendMonthlyReports();
+  res.send("started");
 });
 
 router.get("/unset_user_emails", async (req, res) => {
