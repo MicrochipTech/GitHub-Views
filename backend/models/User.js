@@ -4,11 +4,18 @@ const bcrypt = require("bcrypt-nodejs");
 const userSchema = new mongoose.Schema({
   username: { type: String, unique: true },
   password: String,
-
+  githubEmails: [
+    {
+      email: String,
+      primary: Boolean,
+      verified: Boolean,
+      visibility: String,
+    },
+  ],
   githubId: String,
   token: String,
   token_ref: { type: mongoose.Schema.Types.ObjectId, ref: "Token" },
-  sharedRepos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Repository" }]
+  sharedRepos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Repository" }],
 });
 
 userSchema.pre("save", function(callback) {

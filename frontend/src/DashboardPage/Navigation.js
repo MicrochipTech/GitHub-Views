@@ -24,13 +24,21 @@ function Navigation() {
           }
           return true;
         }).map((p) => (
-          <li key={p.key} onClick={(_) => history.push(`/dashboard/${p.key}`)}>
+          <li
+            data-testid={p.key}
+            key={p.key}
+            onClick={(_) => history.push(`/dashboard/${p.key}`)}
+          >
             {p.title}
           </li>
         ))}
         <hr />
         <DownloadButton />
-        {user.githubId && <li onClick={syncRepos}>Sync Repositories</li>}
+        {user.githubId && (
+          <li data-testid="syncBtn" onClick={syncRepos}>
+            Sync Repositories
+          </li>
+        )}
       </ul>
     </nav>
   );

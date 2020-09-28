@@ -2,9 +2,10 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const GitHubStrategy = require("passport-github").Strategy;
 const UserCtrl = require("../controllers/UserCtrl");
+const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const UserModel = require("../models/User");
 const TokenModel = require("../models/Token");
-const ErrorHandler = require("../errors/ErrorHandler");
+const { logger, errorHandler } = require("../logs/logger");
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -15,7 +16,7 @@ passport.deserializeUser(async (id, done) => {
   try {
     user = await UserModel.findById(id);
   } catch (err) {
-    ErrorHandler.logger(
+    errorHandler(
       `${arguments.callee.name}: Error caught when deserializing user with id ${id}.`,
       err
     );
@@ -69,7 +70,7 @@ passport.use(
       try {
         currentUser = await UserModel.findOne({ githubId: profile.id });
       } catch (err) {
-        ErrorHandler.logger(
+        errorHandler(
           `${arguments.callee.name}: Error caught while getting from database the user with githubId ${profile.id}.`,
           err
         );
@@ -77,7 +78,7 @@ passport.use(
 
       if (currentUser) {
         /* The GitHub user was found in the database, so we will update its latest token */
-        console.log(
+        logger.info(
           `${arguments.callee.name}: Updating token for user ${currentUser.username}...`
         );
         let t;
@@ -89,9 +90,10 @@ passport.use(
             value: accessToken,
           }).save(); /* Create new token */
           currentUser.token_ref = t._id; /* Update user */
-          await currentUser.save();
+          currentUser = await currentUser.save();
+          await UserCtrl.updateProfile(currentUser);
         } catch (err) {
-          ErrorHandler.logger(
+          errorHandler(
             `${arguments.callee.name}: Error caught while updating token for user ${currentUser.username}.`,
             err
           );
@@ -100,16 +102,34 @@ passport.use(
         done(null, currentUser);
       } else {
         /* The GitHub user was not found in the database, so we will create it */
-        console.log(`${arguments.callee.name}: Creating new user...`);
+        logger.info(`${arguments.callee.name}: Creating new user...`);
 
         /* Create new token */
         let t;
         try {
           t = await new TokenModel({ value: accessToken }).save();
         } catch (err) {
-          ErrorHandler.logger(
+          errorHandler(
             `${arguments.callee.name}: Error caught while saving token for the new user ${profile.username}.`,
             err
+          );
+        }
+
+        let userEmails;
+        try {
+          userEmGitHubApiCtrl.getUserEmails(accessToken);
+        } catch (err) {
+          errorHandler(
+            `${arguments.callee.name}: Error caught while getting user emails for user ${profile.username}.`,
+            err
+          );
+        }
+
+        let emails = [];
+
+        if (userEmails && userEmails.success) {
+          emails = userEmails.data.filter(
+            (emails) => emails.visibility !== null
           );
         }
 
@@ -118,10 +138,11 @@ passport.use(
           newUser = await new UserModel({
             username: profile.username,
             githubId: profile.id,
+            gitHubEmail: emails,
             token_ref: t._id,
           }).save();
         } catch (err) {
-          ErrorHandler.logger(
+          errorHandler(
             `${arguments.callee.name}: Error caught while saving new user ${profile.username}.`,
             err
           );
@@ -131,7 +152,7 @@ passport.use(
         try {
           await UserCtrl.checkForNewRepos(newUser, t.value);
         } catch (err) {
-          ErrorHandler.logger(
+          errorHandler(
             `${arguments.callee.name}: Error caught while getting new repos for the new created user ${profile.username}.`,
             err
           );
