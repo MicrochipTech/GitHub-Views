@@ -7,7 +7,7 @@ const RepositoryModel = require("../models/Repository");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 
-const { updateAllRepositories } = require("../config/cron-setup");
+const updateRepositoriesAsynch = require("../config/updateRepositoriesAsynch");
 const fs = require("fs");
 
 process.env.TOKEN_ENC_KEY = `W9fYNQnPD9Xw+S/lhJlJIoIVLIlYaN9VXuOKGNpleKY=`;
@@ -24,7 +24,7 @@ describe(`cron-setup`, () => {
   /* Remove and close the db and server. */
   after(async () => await dbHandler.closeDatabase());
 
-  describe(`updateAllRepositories`, () => {
+  describe(`updateRepositoriesSynch`, () => {
     it(`#empty`, async () => {
       /* Ensure database is mocked: no users and repositories stored */
       await UserModel.countDocuments({}, (err, count) => {
@@ -38,9 +38,9 @@ describe(`cron-setup`, () => {
     });
 
     it(`#still empty`, async () => {
-      /* When database is empty, updateAllRepositories 
+      /* When database is empty, updateRepositoriesSynch 
       should not add any data in database or crash */
-      await updateAllRepositories();
+      await updateRepositoriesSynch();
       await UserModel.countDocuments({}, (err, count) => {
         if (err) console.log(err);
         else expect(count).to.be.equal(0);
@@ -70,7 +70,7 @@ describe(`cron-setup`, () => {
         return { success: true, data: [] };
       });
 
-      await updateAllRepositories();
+      await updateRepositoriesSynch();
 
       await UserModel.countDocuments({}, (err, count) => {
         if (err) console.log(err);
@@ -117,7 +117,7 @@ describe(`cron-setup`, () => {
         }
       );
 
-      await updateAllRepositories();
+      await updateRepositoriesSynch();
 
       await RepositoryModel.countDocuments(
         { not_found: true },
@@ -194,7 +194,7 @@ describe(`cron-setup`, () => {
       expect(mockRepo.reponame).to.be.equal("mock_user/mock_repo");
       expect(mockRepo.nameHistory.length).to.be.equal(0);
 
-      await updateAllRepositories();
+      await updateRepositoriesSynch();
 
       const mockRepoRenamed = await RepositoryModel.findOne({
         github_repo_id: `134574268`,
@@ -255,7 +255,7 @@ describe(`cron-setup`, () => {
         return JSON.parse(rawdata);
       });
 
-      await updateAllRepositories();
+      await updateRepositoriesSynch();
 
       await UserModel.countDocuments({}, (err, count) => {
         if (err) console.log(err);
@@ -311,7 +311,7 @@ describe(`cron-setup`, () => {
         return JSON.parse(rawdata);
       });
 
-      await updateAllRepositories();
+      await updateRepositoriesSynch();
 
       const repos = await RepositoryModel.find({});
       expect(repos.length).to.be.equal(1);

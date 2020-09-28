@@ -69,7 +69,10 @@ if (process.env.ENVIRONMENT === "production") {
 
 function sendMail(to, subject, html) {
   /* Send mails only in production mode */
-  if (process.env.ENVIRONMENT !== "production") return;
+  if (process.env.ENVIRONMENT !== "production") {
+    logger.info("Email not sent in development enviroment.");
+    return;
+  }
 
   const mailOptions = {
     from: process.env.MAIL_AUTH_USER,

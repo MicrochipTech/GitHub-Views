@@ -3,7 +3,7 @@ const authRoutes = require("./auth-routes");
 const repoRoutes = require("./repo-routes");
 const userRoutes = require("./user-routes");
 const aggregateChartsRoutes = require("./aggregateCharts-routes");
-const { updateRepositories } = require("../config/cron-setup");
+const { updateRepositoriesTask } = require("../config/cron-setup");
 const { VERSION } = require("../VERSION");
 const RepositoryModel = require("../models/Repository");
 const UserModel = require("../models/User");
@@ -16,7 +16,7 @@ router.get("/VERSION", (req, res) => {
 });
 
 router.get("/forceUpdate", async (req, res) => {
-  updateRepositories();
+  updateRepositoriesTask();
   res.send("ok started");
 });
 

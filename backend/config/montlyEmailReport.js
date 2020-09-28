@@ -4,14 +4,12 @@ const UserModel = require("../models/User");
 const UserCtrl = require("../controllers/UserCtrl");
 
 async function sendMonthlyReports() {
-  console.log("--------------------------------------");
   logger.info(`${arguments.callee.name}: Sending monthly reports...`);
 
   let users;
   try {
     users = await UserModel.find({
-      // githubId: { $ne: null },
-      githubId: "45935231",
+      githubId: { $ne: null },
       token_ref: { $exists: true },
     }).populate("token_ref");
   } catch (err) {
