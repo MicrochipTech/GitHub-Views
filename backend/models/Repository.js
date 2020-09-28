@@ -5,24 +5,35 @@ forkSchema.add({
   github_repo_id: String,
   reponame: String,
   count: Number,
-  children: [forkSchema]
+  children: [forkSchema],
 });
 
 const repositorySchema = new mongoose.Schema({
   not_found: Boolean,
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  users: [ { type: mongoose.Schema.Types.ObjectId, ref: "User" } ],
+  users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   github_repo_id: String,
   reponame: String,
   count: Number,
   uniques: Number,
-  views: [
+  views2: [
     {
       timestamp: Date,
       count: Number,
-      uniques: Number
-    }
+      uniques: Number,
+    },
   ],
+  views: {
+    total_count: Number,
+    total_uniques: Number,
+    data: [
+      {
+        timestamp: Date,
+        count: Number,
+        uniques: Number,
+      },
+    ],
+  },
   clones: {
     total_count: Number,
     total_uniques: Number,
@@ -30,9 +41,9 @@ const repositorySchema = new mongoose.Schema({
       {
         timestamp: Date,
         count: Number,
-        uniques: Number
-      }
-    ]
+        uniques: Number,
+      },
+    ],
   },
   forks: {
     tree_updated: Boolean,
@@ -40,9 +51,9 @@ const repositorySchema = new mongoose.Schema({
     data: [
       {
         timestamp: Date,
-        count: Number
-      }
-    ]
+        count: Number,
+      },
+    ],
   },
   referrers: [
     {
@@ -51,10 +62,10 @@ const repositorySchema = new mongoose.Schema({
         {
           timestamp: Date,
           count: Number,
-          uniques: Number
-        }
-      ]
-    }
+          uniques: Number,
+        },
+      ],
+    },
   ],
   contents: [
     {
@@ -64,16 +75,16 @@ const repositorySchema = new mongoose.Schema({
         {
           timestamp: Date,
           count: Number,
-          uniques: Number
-        }
-      ]
-    }
+          uniques: Number,
+        },
+      ],
+    },
   ],
   nameHistory: [
     {
       date: Date,
-      change: String
-    }
+      change: String,
+    },
   ],
   commits: {
     updated: Boolean,
@@ -81,10 +92,10 @@ const repositorySchema = new mongoose.Schema({
       {
         sha: String,
         message: String,
-        timestamp: Date
-      }
-    ]
-  }
+        timestamp: Date,
+      },
+    ],
+  },
 });
 
 const Repository = mongoose.model("Repository", repositorySchema);

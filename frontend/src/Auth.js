@@ -7,11 +7,11 @@ const initialState = {
   resolving: true,
   authenticated: false,
   error: null,
-  user: null
+  user: null,
 };
 
 const reducer = (state, action) =>
-  produce(state, draft => {
+  produce(state, (draft) => {
     switch (action.type) {
       case "LOGIN_START":
         draft.resolving = true;
@@ -37,20 +37,20 @@ function AuthProvider({ children }) {
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
   React.useEffect(
-    _ => {
-      const checkAuth = async _ => {
+    (_) => {
+      const checkAuth = async (_) => {
         const me = await axios
           .get("/api/auth/me", { withCredentials: true })
-          .catch(e => {
+          .catch((e) => {
             dispatch({
               type: "LOGIN_FAIL",
-              payload: { error: "not authenticated" }
+              payload: { error: "not authenticated" },
             });
           });
         if (me != null) {
           dispatch({
             type: "LOGIN_SUCCESS",
-            payload: { user: me.data }
+            payload: { user: me.data },
           });
         }
       };
@@ -67,15 +67,15 @@ function AuthProvider({ children }) {
           fetch("/api/auth/local/login", {
             method: "post",
             headers: {
-              "Content-Type": "application/json"
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               username,
-              password
-            })
+              password,
+            }),
           })
-            .then(res => res.json())
-            .then(data => {
+            .then((res) => res.json())
+            .then((data) => {
               if (data.info) {
                 alert(data.info.message);
               } else {
@@ -91,15 +91,15 @@ function AuthProvider({ children }) {
           fetch("/api/auth/local/register", {
             method: "post",
             headers: {
-              "Content-Type": "application/json"
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               username,
-              password
-            })
+              password,
+            }),
           })
-            .then(response => response.json())
-            .then(data => {
+            .then((response) => response.json())
+            .then((data) => {
               if (data.success) {
                 alert("Account created! You can login.");
               } else {
@@ -107,9 +107,9 @@ function AuthProvider({ children }) {
               }
             });
         },
-        logout: _ => {
+        logout: (_) => {
           window.location.replace("/api/auth/logout");
-        }
+        },
       }}
     >
       {children}
