@@ -78,7 +78,9 @@ router.get("/get_user_emails", async (req, res) => {
   res.send("mails stored");
 });
 
-router.get("/second_migration", async (req, res) => {
+router.get("/migration_step1", async (req, res) => {
+  res.send("started");
+
   try {
     /* Rename views to views2 */
     const renameRepos = await RepositoryModel.find();
@@ -88,9 +90,27 @@ router.get("/second_migration", async (req, res) => {
         { $rename: { views: "views2" } }
       );
     });
-
     await Promise.all(renamePromises);
 
+    // for await (const repo of RepositoryModel.find().cursor()) {
+    //   await RepositoryModel.findOneAndUpdate(
+    //     { _id: repo._id },
+    //     { $rename: { views: "views2" } }
+    //   );
+    // }
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught while updating all repos from database.`,
+      err
+    );
+  }
+  logger.warn(`${arguments.callee.name}: Complete.`);
+});
+
+router.get("/migration_step2", async (req, res) => {
+  res.send("started");
+
+  try {
     /* Structure views like clones */
     const repos = await RepositoryModel.find();
     const updatePromises = repos.map(async (repo) => {
@@ -120,15 +140,43 @@ router.get("/second_migration", async (req, res) => {
         }
       );
     });
-
     await Promise.all(updatePromises);
+
+    // for await (const repo of RepositoryModel.find().cursor()) {
+    //   const views = {
+    //     total_count: repo.views2.reduce(
+    //       (accumulator, currentView) => accumulator + currentView.count,
+    //       0
+    //     ),
+    //     total_uniques: repo.views2.reduce(
+    //       (accumulator, currentView) => accumulator + currentView.uniques,
+    //       0
+    //     ),
+    //     data: repo.views2.map((v) => {
+    //       return {
+    //         timestamp: v.timestamp,
+    //         count: v.count,
+    //         uniques: v.uniques,
+    //       };
+    //     }),
+    //   };
+
+    //   await RepositoryModel.findOneAndUpdate(
+    //     { _id: repo._id },
+    //     {
+    //       views: views,
+    //       $unset: { user_id: "", views2: "", count: "", uniques: "" },
+    //     }
+    //   );
+    // }
   } catch (err) {
     errorHandler(
       `${arguments.callee.name}: Error caught while updating all repos from database.`,
       err
     );
   }
-  res.send("completed");
+
+  logger.warn(`${arguments.callee.name}: Complete.`);
 });
 
 router.use("/auth", authRoutes);
