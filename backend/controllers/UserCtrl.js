@@ -1,10 +1,59 @@
 const UserModel = require("../models/User");
-const RepoModel = require("../models/Repository");
+const RepositoryModel = require("../models/Repository");
 const AggregateChartModel = require("../models/AggregateChart");
 const TokenModel = require("../models/Token");
 const GitHubApiCtrl = require("./GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const { logger, errorHandler } = require("../logs/logger");
+const { getRepoViews } = require("./GitHubApiCtrl");
+
+async function updateProfile(user) {
+  let userDetails, userEmails;
+
+  try {
+    userDetails = await GitHubApiCtrl.getUserProfile(user.token_ref.value);
+    userEmails = await GitHubApiCtrl.getUserEmails(user.token_ref.value);
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught when getting from GitHub API emails or details for user with _id ${user._id}.`,
+      err
+    );
+    return false;
+  }
+
+  if (userDetails === undefined || userEmails === undefined) {
+    logger.warning(
+      `Fail when getting from GitHub API emails or details for user with _id ${user._id}.`
+    );
+    return false;
+  }
+  if (!userDetails.success || !userEmails.success) {
+    logger.warning(
+      `Getting emails or details for user with _id ${user._id} was not completed successfully.`
+    );
+    return false;
+  }
+
+  try {
+    await UserModel.findOneAndUpdate(
+      { _id: user._id },
+      {
+        username: userDetails.data.login,
+        githubEmails: userEmails.data.filter(
+          (emails) => emails.visibility !== null
+        ),
+      }
+    );
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught when updating emails and details for user with _id ${user._id}.`,
+      err
+    );
+    return false;
+  }
+
+  return true;
+}
 
 async function unfollowSharedRepo(req, res) {
   const { repoId } = req.body;
@@ -65,7 +114,7 @@ async function getData(req, res) {
   if (req.isAuthenticated()) {
     let userRepos, usersWithSharedRepos, aggregateCharts;
     try {
-      userRepos = await RepoModel.find({ users: { $eq: req.user._id } });
+      userRepos = await RepositoryModel.find({ users: { $eq: req.user._id } });
       usersWithSharedRepos = await UserModel.findById(req.user._id).populate(
         "sharedRepos"
       );
@@ -98,6 +147,115 @@ async function getData(req, res) {
   }
 }
 
+async function getLastXDaysData(user, xDays) {
+  if (!user) {
+    return { success: false, data: [] };
+  }
+
+  let oneMonthAgo = new Date();
+  oneMonthAgo.setUTCHours(0, 0, 0, 0);
+  oneMonthAgo.setUTCDate(oneMonthAgo.getUTCDate() - xDays);
+
+  let repos;
+  try {
+    repos = await RepositoryModel.aggregate([
+      {
+        $match: {
+          not_found: false,
+          users: { $eq: user._id },
+        },
+      },
+      {
+        $project: {
+          reponame: true,
+          views: {
+            data: {
+              $filter: {
+                input: "$views.data",
+                as: "view",
+                cond: {
+                  $gte: ["$$view.timestamp", oneMonthAgo],
+                },
+              },
+            },
+          },
+          clones: {
+            data: {
+              $filter: {
+                input: "$clones.data",
+                as: "clone",
+                cond: {
+                  $gte: ["$$clone.timestamp", oneMonthAgo],
+                },
+              },
+            },
+          },
+          forks: {
+            data: {
+              $filter: {
+                input: "$forks.data",
+                as: "fork",
+                cond: {
+                  $gte: ["$$fork.timestamp", oneMonthAgo],
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $unwind: { path: "$views.data", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          reponame: { $first: "$reponame" },
+          views_count: { $sum: "$views.data.count" },
+          views_uniques: { $sum: "$views.data.uniques" },
+          clones: { $first: "$clones" },
+          forks: { $first: "$forks" },
+        },
+      },
+      {
+        $unwind: { path: "$clones.data", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          reponame: { $first: "$reponame" },
+          views_count: { $first: "$views_count" },
+          views_uniques: { $first: "$views_uniques" },
+          clones_count: { $sum: "$clones.data.count" },
+          clones_uniques: { $sum: "$clones.data.uniques" },
+          forks: { $first: "$forks" },
+        },
+      },
+      {
+        $unwind: { path: "$forks.data", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          reponame: { $first: "$reponame" },
+          views_count: { $first: "$views_count" },
+          views_uniques: { $first: "$views_uniques" },
+          clones_count: { $first: "$clones_count" },
+          clones_uniques: { $first: "$clones_uniques" },
+          forks_count: { $sum: "$forks.data.count" },
+        },
+      },
+    ]);
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught while getting all repos from database.`,
+      err
+    );
+    return { success: false, data: [] };
+  }
+
+  return { success: true, data: repos };
+}
+
 async function checkForNewRepos(user, token) {
   let anyNewRepo = false;
 
@@ -126,7 +284,7 @@ async function checkForNewRepos(user, token) {
   const updateReposPromises = githubRepos.data.map(async (githubRepo) => {
     let repos;
     try {
-      repos = await RepoModel.find({
+      repos = await RepositoryModel.find({
         github_repo_id: String(githubRepo.id),
         not_found: false,
       });
@@ -265,8 +423,10 @@ async function sync(req, res) {
 }
 
 module.exports = {
+  updateProfile,
   getWhereUsernameStartsWith,
   getData,
+  getLastXDaysData,
   sync,
   unfollowSharedRepo,
   checkForNewRepos,

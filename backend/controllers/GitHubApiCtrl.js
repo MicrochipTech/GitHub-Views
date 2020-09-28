@@ -1,5 +1,5 @@
 const fetch = require("node-fetch");
-const {logger, errorHandler} = require("../logs/logger");
+const { logger, errorHandler } = require("../logs/logger");
 
 async function getUserRepos(token) {
   const userRepos = [];
@@ -71,6 +71,74 @@ async function getUserRepos(token) {
     }
   }
   return { success: true, data: userRepos };
+}
+
+async function getUserProfile(token) {
+  let response;
+  try {
+    response = await fetch(`https://api.github.com/user`, {
+      method: "get",
+      redirect: "manual",
+      headers: {
+        Authorization: `token ${token}`,
+      },
+    });
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught in GET user profile from GitHub API.`,
+      err
+    );
+  }
+
+  if (response.status !== 200) {
+    return { success: false, data: res.status };
+  }
+
+  let responseJson;
+  try {
+    responseJson = await response.json();
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught when processing the reponse from GitHub API.`,
+      err
+    );
+  }
+
+  return { success: true, data: responseJson };
+}
+
+async function getUserEmails(token) {
+  let response;
+  try {
+    response = await fetch(`https://api.github.com/user/emails`, {
+      method: "get",
+      redirect: "manual",
+      headers: {
+        Authorization: `token ${token}`,
+      },
+    });
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught in GET user emails from GitHub API.`,
+      err
+    );
+  }
+
+  if (response.status !== 200) {
+    return { success: false, data: res.status };
+  }
+
+  let responseJson;
+  try {
+    responseJson = await response.json();
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught when processing the reponse from GitHub API.`,
+      err
+    );
+  }
+
+  return { success: true, data: responseJson };
 }
 
 async function getRepoDetailsById(github_repo_id, token) {
@@ -352,6 +420,8 @@ async function getRepoCommits(github_repo_id) {
 
 module.exports = {
   getUserRepos,
+  getUserProfile,
+  getUserEmails,
   getRepoDetailsById,
   getRepoViews,
   getRepoClones,

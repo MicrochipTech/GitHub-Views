@@ -8,9 +8,13 @@ if (process.env.ENVIRONMENT === "production") {
   logger = winston.createLogger({
     format: winston.format.combine(
       winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-      winston.format.json()
+      winston.format.printf(
+        ({ timestamp, level, message, stack }) =>
+          `${timestamp} ${level}: ${message} ${stack ? "\n" + stack : ""}`
+      )
     ),
     transports: [
+      new winston.transports.Console(),
       new winston.transports.File({
         filename: "logs/error.log",
         level: "error",
@@ -63,15 +67,18 @@ if (process.env.ENVIRONMENT === "production") {
   });
 }
 
-function sendMail(msg, err) {
+function sendMail(to, subject, html) {
   /* Send mails only in production mode */
-  if (process.env.ENVIRONMENT !== "production") return;
+  if (process.env.ENVIRONMENT !== "production") {
+    logger.info("Email not sent in development enviroment.");
+    return;
+  }
 
   const mailOptions = {
     from: process.env.MAIL_AUTH_USER,
-    to: process.env.MAIL_ADMINS.split(" "),
-    subject: "Report from GitHub Views",
-    html: `<p>${msg}<br><br>${err.message}<br><br>${err.stack}</p>`,
+    to,
+    subject,
+    html,
   };
 
   transporter.sendMail(mailOptions, function(err, info) {
@@ -95,11 +102,16 @@ function errorHandler(msg, err, email = true) {
   });
 
   if (email) {
-    sendMail(msg, err);
+    sendMail(
+      process.env.MAIL_ADMINS.split(" ") /* email to send to */,
+      "Report from GitHub Views" /* subject */,
+      `<p>${msg}<br><br>${err.message}<br><br>${err.stack}</p>` /* html text */
+    );
   }
 }
 
 module.exports = {
   logger,
   errorHandler,
+  sendMail,
 };

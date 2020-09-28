@@ -2,9 +2,10 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const GitHubStrategy = require("passport-github").Strategy;
 const UserCtrl = require("../controllers/UserCtrl");
+const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const UserModel = require("../models/User");
 const TokenModel = require("../models/Token");
-const {logger, errorHandler} = require("../logs/logger");
+const { logger, errorHandler } = require("../logs/logger");
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -89,7 +90,8 @@ passport.use(
             value: accessToken,
           }).save(); /* Create new token */
           currentUser.token_ref = t._id; /* Update user */
-          await currentUser.save();
+          currentUser = await currentUser.save();
+          await UserCtrl.updateProfile(currentUser);
         } catch (err) {
           errorHandler(
             `${arguments.callee.name}: Error caught while updating token for user ${currentUser.username}.`,
@@ -113,11 +115,30 @@ passport.use(
           );
         }
 
+        let userEmails;
+        try {
+          userEmGitHubApiCtrl.getUserEmails(accessToken);
+        } catch (err) {
+          errorHandler(
+            `${arguments.callee.name}: Error caught while getting user emails for user ${profile.username}.`,
+            err
+          );
+        }
+
+        let emails = [];
+
+        if (userEmails && userEmails.success) {
+          emails = userEmails.data.filter(
+            (emails) => emails.visibility !== null
+          );
+        }
+
         let newUser;
         try {
           newUser = await new UserModel({
             username: profile.username,
             githubId: profile.id,
+            gitHubEmail: emails,
             token_ref: t._id,
           }).save();
         } catch (err) {
