@@ -7,6 +7,8 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const { logger, errorHandler } = require("../logs/logger");
 const { getRepoViews } = require("./GitHubApiCtrl");
 
+const mongoose = require("mongoose");
+
 async function updateProfile(user) {
   let userDetails, userEmails;
 
@@ -112,16 +114,31 @@ async function getWhereUsernameStartsWith(req, res) {
 
 async function getData(req, res) {
   if (req.isAuthenticated()) {
+    const { dateStart, dateEnd } = req.query;
+
     let userRepos, usersWithSharedRepos, aggregateCharts;
     try {
-      userRepos = await RepositoryModel.find({ users: { $eq: req.user._id } });
-      usersWithSharedRepos = await UserModel.findById(req.user._id).populate(
-        "sharedRepos"
-      );
+      if (dateStart && dateEnd) {
+        userRepos = getDataBetween(req.user._id, dateStart, dateEnd);
+        usersWithSharedRepos = await UserModel.findById(req.user._id).populate(
+          "sharedRepos"
+        );
 
-      aggregateCharts = await AggregateChartModel.find({
-        user: req.user._id,
-      });
+        aggregateCharts = await AggregateChartModel.find({
+          user: req.user._id,
+        });
+      } else {
+        userRepos = await RepositoryModel.find({
+          users: { $eq: req.user._id },
+        });
+        usersWithSharedRepos = await UserModel.findById(req.user._id).populate(
+          "sharedRepos"
+        );
+
+        aggregateCharts = await AggregateChartModel.find({
+          user: req.user._id,
+        });
+      }
     } catch (err) {
       res.send({
         success: false,
@@ -145,6 +162,168 @@ async function getData(req, res) {
   } else {
     res.status(404).send("not authenticated");
   }
+}
+
+async function getUserAndPopulateReposBetween(user_id, dateStart, dateEnd) {
+  if (!user_id) {
+    return { success: false, data: [] };
+  }
+
+  let user;
+  try {
+    user = await UserModel.aggregate([
+      {
+        $match: {
+          _id: mongoose.Types.ObjectId("5ddb92b94a2f11001f95bac8"),
+        },
+      },
+      {
+        $unwind: { path: "$sharedRepos", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $lookup: {
+          from: "repositories",
+          localField: "sharedRepos",
+          foreignField: "_id",
+          as: "sharedRepos",
+        },
+      },
+      {
+        $unwind: { path: "$sharedRepos", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          username: { $first: "$username" },
+          password: { $first: "$password" },
+          githubEmails: { $first: "$githubEmails" },
+          githubId: { $first: "$githubId" },
+          token: { $first: "$token" },
+          token_ref: { $first: "$token_ref" },
+          sharedRepos: { $push: "$sharedRepos" },
+        },
+      },
+    ]);
+
+    // logger.warn(JSON.stringify(user, null, 2));
+
+    logger.warn(user);
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught while getting all repos from database.`,
+      err
+    );
+    return { success: false, data: [] };
+  }
+
+  return { success: true, data: user };
+}
+
+getUserAndPopulateReposBetween("5ddb92b94a2f11001f95bac8");
+
+async function getDataBetween(user_id, dateStart, dateEnd) {
+  if (!user_id) {
+    return { success: false, data: [] };
+  }
+
+  let repos;
+  try {
+    repos = await RepositoryModel.aggregate([
+      {
+        $match: {
+          not_found: false,
+          users: { $eq: user_id },
+        },
+      },
+      {
+        $project: {
+          not_found: true,
+          users: true,
+          github_repo_id: true,
+          reponame: true,
+          views: {
+            data: {
+              $filter: {
+                input: "$views.data",
+                as: "view",
+                cond: {
+                  $and: [
+                    { $gte: ["$$view.timestamp", dateStart] },
+                    { $lte: ["$$view.timestamp", dateEnd] },
+                  ],
+                },
+              },
+            },
+          },
+          clones: {
+            data: {
+              $filter: {
+                input: "$clones.data",
+                as: "clone",
+                $and: [
+                  { $gte: ["$$clone.timestamp", dateStart] },
+                  { $lte: ["$$clone.timestamp", dateEnd] },
+                ],
+              },
+            },
+          },
+          forks: {
+            data: {
+              $filter: {
+                input: "$forks.data",
+                as: "fork",
+                cond: {
+                  $and: [
+                    { $gte: ["$$fork.timestamp", dateStart] },
+                    { $lte: ["$$fork.timestamp", dateEnd] },
+                  ],
+                },
+              },
+            },
+          },
+          // referrers:{
+          //   $filter
+          // },
+          referrers: true,
+          contents: true,
+          nameHistory: {
+            $filter: {
+              input: "$nameHistory",
+              as: "name",
+              cond: {
+                $and: [
+                  { $gte: ["$$name.date", dateStart] },
+                  { $lte: ["$$name.date", dateEnd] },
+                ],
+              },
+            },
+          },
+          commits: {
+            data: {
+              $filter: {
+                input: "$commits.data",
+                as: "commit",
+                cond: {
+                  $and: [
+                    { $gte: ["$$commit.timestamp", dateStart] },
+                    { $lte: ["$$commit.timestamp", dateEnd] },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    ]);
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught while getting all repos from database.`,
+      err
+    );
+    return { success: false, data: [] };
+  }
+
+  return { success: true, data: repos };
 }
 
 async function getLastXDaysData(user, xDays) {
@@ -426,6 +605,7 @@ module.exports = {
   updateProfile,
   getWhereUsernameStartsWith,
   getData,
+  getDataBetween,
   getLastXDaysData,
   sync,
   unfollowSharedRepo,
