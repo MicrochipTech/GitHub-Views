@@ -183,8 +183,131 @@ async function getUserAndPopulateReposBetween(user_id, dateStart, dateEnd) {
       {
         $lookup: {
           from: "repositories",
-          localField: "sharedRepos",
-          foreignField: "_id",
+          let: { repo_id: "$sharedRepos" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$repo_id"],
+                },
+              },
+            },
+            {
+              $project: {
+                reponame: true,
+                views: {
+                  data: {
+                    $filter: {
+                      input: "$views.data",
+                      as: "view",
+                      cond: {
+                        $and: [
+                          { $gte: ["$$view.timestamp", dateStart] },
+                          { $lte: ["$$view.timestamp", dateEnd] },
+                        ],
+                      },
+                    },
+                  },
+                },
+                clones: {
+                  data: {
+                    $filter: {
+                      input: "$clones.data",
+                      as: "clone",
+                      cond: {
+                        $and: [
+                          { $gte: ["$$clone.timestamp", dateStart] },
+                          { $lte: ["$$clone.timestamp", dateEnd] },
+                        ],
+                      },
+                    },
+                  },
+                },
+                forks: {
+                  data: {
+                    $filter: {
+                      input: "$forks.data",
+                      as: "fork",
+                      cond: {
+                        $and: [
+                          { $gte: ["$$fork.timestamp", dateStart] },
+                          { $lte: ["$$fork.timestamp", dateEnd] },
+                        ],
+                      },
+                    },
+                  },
+                },
+                referrers: {
+                  $map: {
+                    input: "$referrers",
+                    as: "referrer",
+                    in: {
+                      name: "$$referrer.name",
+                      data: {
+                        $filter: {
+                          input: "$$referrer.data",
+                          as: "ref_data",
+                          cond: {
+                            $and: [
+                              { $gte: ["$$ref_data.timestamp", dateStart] },
+                              { $lte: ["$$ref_data.timestamp", dateEnd] },
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                contents: {
+                  $map: {
+                    input: "$contents",
+                    as: "content",
+                    in: {
+                      name: "$$content.name",
+                      data: {
+                        $filter: {
+                          input: "$$content.data",
+                          as: "ref_data",
+                          cond: {
+                            $and: [
+                              { $gte: ["$$ref_data.timestamp", dateStart] },
+                              { $lte: ["$$ref_data.timestamp", dateEnd] },
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                nameHistory: {
+                  $filter: {
+                    input: "$nameHistory",
+                    as: "name",
+                    cond: {
+                      $and: [
+                        { $gte: ["$$name.date", dateStart] },
+                        { $lte: ["$$name.date", dateEnd] },
+                      ],
+                    },
+                  },
+                },
+                commits: {
+                  data: {
+                    $filter: {
+                      input: "$commits.data",
+                      as: "commit",
+                      cond: {
+                        $and: [
+                          { $gte: ["$$commit.timestamp", dateStart] },
+                          { $lte: ["$$commit.timestamp", dateEnd] },
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
           as: "sharedRepos",
         },
       },
@@ -205,9 +328,9 @@ async function getUserAndPopulateReposBetween(user_id, dateStart, dateEnd) {
       },
     ]);
 
-    // logger.warn(JSON.stringify(user, null, 2));
+    logger.warn(JSON.stringify(user, null, 2));
 
-    logger.warn(user);
+    // logger.warn(user);
   } catch (err) {
     errorHandler(
       `${arguments.callee.name}: Error caught while getting all repos from database.`,
@@ -218,8 +341,6 @@ async function getUserAndPopulateReposBetween(user_id, dateStart, dateEnd) {
 
   return { success: true, data: user };
 }
-
-getUserAndPopulateReposBetween("5ddb92b94a2f11001f95bac8");
 
 async function getDataBetween(user_id, dateStart, dateEnd) {
   if (!user_id) {
@@ -260,10 +381,12 @@ async function getDataBetween(user_id, dateStart, dateEnd) {
               $filter: {
                 input: "$clones.data",
                 as: "clone",
-                $and: [
-                  { $gte: ["$$clone.timestamp", dateStart] },
-                  { $lte: ["$$clone.timestamp", dateEnd] },
-                ],
+                cond: {
+                  $and: [
+                    { $gte: ["$$clone.timestamp", dateStart] },
+                    { $lte: ["$$clone.timestamp", dateEnd] },
+                  ],
+                },
               },
             },
           },
@@ -281,11 +404,48 @@ async function getDataBetween(user_id, dateStart, dateEnd) {
               },
             },
           },
-          // referrers:{
-          //   $filter
-          // },
-          referrers: true,
-          contents: true,
+          referrers: {
+            $map: {
+              input: "$referrers",
+              as: "referrer",
+              in: {
+                name: "$$referrer.name",
+                data: {
+                  $filter: {
+                    input: "$$referrer.data",
+                    as: "ref_data",
+                    cond: {
+                      $and: [
+                        { $gte: ["$$ref_data.timestamp", dateStart] },
+                        { $lte: ["$$ref_data.timestamp", dateEnd] },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+          contents: {
+            $map: {
+              input: "$contents",
+              as: "content",
+              in: {
+                name: "$$content.name",
+                data: {
+                  $filter: {
+                    input: "$$content.data",
+                    as: "ref_data",
+                    cond: {
+                      $and: [
+                        { $gte: ["$$ref_data.timestamp", dateStart] },
+                        { $lte: ["$$ref_data.timestamp", dateEnd] },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
           nameHistory: {
             $filter: {
               input: "$nameHistory",
