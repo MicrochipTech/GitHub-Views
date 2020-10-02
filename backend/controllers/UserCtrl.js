@@ -114,57 +114,381 @@ async function getWhereUsernameStartsWith(req, res) {
 
 async function getData(req, res) {
   if (req.isAuthenticated()) {
-    const { dateStart, dateEnd } = req.query;
+    const { repo_id, dateStart, dateEnd } = req.query;
 
-    let userRepos, usersWithSharedRepos, aggregateCharts;
-    try {
-      if (dateStart && dateEnd) {
-        userRepos = getDataBetween(req.user._id, dateStart, dateEnd);
-        usersWithSharedRepos = await UserModel.findById(req.user._id).populate(
-          "sharedRepos"
+    if (repo_id) {
+      let repoWithTraffic;
+      try {
+        if (dateStart && dateEnd) {
+          repoWithTraffic = await getRepoBetween(repo_id, dateStart, dateEnd);
+        } else {
+          repoWithTraffic = await RepositoryModel.findOne({
+            _id: repo_id,
+          });
+        }
+      } catch (err) {
+        res.send({
+          success: false,
+          error: `Error getting data from database.`,
+        });
+        errorHandler(
+          `${arguments.callee.name}: Error getting repos, shared repos and aggregate charts from database for user with id ${req.user._id}.`,
+          err
         );
-
-        aggregateCharts = await AggregateChartModel.find({
-          user: req.user._id,
-        });
-      } else {
-        userRepos = await RepositoryModel.find({
-          users: { $eq: req.user._id },
-        });
-        usersWithSharedRepos = await UserModel.findById(req.user._id).populate(
-          "sharedRepos"
-        );
-
-        aggregateCharts = await AggregateChartModel.find({
-          user: req.user._id,
-        });
       }
-    } catch (err) {
-      res.send({
-        success: false,
-        error: `Error getting data from database.`,
-      });
-      errorHandler(
-        `${arguments.callee.name}: Error getting repos, shared repos and aggregate charts from database for user with id ${req.user._id}.`,
-        err
-      );
+      res.json({ success: true, repoWithTraffic });
+    } else {
+      let userRepos, usersWithSharedRepos, aggregateCharts;
+      try {
+        if (dateStart && dateEnd) {
+          userRepos = await getUserReposBetween(
+            req.user._id,
+            dateStart,
+            dateEnd
+          );
+          usersWithSharedRepos = await getUserAndPopulateSharedReposBetween(
+            req.user._id,
+            dateStart,
+            dateEnd
+          );
+
+          aggregateCharts = await AggregateChartModel.find({
+            user: req.user._id,
+          });
+        } else {
+          userRepos = await RepositoryModel.find({
+            users: { $eq: req.user._id },
+          });
+          usersWithSharedRepos = await UserModel.findById(
+            req.user._id
+          ).populate("sharedRepos");
+
+          aggregateCharts = await AggregateChartModel.find({
+            user: req.user._id,
+          });
+        }
+      } catch (err) {
+        res.send({
+          success: false,
+          error: `Error getting data from database.`,
+        });
+        errorHandler(
+          `${arguments.callee.name}: Error getting repos, shared repos and aggregate charts from database for user with id ${req.user._id}.`,
+          err
+        );
+      }
+
+      const { sharedRepos, githubId } = usersWithSharedRepos;
+      const dataToPlot = {
+        userRepos,
+        sharedRepos,
+        aggregateCharts,
+        githubId,
+      };
+
+      res.json({ success: true, dataToPlot });
     }
-
-    const { sharedRepos, githubId } = usersWithSharedRepos;
-    const dataToPlot = {
-      userRepos,
-      sharedRepos,
-      aggregateCharts,
-      githubId,
-    };
-
-    res.json(dataToPlot);
   } else {
     res.status(404).send("not authenticated");
   }
 }
 
-async function getUserAndPopulateReposBetween(user_id, dateStart, dateEnd) {
+async function getRepoBetween(repo_id, dateStart, dateEnd) {
+  if (!repo_id) {
+    return { success: false };
+  }
+
+  let repos;
+  try {
+    repos = await RepositoryModel.aggregate([
+      {
+        $match: {
+          _id: repo_id,
+        },
+      },
+      {
+        $project: {
+          not_found: true,
+          users: true,
+          github_repo_id: true,
+          reponame: true,
+          views: {
+            data: {
+              $filter: {
+                input: "$views.data",
+                as: "view",
+                cond: {
+                  $and: [
+                    { $gte: ["$$view.timestamp", dateStart] },
+                    { $lte: ["$$view.timestamp", dateEnd] },
+                  ],
+                },
+              },
+            },
+          },
+          clones: {
+            data: {
+              $filter: {
+                input: "$clones.data",
+                as: "clone",
+                cond: {
+                  $and: [
+                    { $gte: ["$$clone.timestamp", dateStart] },
+                    { $lte: ["$$clone.timestamp", dateEnd] },
+                  ],
+                },
+              },
+            },
+          },
+          forks: {
+            data: {
+              $filter: {
+                input: "$forks.data",
+                as: "fork",
+                cond: {
+                  $and: [
+                    { $gte: ["$$fork.timestamp", dateStart] },
+                    { $lte: ["$$fork.timestamp", dateEnd] },
+                  ],
+                },
+              },
+            },
+          },
+          referrers: {
+            $map: {
+              input: "$referrers",
+              as: "referrer",
+              in: {
+                name: "$$referrer.name",
+                data: {
+                  $filter: {
+                    input: "$$referrer.data",
+                    as: "ref_data",
+                    cond: {
+                      $and: [
+                        { $gte: ["$$ref_data.timestamp", dateStart] },
+                        { $lte: ["$$ref_data.timestamp", dateEnd] },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+          contents: {
+            $map: {
+              input: "$contents",
+              as: "content",
+              in: {
+                name: "$$content.name",
+                data: {
+                  $filter: {
+                    input: "$$content.data",
+                    as: "ref_data",
+                    cond: {
+                      $and: [
+                        { $gte: ["$$ref_data.timestamp", dateStart] },
+                        { $lte: ["$$ref_data.timestamp", dateEnd] },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+          nameHistory: {
+            $filter: {
+              input: "$nameHistory",
+              as: "name",
+              cond: {
+                $and: [
+                  { $gte: ["$$name.date", dateStart] },
+                  { $lte: ["$$name.date", dateEnd] },
+                ],
+              },
+            },
+          },
+          commits: {
+            data: {
+              $filter: {
+                input: "$commits.data",
+                as: "commit",
+                cond: {
+                  $and: [
+                    { $gte: ["$$commit.timestamp", dateStart] },
+                    { $lte: ["$$commit.timestamp", dateEnd] },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    ]);
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught while getting all repos from database.`,
+      err
+    );
+    return { success: false };
+  }
+
+  if (repo.length !== 1) {
+    return { success: false };
+  }
+
+  return { success: true, data: repos[0] };
+}
+
+async function getUserReposBetween(user_id, dateStart, dateEnd) {
+  if (!user_id) {
+    return { success: false, data: [] };
+  }
+
+  let repos;
+  try {
+    repos = await RepositoryModel.aggregate([
+      {
+        $match: {
+          not_found: false,
+          users: { $eq: user_id },
+        },
+      },
+      {
+        $project: {
+          not_found: true,
+          users: true,
+          github_repo_id: true,
+          reponame: true,
+          views: {
+            data: {
+              $filter: {
+                input: "$views.data",
+                as: "view",
+                cond: {
+                  $and: [
+                    { $gte: ["$$view.timestamp", dateStart] },
+                    { $lte: ["$$view.timestamp", dateEnd] },
+                  ],
+                },
+              },
+            },
+          },
+          clones: {
+            data: {
+              $filter: {
+                input: "$clones.data",
+                as: "clone",
+                cond: {
+                  $and: [
+                    { $gte: ["$$clone.timestamp", dateStart] },
+                    { $lte: ["$$clone.timestamp", dateEnd] },
+                  ],
+                },
+              },
+            },
+          },
+          forks: {
+            data: {
+              $filter: {
+                input: "$forks.data",
+                as: "fork",
+                cond: {
+                  $and: [
+                    { $gte: ["$$fork.timestamp", dateStart] },
+                    { $lte: ["$$fork.timestamp", dateEnd] },
+                  ],
+                },
+              },
+            },
+          },
+          referrers: {
+            $map: {
+              input: "$referrers",
+              as: "referrer",
+              in: {
+                name: "$$referrer.name",
+                data: {
+                  $filter: {
+                    input: "$$referrer.data",
+                    as: "ref_data",
+                    cond: {
+                      $and: [
+                        { $gte: ["$$ref_data.timestamp", dateStart] },
+                        { $lte: ["$$ref_data.timestamp", dateEnd] },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+          contents: {
+            $map: {
+              input: "$contents",
+              as: "content",
+              in: {
+                name: "$$content.name",
+                data: {
+                  $filter: {
+                    input: "$$content.data",
+                    as: "ref_data",
+                    cond: {
+                      $and: [
+                        { $gte: ["$$ref_data.timestamp", dateStart] },
+                        { $lte: ["$$ref_data.timestamp", dateEnd] },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+          nameHistory: {
+            $filter: {
+              input: "$nameHistory",
+              as: "name",
+              cond: {
+                $and: [
+                  { $gte: ["$$name.date", dateStart] },
+                  { $lte: ["$$name.date", dateEnd] },
+                ],
+              },
+            },
+          },
+          commits: {
+            data: {
+              $filter: {
+                input: "$commits.data",
+                as: "commit",
+                cond: {
+                  $and: [
+                    { $gte: ["$$commit.timestamp", dateStart] },
+                    { $lte: ["$$commit.timestamp", dateEnd] },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    ]);
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught while getting all repos from database.`,
+      err
+    );
+    return { success: false, data: [] };
+  }
+
+  return { success: true, data: repos };
+}
+
+async function getUserAndPopulateSharedReposBetween(
+  user_id,
+  dateStart,
+  dateEnd
+) {
   if (!user_id) {
     return { success: false, data: [] };
   }
@@ -340,150 +664,6 @@ async function getUserAndPopulateReposBetween(user_id, dateStart, dateEnd) {
   }
 
   return { success: true, data: user };
-}
-
-async function getDataBetween(user_id, dateStart, dateEnd) {
-  if (!user_id) {
-    return { success: false, data: [] };
-  }
-
-  let repos;
-  try {
-    repos = await RepositoryModel.aggregate([
-      {
-        $match: {
-          not_found: false,
-          users: { $eq: user_id },
-        },
-      },
-      {
-        $project: {
-          not_found: true,
-          users: true,
-          github_repo_id: true,
-          reponame: true,
-          views: {
-            data: {
-              $filter: {
-                input: "$views.data",
-                as: "view",
-                cond: {
-                  $and: [
-                    { $gte: ["$$view.timestamp", dateStart] },
-                    { $lte: ["$$view.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-          clones: {
-            data: {
-              $filter: {
-                input: "$clones.data",
-                as: "clone",
-                cond: {
-                  $and: [
-                    { $gte: ["$$clone.timestamp", dateStart] },
-                    { $lte: ["$$clone.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-          forks: {
-            data: {
-              $filter: {
-                input: "$forks.data",
-                as: "fork",
-                cond: {
-                  $and: [
-                    { $gte: ["$$fork.timestamp", dateStart] },
-                    { $lte: ["$$fork.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-          referrers: {
-            $map: {
-              input: "$referrers",
-              as: "referrer",
-              in: {
-                name: "$$referrer.name",
-                data: {
-                  $filter: {
-                    input: "$$referrer.data",
-                    as: "ref_data",
-                    cond: {
-                      $and: [
-                        { $gte: ["$$ref_data.timestamp", dateStart] },
-                        { $lte: ["$$ref_data.timestamp", dateEnd] },
-                      ],
-                    },
-                  },
-                },
-              },
-            },
-          },
-          contents: {
-            $map: {
-              input: "$contents",
-              as: "content",
-              in: {
-                name: "$$content.name",
-                data: {
-                  $filter: {
-                    input: "$$content.data",
-                    as: "ref_data",
-                    cond: {
-                      $and: [
-                        { $gte: ["$$ref_data.timestamp", dateStart] },
-                        { $lte: ["$$ref_data.timestamp", dateEnd] },
-                      ],
-                    },
-                  },
-                },
-              },
-            },
-          },
-          nameHistory: {
-            $filter: {
-              input: "$nameHistory",
-              as: "name",
-              cond: {
-                $and: [
-                  { $gte: ["$$name.date", dateStart] },
-                  { $lte: ["$$name.date", dateEnd] },
-                ],
-              },
-            },
-          },
-          commits: {
-            data: {
-              $filter: {
-                input: "$commits.data",
-                as: "commit",
-                cond: {
-                  $and: [
-                    { $gte: ["$$commit.timestamp", dateStart] },
-                    { $lte: ["$$commit.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-        },
-      },
-    ]);
-  } catch (err) {
-    errorHandler(
-      `${arguments.callee.name}: Error caught while getting all repos from database.`,
-      err
-    );
-    return { success: false, data: [] };
-  }
-
-  return { success: true, data: repos };
 }
 
 async function getLastXDaysData(user, xDays) {
@@ -765,7 +945,6 @@ module.exports = {
   updateProfile,
   getWhereUsernameStartsWith,
   getData,
-  getDataBetween,
   getLastXDaysData,
   sync,
   unfollowSharedRepo,
