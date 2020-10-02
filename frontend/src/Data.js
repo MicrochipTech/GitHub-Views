@@ -119,6 +119,9 @@ function DataProvider({ children }) {
     (_) => {
       const getData = async (_) => {
         const res = await axios.get("/api/user/getData").catch((e) => {});
+
+        console.log(res);
+
         if (res != null) {
           dispatch({ type: "DATA_READY", payload: prepareData(res.data) });
         } else {

@@ -7,6 +7,11 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const { logger, errorHandler } = require("../logs/logger");
 const { getRepoViews } = require("./GitHubApiCtrl");
 
+const getRepoWithTrafficBetween = require("../mongoQueries/getRepoWithTrafficBetween");
+const getUserReposWithTrafficBetween = require("../mongoQueries/getUserReposWithTrafficBetween");
+const getUserSharedReposWithTrafficBetween = require("../mongoQueries/getUserSharedReposWithTrafficBetween");
+const getUserReposForLastXDays = require("../mongoQueries/getUserReposForLastXDays");
+
 const mongoose = require("mongoose");
 
 async function updateProfile(user) {
@@ -120,7 +125,20 @@ async function getData(req, res) {
       let repoWithTraffic;
       try {
         if (dateStart && dateEnd) {
-          repoWithTraffic = await getRepoBetween(repo_id, dateStart, dateEnd);
+          const repoWithTrafficRes = await getRepoBetween(
+            repo_id,
+            dateStart,
+            dateEnd
+          );
+          if (repoWithTrafficRes.success === fasle) {
+            res.send({
+              success: false,
+              error: `Error getting data.`,
+            });
+            return;
+          }
+
+          repoWithTraffic = repoWithTrafficRes.data;
         } else {
           repoWithTraffic = await RepositoryModel.findOne({
             _id: repo_id,
@@ -141,27 +159,84 @@ async function getData(req, res) {
       let userRepos, usersWithSharedRepos, aggregateCharts;
       try {
         if (dateStart && dateEnd) {
-          userRepos = await getUserReposBetween(
-            req.user._id,
-            dateStart,
-            dateEnd
-          );
-          usersWithSharedRepos = await getUserAndPopulateSharedReposBetween(
+          const userReposRes = await getUserReposBetween(
             req.user._id,
             dateStart,
             dateEnd
           );
 
+          if (userReposRes.success === false) {
+            res.send({
+              success: false,
+              error: `Error getting data.`,
+            });
+            return;
+          }
+          userRepos = userReposRes.data;
+
+          const usersWithSharedReposRes = await getUserAndPopulateSharedReposBetween(
+            req.user._id,
+            dateStart,
+            dateEnd
+          );
+          if (usersWithSharedReposRes.success === false) {
+            res.send({
+              success: false,
+              error: `Error getting data.`,
+            });
+            return;
+          }
+
+          usersWithSharedRepos = usersWithSharedReposRes.data;
+
           aggregateCharts = await AggregateChartModel.find({
             user: req.user._id,
           });
         } else {
-          userRepos = await RepositoryModel.find({
-            users: { $eq: req.user._id },
-          });
-          usersWithSharedRepos = await UserModel.findById(
-            req.user._id
-          ).populate("sharedRepos");
+          let _3daysAgo = new Date();
+          _3daysAgo.setUTCHours(0, 0, 0, 0);
+          _3daysAgo.setUTCDate(_3daysAgo.getUTCDate() - 15);
+
+          let today = new Date();
+          today.setUTCHours(0, 0, 0, 0);
+
+          const userReposRes = await getUserReposBetween(
+            req.user._id,
+            dateStart,
+            dateEnd
+          );
+
+          if (userReposRes.success === false) {
+            res.send({
+              success: false,
+              error: `Error getting data.`,
+            });
+            return;
+          }
+          userRepos = userReposRes.data;
+
+          const usersWithSharedReposRes = await getUserAndPopulateSharedReposBetween(
+            req.user._id,
+            dateStart,
+            dateEnd
+          );
+
+          if (usersWithSharedReposRes.success === false) {
+            res.send({
+              success: false,
+              error: `Error getting data.`,
+            });
+            return;
+          }
+
+          usersWithSharedRepos = usersWithSharedReposRes.data;
+
+          // userRepos = await RepositoryModel.find({
+          //   users: { $eq: req.user._id },
+          // });
+          // usersWithSharedRepos = await UserModel.findById(
+          //   req.user._id
+          // ).populate("sharedRepos");
 
           aggregateCharts = await AggregateChartModel.find({
             user: req.user._id,
@@ -179,6 +254,7 @@ async function getData(req, res) {
       }
 
       const { sharedRepos, githubId } = usersWithSharedRepos;
+
       const dataToPlot = {
         userRepos,
         sharedRepos,
@@ -186,7 +262,7 @@ async function getData(req, res) {
         githubId,
       };
 
-      res.json({ success: true, dataToPlot });
+      res.json(dataToPlot);
     }
   } else {
     res.status(404).send("not authenticated");
@@ -200,131 +276,9 @@ async function getRepoBetween(repo_id, dateStart, dateEnd) {
 
   let repos;
   try {
-    repos = await RepositoryModel.aggregate([
-      {
-        $match: {
-          _id: repo_id,
-        },
-      },
-      {
-        $project: {
-          not_found: true,
-          users: true,
-          github_repo_id: true,
-          reponame: true,
-          views: {
-            data: {
-              $filter: {
-                input: "$views.data",
-                as: "view",
-                cond: {
-                  $and: [
-                    { $gte: ["$$view.timestamp", dateStart] },
-                    { $lte: ["$$view.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-          clones: {
-            data: {
-              $filter: {
-                input: "$clones.data",
-                as: "clone",
-                cond: {
-                  $and: [
-                    { $gte: ["$$clone.timestamp", dateStart] },
-                    { $lte: ["$$clone.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-          forks: {
-            data: {
-              $filter: {
-                input: "$forks.data",
-                as: "fork",
-                cond: {
-                  $and: [
-                    { $gte: ["$$fork.timestamp", dateStart] },
-                    { $lte: ["$$fork.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-          referrers: {
-            $map: {
-              input: "$referrers",
-              as: "referrer",
-              in: {
-                name: "$$referrer.name",
-                data: {
-                  $filter: {
-                    input: "$$referrer.data",
-                    as: "ref_data",
-                    cond: {
-                      $and: [
-                        { $gte: ["$$ref_data.timestamp", dateStart] },
-                        { $lte: ["$$ref_data.timestamp", dateEnd] },
-                      ],
-                    },
-                  },
-                },
-              },
-            },
-          },
-          contents: {
-            $map: {
-              input: "$contents",
-              as: "content",
-              in: {
-                name: "$$content.name",
-                data: {
-                  $filter: {
-                    input: "$$content.data",
-                    as: "ref_data",
-                    cond: {
-                      $and: [
-                        { $gte: ["$$ref_data.timestamp", dateStart] },
-                        { $lte: ["$$ref_data.timestamp", dateEnd] },
-                      ],
-                    },
-                  },
-                },
-              },
-            },
-          },
-          nameHistory: {
-            $filter: {
-              input: "$nameHistory",
-              as: "name",
-              cond: {
-                $and: [
-                  { $gte: ["$$name.date", dateStart] },
-                  { $lte: ["$$name.date", dateEnd] },
-                ],
-              },
-            },
-          },
-          commits: {
-            data: {
-              $filter: {
-                input: "$commits.data",
-                as: "commit",
-                cond: {
-                  $and: [
-                    { $gte: ["$$commit.timestamp", dateStart] },
-                    { $lte: ["$$commit.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-        },
-      },
-    ]);
+    repos = await RepositoryModel.aggregate(
+      getRepoWithTrafficBetween(repo_id, dateStart, dateEnd)
+    );
   } catch (err) {
     errorHandler(
       `${arguments.callee.name}: Error caught while getting all repos from database.`,
@@ -347,132 +301,9 @@ async function getUserReposBetween(user_id, dateStart, dateEnd) {
 
   let repos;
   try {
-    repos = await RepositoryModel.aggregate([
-      {
-        $match: {
-          not_found: false,
-          users: { $eq: user_id },
-        },
-      },
-      {
-        $project: {
-          not_found: true,
-          users: true,
-          github_repo_id: true,
-          reponame: true,
-          views: {
-            data: {
-              $filter: {
-                input: "$views.data",
-                as: "view",
-                cond: {
-                  $and: [
-                    { $gte: ["$$view.timestamp", dateStart] },
-                    { $lte: ["$$view.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-          clones: {
-            data: {
-              $filter: {
-                input: "$clones.data",
-                as: "clone",
-                cond: {
-                  $and: [
-                    { $gte: ["$$clone.timestamp", dateStart] },
-                    { $lte: ["$$clone.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-          forks: {
-            data: {
-              $filter: {
-                input: "$forks.data",
-                as: "fork",
-                cond: {
-                  $and: [
-                    { $gte: ["$$fork.timestamp", dateStart] },
-                    { $lte: ["$$fork.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-          referrers: {
-            $map: {
-              input: "$referrers",
-              as: "referrer",
-              in: {
-                name: "$$referrer.name",
-                data: {
-                  $filter: {
-                    input: "$$referrer.data",
-                    as: "ref_data",
-                    cond: {
-                      $and: [
-                        { $gte: ["$$ref_data.timestamp", dateStart] },
-                        { $lte: ["$$ref_data.timestamp", dateEnd] },
-                      ],
-                    },
-                  },
-                },
-              },
-            },
-          },
-          contents: {
-            $map: {
-              input: "$contents",
-              as: "content",
-              in: {
-                name: "$$content.name",
-                data: {
-                  $filter: {
-                    input: "$$content.data",
-                    as: "ref_data",
-                    cond: {
-                      $and: [
-                        { $gte: ["$$ref_data.timestamp", dateStart] },
-                        { $lte: ["$$ref_data.timestamp", dateEnd] },
-                      ],
-                    },
-                  },
-                },
-              },
-            },
-          },
-          nameHistory: {
-            $filter: {
-              input: "$nameHistory",
-              as: "name",
-              cond: {
-                $and: [
-                  { $gte: ["$$name.date", dateStart] },
-                  { $lte: ["$$name.date", dateEnd] },
-                ],
-              },
-            },
-          },
-          commits: {
-            data: {
-              $filter: {
-                input: "$commits.data",
-                as: "commit",
-                cond: {
-                  $and: [
-                    { $gte: ["$$commit.timestamp", dateStart] },
-                    { $lte: ["$$commit.timestamp", dateEnd] },
-                  ],
-                },
-              },
-            },
-          },
-        },
-      },
-    ]);
+    repos = await RepositoryModel.aggregate(
+      getUserReposWithTrafficBetween(user_id, dateStart, dateEnd)
+    );
   } catch (err) {
     errorHandler(
       `${arguments.callee.name}: Error caught while getting all repos from database.`,
@@ -480,6 +311,12 @@ async function getUserReposBetween(user_id, dateStart, dateEnd) {
     );
     return { success: false, data: [] };
   }
+
+  repos.forEach((repo) => {
+    if (repo.reponame === "MicrochipTech/Getting_Started_with_GPIO") {
+      console.log(JSON.stringify(repo, null, 2));
+    }
+  });
 
   return { success: true, data: repos };
 }
@@ -490,180 +327,28 @@ async function getUserAndPopulateSharedReposBetween(
   dateEnd
 ) {
   if (!user_id) {
-    return { success: false, data: [] };
+    return { success: false };
   }
 
-  let user;
+  let users;
   try {
-    user = await UserModel.aggregate([
-      {
-        $match: {
-          _id: mongoose.Types.ObjectId("5ddb92b94a2f11001f95bac8"),
-        },
-      },
-      {
-        $unwind: { path: "$sharedRepos", preserveNullAndEmptyArrays: true },
-      },
-      {
-        $lookup: {
-          from: "repositories",
-          let: { repo_id: "$sharedRepos" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: ["$_id", "$$repo_id"],
-                },
-              },
-            },
-            {
-              $project: {
-                reponame: true,
-                views: {
-                  data: {
-                    $filter: {
-                      input: "$views.data",
-                      as: "view",
-                      cond: {
-                        $and: [
-                          { $gte: ["$$view.timestamp", dateStart] },
-                          { $lte: ["$$view.timestamp", dateEnd] },
-                        ],
-                      },
-                    },
-                  },
-                },
-                clones: {
-                  data: {
-                    $filter: {
-                      input: "$clones.data",
-                      as: "clone",
-                      cond: {
-                        $and: [
-                          { $gte: ["$$clone.timestamp", dateStart] },
-                          { $lte: ["$$clone.timestamp", dateEnd] },
-                        ],
-                      },
-                    },
-                  },
-                },
-                forks: {
-                  data: {
-                    $filter: {
-                      input: "$forks.data",
-                      as: "fork",
-                      cond: {
-                        $and: [
-                          { $gte: ["$$fork.timestamp", dateStart] },
-                          { $lte: ["$$fork.timestamp", dateEnd] },
-                        ],
-                      },
-                    },
-                  },
-                },
-                referrers: {
-                  $map: {
-                    input: "$referrers",
-                    as: "referrer",
-                    in: {
-                      name: "$$referrer.name",
-                      data: {
-                        $filter: {
-                          input: "$$referrer.data",
-                          as: "ref_data",
-                          cond: {
-                            $and: [
-                              { $gte: ["$$ref_data.timestamp", dateStart] },
-                              { $lte: ["$$ref_data.timestamp", dateEnd] },
-                            ],
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-                contents: {
-                  $map: {
-                    input: "$contents",
-                    as: "content",
-                    in: {
-                      name: "$$content.name",
-                      data: {
-                        $filter: {
-                          input: "$$content.data",
-                          as: "ref_data",
-                          cond: {
-                            $and: [
-                              { $gte: ["$$ref_data.timestamp", dateStart] },
-                              { $lte: ["$$ref_data.timestamp", dateEnd] },
-                            ],
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-                nameHistory: {
-                  $filter: {
-                    input: "$nameHistory",
-                    as: "name",
-                    cond: {
-                      $and: [
-                        { $gte: ["$$name.date", dateStart] },
-                        { $lte: ["$$name.date", dateEnd] },
-                      ],
-                    },
-                  },
-                },
-                commits: {
-                  data: {
-                    $filter: {
-                      input: "$commits.data",
-                      as: "commit",
-                      cond: {
-                        $and: [
-                          { $gte: ["$$commit.timestamp", dateStart] },
-                          { $lte: ["$$commit.timestamp", dateEnd] },
-                        ],
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          ],
-          as: "sharedRepos",
-        },
-      },
-      {
-        $unwind: { path: "$sharedRepos", preserveNullAndEmptyArrays: true },
-      },
-      {
-        $group: {
-          _id: "$_id",
-          username: { $first: "$username" },
-          password: { $first: "$password" },
-          githubEmails: { $first: "$githubEmails" },
-          githubId: { $first: "$githubId" },
-          token: { $first: "$token" },
-          token_ref: { $first: "$token_ref" },
-          sharedRepos: { $push: "$sharedRepos" },
-        },
-      },
-    ]);
-
-    logger.warn(JSON.stringify(user, null, 2));
-
-    // logger.warn(user);
+    users = await UserModel.aggregate(
+      getUserSharedReposWithTrafficBetween(user_id, dateStart, dateEnd)
+    );
   } catch (err) {
     errorHandler(
       `${arguments.callee.name}: Error caught while getting all repos from database.`,
       err
     );
-    return { success: false, data: [] };
+    return { success: false };
   }
 
-  return { success: true, data: user };
+  if (users.length !== 1) {
+    logger.warn(`${arguments.callee.name}: Error expected.`);
+    return { success: false };
+  }
+
+  return { success: true, data: users[0] };
 }
 
 async function getLastXDaysData(user, xDays) {
@@ -677,93 +362,9 @@ async function getLastXDaysData(user, xDays) {
 
   let repos;
   try {
-    repos = await RepositoryModel.aggregate([
-      {
-        $match: {
-          not_found: false,
-          users: { $eq: user._id },
-        },
-      },
-      {
-        $project: {
-          reponame: true,
-          views: {
-            data: {
-              $filter: {
-                input: "$views.data",
-                as: "view",
-                cond: {
-                  $gte: ["$$view.timestamp", oneMonthAgo],
-                },
-              },
-            },
-          },
-          clones: {
-            data: {
-              $filter: {
-                input: "$clones.data",
-                as: "clone",
-                cond: {
-                  $gte: ["$$clone.timestamp", oneMonthAgo],
-                },
-              },
-            },
-          },
-          forks: {
-            data: {
-              $filter: {
-                input: "$forks.data",
-                as: "fork",
-                cond: {
-                  $gte: ["$$fork.timestamp", oneMonthAgo],
-                },
-              },
-            },
-          },
-        },
-      },
-      {
-        $unwind: { path: "$views.data", preserveNullAndEmptyArrays: true },
-      },
-      {
-        $group: {
-          _id: "$_id",
-          reponame: { $first: "$reponame" },
-          views_count: { $sum: "$views.data.count" },
-          views_uniques: { $sum: "$views.data.uniques" },
-          clones: { $first: "$clones" },
-          forks: { $first: "$forks" },
-        },
-      },
-      {
-        $unwind: { path: "$clones.data", preserveNullAndEmptyArrays: true },
-      },
-      {
-        $group: {
-          _id: "$_id",
-          reponame: { $first: "$reponame" },
-          views_count: { $first: "$views_count" },
-          views_uniques: { $first: "$views_uniques" },
-          clones_count: { $sum: "$clones.data.count" },
-          clones_uniques: { $sum: "$clones.data.uniques" },
-          forks: { $first: "$forks" },
-        },
-      },
-      {
-        $unwind: { path: "$forks.data", preserveNullAndEmptyArrays: true },
-      },
-      {
-        $group: {
-          _id: "$_id",
-          reponame: { $first: "$reponame" },
-          views_count: { $first: "$views_count" },
-          views_uniques: { $first: "$views_uniques" },
-          clones_count: { $first: "$clones_count" },
-          clones_uniques: { $first: "$clones_uniques" },
-          forks_count: { $sum: "$forks.data.count" },
-        },
-      },
-    ]);
+    repos = await RepositoryModel.aggregate(
+      getUserReposForLastXDays(user, xDays)
+    );
   } catch (err) {
     errorHandler(
       `${arguments.callee.name}: Error caught while getting all repos from database.`,
