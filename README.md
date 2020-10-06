@@ -63,6 +63,6 @@ The tool will start collecting views data for all the repos you have access to.
 
 Feel free to add features and this project and submit a PR. We will add you to the contributors list below.
 
-[<img alt="m17336" src="https://github.com/m17336.png?size=40" height="40">](https://github.com/m17336)
+[<img alt="m17336" src="https://github.com/alexmchp.png?size=40" height="40">](https://github.com/alexmchp)
 [<img alt="filipgeorge" src="https://github.com/filipgeorge.png?size=40" height="40">](https://github.com/filipgeorge)
 [<img alt="CristianSabiuta" src="https://github.com/CristianSabiuta.png?size=40" height="40">](https://github.com/CristianSabiuta)
