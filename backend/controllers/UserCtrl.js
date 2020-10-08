@@ -15,11 +15,12 @@ const getUserReposForLastXDays = require("../mongoQueries/getUserReposForLastXDa
 const mongoose = require("mongoose");
 
 async function updateProfile(user) {
+  const t = await TokenModel.findOne({ _id: user.token_ref });
   let userDetails, userEmails;
 
   try {
-    userDetails = await GitHubApiCtrl.getUserProfile(user.token_ref.value);
-    userEmails = await GitHubApiCtrl.getUserEmails(user.token_ref.value);
+    userDetails = await GitHubApiCtrl.getUserProfile(t.value);
+    userEmails = await GitHubApiCtrl.getUserEmails(t.value);
   } catch (err) {
     errorHandler(
       `${arguments.callee.name}: Error caught when getting from GitHub API emails or details for user with _id ${user._id}.`,
@@ -29,13 +30,13 @@ async function updateProfile(user) {
   }
 
   if (userDetails === undefined || userEmails === undefined) {
-    logger.warning(
+    logger.warn(
       `Fail when getting from GitHub API emails or details for user with _id ${user._id}.`
     );
     return false;
   }
   if (!userDetails.success || !userEmails.success) {
-    logger.warning(
+    logger.warn(
       `Getting emails or details for user with _id ${user._id} was not completed successfully.`
     );
     return false;
@@ -193,50 +194,13 @@ async function getData(req, res) {
             user: req.user._id,
           });
         } else {
-          let _3daysAgo = new Date();
-          _3daysAgo.setUTCHours(0, 0, 0, 0);
-          _3daysAgo.setUTCDate(_3daysAgo.getUTCDate() - 15);
+          userRepos = await RepositoryModel.find({
+            users: { $eq: req.user._id },
+          });
 
-          let today = new Date();
-          today.setUTCHours(0, 0, 0, 0);
-
-          const userReposRes = await getUserReposBetween(
-            req.user._id,
-            dateStart,
-            dateEnd
-          );
-
-          if (userReposRes.success === false) {
-            res.send({
-              success: false,
-              error: `Error getting data.`,
-            });
-            return;
-          }
-          userRepos = userReposRes.data;
-
-          const usersWithSharedReposRes = await getUserAndPopulateSharedReposBetween(
-            req.user._id,
-            dateStart,
-            dateEnd
-          );
-
-          if (usersWithSharedReposRes.success === false) {
-            res.send({
-              success: false,
-              error: `Error getting data.`,
-            });
-            return;
-          }
-
-          usersWithSharedRepos = usersWithSharedReposRes.data;
-
-          // userRepos = await RepositoryModel.find({
-          //   users: { $eq: req.user._id },
-          // });
-          // usersWithSharedRepos = await UserModel.findById(
-          //   req.user._id
-          // ).populate("sharedRepos");
+          usersWithSharedRepos = await UserModel.findById(
+            req.user._id
+          ).populate("sharedRepos");
 
           aggregateCharts = await AggregateChartModel.find({
             user: req.user._id,
@@ -262,7 +226,7 @@ async function getData(req, res) {
         githubId,
       };
 
-      res.json(dataToPlot);
+      res.json({ success: true, dataToPlot });
     }
   } else {
     res.status(404).send("not authenticated");
@@ -311,12 +275,6 @@ async function getUserReposBetween(user_id, dateStart, dateEnd) {
     );
     return { success: false, data: [] };
   }
-
-  repos.forEach((repo) => {
-    if (repo.reponame === "MicrochipTech/Getting_Started_with_GPIO") {
-      console.log(JSON.stringify(repo, null, 2));
-    }
-  });
 
   return { success: true, data: repos };
 }
