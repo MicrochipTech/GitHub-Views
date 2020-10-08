@@ -1,5 +1,5 @@
 const AggregateChart = require("../models/AggregateChart");
-const {logger, errorHandler} = require("../logs/logger");
+const { logger, errorHandler } = require("../logs/logger");
 
 async function getAllForCurrentUser(req, res) {
   const userAggCharts = AggregateChart.find({ user: req.user._id }).populate(
@@ -24,7 +24,7 @@ async function createChart(req, res) {
     errorHandler(
       `${arguments.callee.name}: Error caught when creating new aggregateCharts.`,
       err,
-      fasle
+      false
     );
   }
 

@@ -117,7 +117,7 @@ passport.use(
 
         let userEmails;
         try {
-          userEmGitHubApiCtrl.getUserEmails(accessToken);
+          userEmails = await GitHubApiCtrl.getUserEmails(accessToken);
         } catch (err) {
           errorHandler(
             `${arguments.callee.name}: Error caught while getting user emails for user ${profile.username}.`,
@@ -138,7 +138,7 @@ passport.use(
           newUser = await new UserModel({
             username: profile.username,
             githubId: profile.id,
-            gitHubEmail: emails,
+            githubEmails: emails,
             token_ref: t._id,
           }).save();
         } catch (err) {
