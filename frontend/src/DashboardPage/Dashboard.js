@@ -1,8 +1,9 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import { DataContext } from "../Data";
-import { Grid } from "@material-ui/core";
+import { Grid, Box, Popover } from "@material-ui/core";
 import CircularProgress from "@material-ui/core/CircularProgress";
+import InfoIcon from "@material-ui/icons/Info";
 import NewAggregateChartButton from "./NewAggregateChartButton";
 import SearchBar from "./SearchBar";
 import Header from "../common/Header";
@@ -19,12 +20,19 @@ function Dashboard() {
   const { repos, loadingData } = React.useContext(DataContext);
   const [searchValue, setSearchValue] = React.useState("");
   const [activePage, setActivePage] = React.useState(1);
+  const [infoIcon, setInfoIcon] = React.useState(null);
 
   console.log(repos, page);
-  const reposMatchingSerach = repos[page].filter(
-    (d) =>
-      !d.reponame || d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
-  );
+  const reposMatchingSerach = repos[page]
+    .filter(
+      (d) =>
+        !d.reponame ||
+        d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
+    )
+    .sort((a, b) =>
+      a.reponame.toLowerCase() < b.reponame.toLowerCase() ? -1 : 1
+    );
+  console.log("reposMatchingSerach: ", reposMatchingSerach);
   const totalCount = reposMatchingSerach.length;
 
   const visibleRepos = reposMatchingSerach.slice(
@@ -36,6 +44,19 @@ function Dashboard() {
     setSearchValue("");
   }, [page]);
 
+  let counterSplit = {};
+  if (page !== "aggregateCharts") {
+    reposMatchingSerach.forEach((r) => {
+      const org = r.reponame.split("/")[0];
+      if (counterSplit[org] === undefined) {
+        counterSplit[org] = 0;
+      }
+      counterSplit[org] += 1;
+    });
+  } else {
+    counterSplit = undefined;
+  }
+
   return (
     <Grid container className="dashboardWrapper">
       <Header />
@@ -45,6 +66,12 @@ function Dashboard() {
       </Grid>
 
       <Grid item md={10}>
+        {loadingData && (
+          <center className="padding20">
+            <CircularProgress />
+          </center>
+        )}
+
         <SearchBar
           show={!loadingData && page !== "aggregateCharts"}
           onSearch={(q) => {
@@ -52,6 +79,38 @@ function Dashboard() {
             setSearchValue(q);
           }}
         />
+
+        {!loadingData && counterSplit !== undefined && (
+          <Box display="flex" flexDirection="row" alignItems="center">
+            <InfoIcon
+              onClick={(e) => setInfoIcon(e.currentTarget)}
+              style={{ cursor: "pointer" }}
+            />
+            <Popover
+              anchorEl={infoIcon}
+              open={infoIcon !== null}
+              onClose={() => setInfoIcon(null)}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "center",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "center",
+              }}
+            >
+              <Box p="10px">
+                {Object.entries(counterSplit).map(([key, value]) => (
+                  <div>
+                    {value} - {key}
+                  </div>
+                ))}
+              </Box>
+            </Popover>
+            &nbsp;
+            <span>{totalCount} repos</span>
+          </Box>
+        )}
 
         <div>
           {totalCount > ITEMS_PER_PAGE && (
@@ -76,12 +135,6 @@ function Dashboard() {
                 }}
               />
             ))}
-
-          {loadingData && (
-            <center className="padding20">
-              <CircularProgress />
-            </center>
-          )}
 
           {!loadingData &&
             (repos[page].length === 0 || visibleRepos.length === 0) && (

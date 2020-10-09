@@ -10,19 +10,9 @@ forkSchema.add({
 
 const repositorySchema = new mongoose.Schema({
   not_found: Boolean,
-  user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   github_repo_id: String,
   reponame: String,
-  count: Number,
-  uniques: Number,
-  views2: [
-    {
-      timestamp: Date,
-      count: Number,
-      uniques: Number,
-    },
-  ],
   views: {
     total_count: Number,
     total_uniques: Number,

@@ -114,8 +114,9 @@ async function getData(req, res) {
   if (req.isAuthenticated()) {
     let userRepos, usersWithSharedRepos, aggregateCharts;
     try {
-      userRepos = await RepositoryModel.find({ users: { $eq: req.user._id } });
-      usersWithSharedRepos = await UserModel.findById(req.user._id).populate(
+      const user_id = req.user._id;
+      userRepos = await RepositoryModel.find({ users: { $eq: user_id } });
+      usersWithSharedRepos = await UserModel.findById(user_id).populate(
         "sharedRepos"
       );
 
