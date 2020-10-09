@@ -20,7 +20,7 @@ async function nameContains(req, res) {
     errorHandler(
       `${arguments.callee.name}: Error caught when getting from database repos with the name containing ${q} sequence.`,
       err,
-      fasle
+      false
     );
   }
 
