@@ -92,7 +92,12 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
                 }}
               >
                 <FilterableRepos
-                  allRepos={[...repos.userRepos, ...repos.sharedRepos]}
+                  allRepos={[
+                    ...repos.userRepos,
+                    ...repos.sharedRepos,
+                  ].sort((a, b) =>
+                    a.reponame.toLowerCase() < b.reponame.toLowerCase() ? -1 : 1
+                  )}
                   selectedRepos={reposToDownload}
                   onChange={(id, selected) => {
                     if (selected) {
@@ -153,7 +158,13 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
                     const selectedRepos = [
                       ...repos.userRepos,
                       repos.sharedRepos,
-                    ].filter((r) => reposToDownload.indexOf(r._id) !== -1);
+                    ]
+                      .filter((r) => reposToDownload.indexOf(r._id) !== -1)
+                      .sort((a, b) =>
+                        a.reponame.toLowerCase() < b.reponame.toLowerCase()
+                          ? -1
+                          : 1
+                      );
                     onDownload(selectedRepos, sheets);
                   }}
                 >
