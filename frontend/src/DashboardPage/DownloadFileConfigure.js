@@ -1,4 +1,6 @@
 import React from "react";
+import axios from "axios";
+import moment from "moment";
 import { DataContext } from "../Data";
 import {
   Modal,
@@ -6,9 +8,13 @@ import {
   Checkbox,
   FormControlLabel,
   Button,
+  Box,
+  Grid,
 } from "@material-ui/core";
 import CloseIcon from "@material-ui/icons/Close";
 import FilterableRepos from "./FilterableRepos";
+import DateRangePicker from "@wojtekmaj/react-daterange-picker";
+import { prepareData } from "./../utils";
 
 const STRATEGY_ALL = 1,
   STRATEGY_NONE = 2,
@@ -34,6 +40,10 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
   ]);
   const [step, setStep] = React.useState(0);
   const [selectStrategy, setSelectStrategy] = React.useState(STRATEGY_ALL);
+  const [interval, setInterval] = React.useState([
+    moment().subtract(1, "month").toDate(),
+    moment().toDate(),
+  ]);
 
   React.useEffect(() => {
     if (selectStrategy === STRATEGY_ALL) {
@@ -92,7 +102,12 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
                 }}
               >
                 <FilterableRepos
-                  allRepos={[...repos.userRepos, ...repos.sharedRepos]}
+                  allRepos={[
+                    ...repos.userRepos,
+                    ...repos.sharedRepos,
+                  ].sort((a, b) =>
+                    a.reponame.toLowerCase() < b.reponame.toLowerCase() ? -1 : 1
+                  )}
                   selectedRepos={reposToDownload}
                   onChange={(id, selected) => {
                     if (selected) {
@@ -130,35 +145,75 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
                 <Typography variant="subtitle1">
                   Select what data to include for each repo (at leaset one)
                 </Typography>
-                {sheets.map((s, idx) => (
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={s.checked}
-                        onChange={(e) => {
-                          const newSheets = [...sheets];
-                          newSheets[idx].checked = e.target.checked;
-                          setSheets(newSheets);
-                        }}
-                        color="primary"
+                <Grid container>
+                  {sheets.map((s, idx) => (
+                    <Grid item xs={3}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={s.checked}
+                            onChange={(e) => {
+                              const newSheets = [...sheets];
+                              newSheets[idx].checked = e.target.checked;
+                              setSheets(newSheets);
+                            }}
+                            color="primary"
+                          />
+                        }
+                        label={s.name}
                       />
-                    }
-                    label={s.name}
-                  />
-                ))}
-                <Button onClick={() => setStep(0)}>Back</Button>
-                <Button
-                  disabled={sheets.filter((s) => s.checked).length === 0}
-                  onClick={() => {
-                    const selectedRepos = [
-                      ...repos.userRepos,
-                      repos.sharedRepos,
-                    ].filter((r) => reposToDownload.indexOf(r._id) !== -1);
-                    onDownload(selectedRepos, sheets);
-                  }}
-                >
-                  Download
-                </Button>
+                    </Grid>
+                  ))}
+                </Grid>
+                <Box pt="20px" pb="20px">
+                  <Typography variant="subtitle1">
+                    Select the time interval to download data for
+                  </Typography>
+                  <Box>
+                    <DateRangePicker
+                      onChange={(interval) => {
+                        if (interval) {
+                          setInterval(interval);
+                        } else {
+                          setInterval([
+                            moment().subtract(1, "month").toDate(),
+                            moment().toDate(),
+                          ]);
+                        }
+                      }}
+                      value={[...interval]}
+                    />
+                  </Box>
+                </Box>
+                <Box>
+                  <Button onClick={() => setStep(0)}>Back</Button>
+                  <Button
+                    disabled={sheets.filter((s) => s.checked).length === 0}
+                    onClick={async () => {
+                      const res = await axios.get(
+                        `/api/user/getData?start=${interval[0]}&end=${interval[1]}`
+                      );
+                      if (res === null) {
+                        alert("There was an error.");
+                        return;
+                      }
+                      const data = prepareData(res.data);
+                      const selectedRepos = [
+                        ...data.userRepos,
+                        ...data.sharedRepos,
+                      ]
+                        .filter((r) => reposToDownload.indexOf(r._id) !== -1)
+                        .sort((a, b) =>
+                          a.reponame.toLowerCase() < b.reponame.toLowerCase()
+                            ? -1
+                            : 1
+                        );
+                      onDownload(selectedRepos, sheets);
+                    }}
+                  >
+                    Download
+                  </Button>
+                </Box>
               </div>
             </div>
           )}

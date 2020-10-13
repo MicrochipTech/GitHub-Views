@@ -23,10 +23,16 @@ function Dashboard() {
   const [infoIcon, setInfoIcon] = React.useState(null);
 
   console.log(repos, page);
-  const reposMatchingSerach = repos[page].filter(
-    (d) =>
-      !d.reponame || d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
-  );
+  const reposMatchingSerach = repos[page]
+    .filter(
+      (d) =>
+        !d.reponame ||
+        d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
+    )
+    .sort((a, b) =>
+      a.reponame.toLowerCase() < b.reponame.toLowerCase() ? -1 : 1
+    );
+  console.log("reposMatchingSerach: ", reposMatchingSerach);
   const totalCount = reposMatchingSerach.length;
 
   const visibleRepos = reposMatchingSerach.slice(
@@ -38,14 +44,18 @@ function Dashboard() {
     setSearchValue("");
   }, [page]);
 
-  const counterSplit = {};
-  reposMatchingSerach.forEach((r) => {
-    const org = r.reponame.split("/")[0];
-    if (counterSplit[org] === undefined) {
-      counterSplit[org] = 0;
-    }
-    counterSplit[org] += 1;
-  });
+  let counterSplit = {};
+  if (page !== "aggregateCharts") {
+    reposMatchingSerach.forEach((r) => {
+      const org = r.reponame.split("/")[0];
+      if (counterSplit[org] === undefined) {
+        counterSplit[org] = 0;
+      }
+      counterSplit[org] += 1;
+    });
+  } else {
+    counterSplit = undefined;
+  }
 
   return (
     <Grid container className="dashboardWrapper">
@@ -70,7 +80,7 @@ function Dashboard() {
           }}
         />
 
-        {!loadingData && (
+        {!loadingData && counterSplit !== undefined && (
           <Box display="flex" flexDirection="row" alignItems="center">
             <InfoIcon
               onClick={(e) => setInfoIcon(e.currentTarget)}

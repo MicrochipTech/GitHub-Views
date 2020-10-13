@@ -3,31 +3,9 @@ import produce from "immer";
 import axios from "axios";
 import { add0s } from "./utils";
 
+import { prepareRepo, prepareData } from "./utils";
+
 const DataContext = React.createContext();
-
-function prepareRepo(r) {
-  return {
-    ...r,
-    views: { ...r.views, data: add0s(r.views.data) },
-    clones: { ...r.clones, data: add0s(r.clones.data) },
-    forks: { ...r.forks, data: add0s(r.forks.data) },
-  };
-}
-
-function prepareData(data) {
-  data.zombieRepos = data.userRepos
-    .filter((r) => r.not_found)
-    .map(prepareRepo)
-    .concat(data.sharedRepos.filter((r) => r.not_found).map(prepareRepo));
-
-  data.userRepos = data.userRepos.filter((r) => !r.not_found).map(prepareRepo);
-
-  data.sharedRepos = data.sharedRepos
-    .filter((r) => !r.not_found)
-    .map(prepareRepo);
-
-  return data;
-}
 
 const reducer = (state, action) =>
   produce(state, (draft) => {
