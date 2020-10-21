@@ -10,6 +10,7 @@ import {
   Button,
   Box,
   Grid,
+  CircularProgress,
 } from "@material-ui/core";
 import CloseIcon from "@material-ui/icons/Close";
 import FilterableRepos from "./FilterableRepos";
@@ -44,6 +45,8 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
     moment().subtract(1, "month").toDate(),
     moment().toDate(),
   ]);
+  const [allTime, setAllTime] = React.useState(true);
+  const [fetching, setFetching] = React.useState(false);
 
   React.useEffect(() => {
     if (selectStrategy === STRATEGY_ALL) {
@@ -170,19 +173,36 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
                     Select the time interval to download data for
                   </Typography>
                   <Box>
-                    <DateRangePicker
-                      onChange={(interval) => {
-                        if (interval) {
-                          setInterval(interval);
-                        } else {
-                          setInterval([
-                            moment().subtract(1, "month").toDate(),
-                            moment().toDate(),
-                          ]);
-                        }
-                      }}
-                      value={[...interval]}
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={allTime}
+                          onChange={(e) => {
+                            setAllTime(e.target.checked);
+                          }}
+                          color="primary"
+                        />
+                      }
+                      label="All time data"
                     />
+                    {!allTime && (
+                      <div>
+                        <div>Time interval:</div>
+                        <DateRangePicker
+                          onChange={(interval) => {
+                            if (interval) {
+                              setInterval(interval);
+                            } else {
+                              setInterval([
+                                moment().subtract(1, "month").toDate(),
+                                moment().toDate(),
+                              ]);
+                            }
+                          }}
+                          value={[...interval]}
+                        />
+                      </div>
+                    )}
                   </Box>
                 </Box>
                 <Box>
@@ -190,14 +210,25 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
                   <Button
                     disabled={sheets.filter((s) => s.checked).length === 0}
                     onClick={async () => {
-                      const res = await axios.get(
-                        `/api/user/getData?start=${interval[0]}&end=${interval[1]}`
-                      );
+                      let query = "";
+                      setFetching(true);
+
+                      if (!allTime) {
+                        query = `?start=${interval[0].toISOString()}&end=${interval[1].toISOString()}`;
+                      }
+
+                      const res = await axios.get(`/api/user/getData${query}`);
+                      setFetching(false);
+
                       if (res === null) {
                         alert("There was an error.");
                         return;
                       }
-                      const data = prepareData(res.data);
+
+                      console.log("res.data.dataToPlot: ", res.data.dataToPlot);
+                      const data = prepareData(res.data.dataToPlot);
+                      console.log("data: ", data);
+
                       const selectedRepos = [
                         ...data.userRepos,
                         ...data.sharedRepos,
@@ -211,6 +242,7 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
                       onDownload(selectedRepos, sheets);
                     }}
                   >
+                    {fetching && <CircularProgress size={14} />}
                     Download
                   </Button>
                 </Box>

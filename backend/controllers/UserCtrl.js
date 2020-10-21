@@ -8,7 +8,7 @@ const { logger, errorHandler } = require("../logs/logger");
 const { getRepoViews } = require("./GitHubApiCtrl");
 
 const getRepoWithTrafficBetween = require("../mongoQueries/getRepoWithTrafficBetween");
-const getUserReposWithTrafficBetween = require("../mongoQueries/getUserReposWithTrafficBetween");
+const getRepoDataBetween = require("../mongoQueries/getUserReposWithTrafficBetween");
 const getUserSharedReposWithTrafficBetween = require("../mongoQueries/getUserSharedReposWithTrafficBetween");
 const getUserReposForLastXDays = require("../mongoQueries/getUserReposForLastXDays");
 
@@ -120,7 +120,14 @@ async function getWhereUsernameStartsWith(req, res) {
 
 async function getData(req, res) {
   if (req.isAuthenticated()) {
-    const { repo_id, dateStart, dateEnd } = req.query;
+    const { repo_id, start, end } = req.query;
+
+    const dateStart = new Date(start);
+    const dateEnd = new Date(end);
+
+    function isValidDate(d) {
+      return d instanceof Date && !isNaN(d);
+    }
 
     if (repo_id) {
       let repoWithTraffic;
@@ -159,7 +166,7 @@ async function getData(req, res) {
     } else {
       let userRepos, usersWithSharedRepos, aggregateCharts;
       try {
-        if (dateStart && dateEnd) {
+        if (isValidDate(dateStart) && isValidDate(dateEnd)) {
           const userReposRes = await getUserReposBetween(
             req.user._id,
             dateStart,
@@ -175,11 +182,14 @@ async function getData(req, res) {
           }
           userRepos = userReposRes.data;
 
+          console.log("dateStart, dateEnd: ", dateStart, dateEnd);
+
           const usersWithSharedReposRes = await getUserAndPopulateSharedReposBetween(
             req.user._id,
             dateStart,
             dateEnd
           );
+
           if (usersWithSharedReposRes.success === false) {
             res.send({
               success: false,
@@ -187,6 +197,11 @@ async function getData(req, res) {
             });
             return;
           }
+
+          // console.log(
+          //   "usersWithSharedReposRes.data: ",
+          //   JSON.stringify(usersWithSharedReposRes.data, null, 2)
+          // );
 
           usersWithSharedRepos = usersWithSharedReposRes.data;
 
@@ -266,7 +281,16 @@ async function getUserReposBetween(user_id, dateStart, dateEnd) {
   let repos;
   try {
     repos = await RepositoryModel.aggregate(
-      getUserReposWithTrafficBetween(user_id, dateStart, dateEnd)
+      getRepoDataBetween(
+        {
+          not_found: false,
+          users: { $eq: user_id },
+        },
+        dateStart,
+        dateEnd
+        // new Date("Mon, 31 Aug 2020 21:00:00 GMT"),
+        // new Date("Thu, 01 Oct 2020 20:59:59 GMT")
+      )
     );
   } catch (err) {
     errorHandler(

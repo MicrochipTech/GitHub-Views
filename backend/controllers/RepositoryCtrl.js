@@ -2,6 +2,7 @@ const UserModel = require("../models/User");
 const RepositoryModel = require("../models/Repository");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const { logger, errorHandler } = require("../logs/logger");
+const getRepoDataBetween = require("../mongoQueries/getUserReposWithTrafficBetween");
 
 async function nameContains(req, res) {
   const { q } = req.query;
@@ -504,14 +505,22 @@ async function getPublicRepos(req, res) {
   const repoOwners = process.env.PUBLIC_REPO_OWNERS.split(" ").join("|");
   const reponameRegex = new RegExp(`^(${repoOwners})`);
 
-  const repos = await RepositoryModel.find(
-    { reponame: reponameRegex },
-    fields,
-    {
+  let repos = [];
+  if (req.from !== undefined && req.to !== undefined) {
+    repos = await RepositoryModel.aggregate(
+      getRepoDataBetween(
+        { reponame: reponameRegex },
+        new Date(req.from),
+        new Date(req.to),
+        fields
+      )
+    );
+  } else {
+    repos = await RepositoryModel.find({ reponame: reponameRegex }, fields, {
       skip: Number(req.query.page_no) * Number(req.query.page_size),
       limit: Number(req.query.page_size),
-    }
-  );
+    });
+  }
 
   res.send(repos);
 }

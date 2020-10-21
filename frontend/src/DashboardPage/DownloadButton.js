@@ -110,7 +110,7 @@ function forksCsv(concatRepos) {
 
   for (let i = 0; i < concatRepos.length; i += 1) {
     if (concatRepos[i].forks.data.length === 0) {
-      console.log(concatRepos[i].reponame);
+      // console.log(concatRepos[i].reponame);
       continue;
     }
     let firstRepoTimestamp = new Date(concatRepos[i].forks.data[0].timestamp);
@@ -128,7 +128,7 @@ function forksCsv(concatRepos) {
 
   for (let i = 0; i < concatRepos.length; i += 1) {
     if (concatRepos[i].forks.data.length === 0) {
-      console.log(concatRepos[i].reponame);
+      // console.log(concatRepos[i].reponame);
       continue;
     }
 
@@ -370,7 +370,7 @@ function downlaodDaily(concatRepos, sheets) {
     rows = rows.concat([["Popular Content"]]).concat(contentTable);
   }
 
-  console.log("rows: ", rows);
+  // console.log("rows: ", rows);
 
   downloadExcelFile(rows);
 }
@@ -405,12 +405,12 @@ function reduceToMonthly(rows, dateIndex) {
   };
 
   let rowsMapReduced = rows.map((element, index) => {
-    console.log(element.slice(0, dateIndex));
+    // console.log(element.slice(0, dateIndex));
     if (index === 0) {
       let months = element.reduce(reducer, element.slice(0, dateIndex));
       months = months.map((innerE, innerI) => {
         if (innerI >= dateIndex) {
-          console.log(innerE);
+          // console.log(innerE);
           return moment(innerE).format("MMM YYYY");
         }
         return innerE;
@@ -423,7 +423,7 @@ function reduceToMonthly(rows, dateIndex) {
         element.slice(0, dateIndex)
       );
 
-      console.log("debug: ", reducedCounts);
+      // console.log("debug: ", reducedCounts);
 
       reducedCounts = reducedCounts.map((innerE, innerI) => {
         if (innerI >= dateIndex) {
@@ -485,7 +485,7 @@ function downlaodMonthly(concatRepos, sheets) {
     trafficCSV = trafficCSV.concat(reducedContentsTable);
   }
 
-  console.log(trafficCSV);
+  // console.log(trafficCSV);
   downloadExcelFile(trafficCSV);
 }
 
