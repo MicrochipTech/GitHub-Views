@@ -2,6 +2,7 @@ const UserModel = require("../models/User");
 const RepositoryModel = require("../models/Repository");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const { logger, errorHandler } = require("../logs/logger");
+const getRepoDataBetween = require("../mongoQueries/getUserReposWithTrafficBetween");
 
 async function nameContains(req, res) {
   const { q } = req.query;
@@ -36,196 +37,6 @@ async function nameContains(req, res) {
     .map((r) => ({ reponame: r.reponame, _id: r._id }));
 
   res.send(reposList);
-}
-
-async function createRepository(repoDetails, userId, token) {
-  /* TODO comments */
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-
-  const newRepo = new RepositoryModel({
-    users: [userId],
-    github_repo_id: repoDetails.id,
-    reponame: repoDetails.full_name,
-    views: {
-      total_count: 0,
-      total_uniques: 0,
-      data: [],
-    },
-    clones: {
-      total_count: 0,
-      total_uniques: 0,
-      data: [],
-    },
-    forks: {
-      tree_updated: false,
-      data: [
-        {
-          timestamp: today.toISOString(),
-          count: repoDetails.forks_count,
-        },
-      ],
-      children: [],
-    },
-    referrers: [],
-    contents: [],
-    commits: {
-      updated: false,
-      data: [],
-    },
-    not_found: false,
-  });
-
-  let repoTraffic;
-  try {
-    repoTraffic = await module.exports.getRepoTraffic(newRepo.reponame, token);
-  } catch (err) {
-    errorHandler(
-      `${arguments.callee.name}: Error caught when getting traffic data for the new repo ${newRepo.reponame}.`,
-      err
-    );
-  }
-  const { status, data: traffic } = repoTraffic;
-
-  if (status === false) {
-    logger.warn(
-      `${arguments.callee.name}: Fail getting traffic data for repo ${newRepo.reponame}`
-    );
-    return { success: false };
-  }
-
-  updateRepoTraffic(newRepo, traffic);
-
-  return { success: true, data: newRepo };
-}
-
-function updateRepoTraffic(repo, traffic) {
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-
-  /* Update views */
-  let viewsToUpdate = traffic.views;
-  if (repo.views.data.length !== 0) {
-    const lastViewTimestamp =
-      repo.views.data[repo.views.data.length - 1].timestamp;
-    viewsToUpdate = viewsToUpdate.filter((info) => {
-      const timestampDate = new Date(info.timestamp);
-      timestampDate.setUTCHours(0, 0, 0, 0);
-
-      if (
-        timestampDate.getTime() > lastViewTimestamp.getTime() &&
-        timestampDate.getTime() < today.getTime()
-      ) {
-        return true;
-      }
-
-      return false;
-    });
-  } else if (
-    viewsToUpdate.length !== 0 &&
-    new Date(viewsToUpdate[viewsToUpdate.length - 1].timestamp).getTime() ===
-      today.getTime()
-  ) {
-    /* If the views data is empty, check only the last timestamp. If it includes data from today, remove it */
-    viewsToUpdate.pop();
-  }
-
-  repo.views.total_count += viewsToUpdate.reduce(
-    (accumulator, currentView) => accumulator + currentView.count,
-    0
-  );
-  repo.views.total_uniques += viewsToUpdate.reduce(
-    (accumulator, currentView) => accumulator + currentView.uniques,
-    0
-  );
-  repo.views.data.push(...viewsToUpdate);
-
-  /* Update clones */
-  let clonesToUpdate = traffic.clones;
-  if (repo.clones.data.length !== 0) {
-    const lastCloneTimestamp =
-      repo.clones.data[repo.clones.data.length - 1].timestamp;
-    clonesToUpdate = clonesToUpdate.filter((info) => {
-      const timestampDate = new Date(info.timestamp);
-
-      if (
-        timestampDate.getTime() > lastCloneTimestamp.getTime() &&
-        timestampDate.getTime() < today.getTime()
-      ) {
-        return true;
-      }
-
-      return false;
-    });
-  } else if (
-    clonesToUpdate.length !== 0 &&
-    new Date(clonesToUpdate[clonesToUpdate.length - 1].timestamp).getTime() ===
-      today.getTime()
-  ) {
-    /* If the clones data is empty, check only the last timestamp. If it includes data from today, remove it */
-    clonesToUpdate.pop();
-  }
-
-  repo.clones.total_count += clonesToUpdate.reduce(
-    (accumulator, currentClone) => accumulator + currentClone.count,
-    0
-  );
-  repo.clones.total_uniques += clonesToUpdate.reduce(
-    (accumulator, currentClone) => accumulator + currentClone.uniques,
-    0
-  );
-  repo.clones.data.push(...clonesToUpdate);
-
-  /* Update referrers */
-  traffic.referrers.forEach((data) => {
-    foundReferrer = repo.referrers.find((r) => r.name === data.referrer);
-    if (foundReferrer) {
-      /* The referrer is already in database */
-      foundReferrer.data.push({
-        timestamp: today.toISOString(),
-        count: data.count,
-        uniques: data.uniques,
-      });
-    } else {
-      /* Add the new referrer in database */
-      repo.referrers.push({
-        name: data.referrer,
-        data: [
-          {
-            timestamp: today.toISOString(),
-            count: data.count,
-            uniques: data.uniques,
-          },
-        ],
-      });
-    }
-  });
-
-  /* Update content */
-  traffic.contents.forEach((data) => {
-    foundContent = repo.contents.find((c) => c.path === data.path);
-    if (foundContent) {
-      /* The content is already in database */
-      foundContent.data.push({
-        timestamp: today.toISOString(),
-        count: data.count,
-        uniques: data.uniques,
-      });
-    } else {
-      /* Add the new content in database */
-      repo.contents.push({
-        path: data.path,
-        title: data.title,
-        data: [
-          {
-            timestamp: today.toISOString(),
-            count: data.count,
-            uniques: data.uniques,
-          },
-        ],
-      });
-    }
-  });
 }
 
 async function getRepoTraffic(reponame, token) {
@@ -339,6 +150,235 @@ async function getRepoTraffic(reponame, token) {
       contents: pathResponseJson || [],
     },
   };
+}
+
+async function createRepository(repoDetails, userId, token) {
+  /* TODO comments */
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  const newRepo = new RepositoryModel({
+    users: [userId],
+    github_repo_id: repoDetails.id,
+    reponame: repoDetails.full_name,
+    views: {
+      total_count: 0,
+      total_uniques: 0,
+      data: [],
+    },
+    clones: {
+      total_count: 0,
+      total_uniques: 0,
+      data: [],
+    },
+    forks: {
+      tree_updated: false,
+      data: [
+        {
+          timestamp: today.toISOString(),
+          count: repoDetails.forks_count,
+        },
+      ],
+      children: [],
+    },
+    referrers: [],
+    contents: [],
+    commits: {
+      updated: false,
+      data: [],
+    },
+    not_found: false,
+  });
+
+  let repoTraffic;
+  try {
+    repoTraffic = await getRepoTraffic(newRepo.reponame, token);
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught when getting traffic data for the new repo ${newRepo.reponame}.`,
+      err
+    );
+  }
+  const { status, data: traffic } = repoTraffic;
+
+  if (status === false) {
+    logger.warn(
+      `${arguments.callee.name}: Fail getting traffic data for repo ${newRepo.reponame}`
+    );
+    return { success: false };
+  }
+
+  updateRepoTraffic(
+    {
+      reponame: newRepo.reponame,
+      referrers: [],
+      contents: [],
+      views_length: 0,
+      last_view: {},
+      clones_length: 0,
+      last_clone: {},
+      forks_sum: newRepo.forks.data[0].count,
+    },
+    traffic
+  );
+
+  return { success: true, data: newRepo };
+}
+
+function getNewAndNewUniques(from, existing, lastExisting) {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  let toUpdate = from;
+  if (existing !== 0) {
+    const lastTimestamp = lastExisting.timestamp;
+    toUpdate = toUpdate.filter((info) => {
+      const timestampDate = new Date(info.timestamp);
+      timestampDate.setUTCHours(0, 0, 0, 0);
+
+      if (
+        timestampDate.getTime() > lastTimestamp.getTime() &&
+        timestampDate.getTime() < today.getTime()
+      ) {
+        return true;
+      }
+
+      return false;
+    });
+  } else if (
+    toUpdate.length !== 0 &&
+    new Date(toUpdate[toUpdate.length - 1].timestamp).getTime() ===
+      today.getTime()
+  ) {
+    /* If the views data is empty, check only the last timestamp. If it includes data from today, remove it */
+    toUpdate.pop();
+  }
+
+  const new_data = toUpdate.reduce(
+    (accumulator, current) => accumulator + current.count,
+    0
+  );
+  const new_unique = toUpdate.reduce(
+    (accumulator, current) => accumulator + current.uniques,
+    0
+  );
+  return [new_data, new_unique, toUpdate];
+}
+
+function updateRepoTraffic(repo, traffic) {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  const [new_views, new_unique_views, viewsToUpdate] = getNewAndNewUniques(
+    traffic.views,
+    repo.views_length,
+    repo.last_view
+  );
+  const [new_clones, new_unique_cloners, clonesToUpdate] = getNewAndNewUniques(
+    traffic.clones,
+    repo.clones_length,
+    repo.last_clone
+  );
+
+  if (String(repo._id) === "5f467a18b93370001fe850ab") {
+    console.log("viewsToUpdate: ", viewsToUpdate);
+  }
+
+  RepositoryModel.updateOne(
+    { _id: repo._id },
+    {
+      $inc: {
+        "views.total_count": new_views,
+        "views.total_uniques": new_unique_views,
+        "clones.total_count": new_clones,
+        "clones.total_uniques": new_unique_cloners,
+      },
+      $push: {
+        "views.data": { $each: viewsToUpdate },
+        "clones.data": { $each: clonesToUpdate },
+      },
+    }
+  ).exec();
+
+  /* Update referrers */
+  traffic.referrers.forEach((data) => {
+    const foundReferrer = repo.referrers.findIndex(
+      (r) => r.name === data.referrer
+    );
+    if (foundReferrer !== -1) {
+      /* The referrer is already in database */
+      RepositoryModel.collection.updateOne(
+        { _id: repo._id },
+        {
+          $push: {
+            [`referrers.${foundReferrer}.data`]: {
+              timestamp: today.toISOString(),
+              count: data.count,
+              uniques: data.uniques,
+            },
+          },
+        }
+      ); // This is run by the JS Mongo driver, .exec does not exist there, it just works
+    } else {
+      RepositoryModel.updateOne(
+        { _id: repo._id },
+        {
+          $push: {
+            referrers: {
+              name: data.referrer,
+              data: [
+                {
+                  timestamp: today.toISOString(),
+                  count: data.count,
+                  uniques: data.uniques,
+                },
+              ],
+            },
+          },
+        }
+      ).exec();
+    }
+  });
+
+  /* Update content */
+  traffic.contents.forEach((data) => {
+    const foundContent = repo.contents.findIndex((c) => c.path === data.path);
+    if (foundContent !== -1) {
+      /* The content is already in database */
+      RepositoryModel.collection.updateOne(
+        { _id: repo._id },
+        {
+          $push: {
+            [`contents.${foundContent}.data`]: {
+              timestamp: today.toISOString(),
+              count: data.count,
+              uniques: data.uniques,
+            },
+          },
+        }
+      ); // This is run by the JS Mongo driver, .exec does not exist there, it just works
+    } else {
+      /* Add the new content in database */
+      RepositoryModel.updateOne(
+        { _id: repo._id },
+        {
+          $push: {
+            contents: {
+              path: data.path,
+              title: data.title,
+              data: [
+                {
+                  timestamp: today.toISOString(),
+                  count: data.count,
+                  uniques: data.uniques,
+                },
+              ],
+            },
+          },
+        }
+      ).exec();
+    }
+  });
 }
 
 async function updateForksTree(req, res) {
@@ -504,14 +544,22 @@ async function getPublicRepos(req, res) {
   const repoOwners = process.env.PUBLIC_REPO_OWNERS.split(" ").join("|");
   const reponameRegex = new RegExp(`^(${repoOwners})`);
 
-  const repos = await RepositoryModel.find(
-    { reponame: reponameRegex },
-    fields,
-    {
+  let repos = [];
+  if (req.from !== undefined && req.to !== undefined) {
+    repos = await RepositoryModel.aggregate(
+      getRepoDataBetween(
+        { reponame: reponameRegex },
+        new Date(req.from),
+        new Date(req.to),
+        fields
+      )
+    );
+  } else {
+    repos = await RepositoryModel.find({ reponame: reponameRegex }, fields, {
       skip: Number(req.query.page_no) * Number(req.query.page_size),
       limit: Number(req.query.page_size),
-    }
-  );
+    });
+  }
 
   res.send(repos);
 }

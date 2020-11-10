@@ -7,12 +7,20 @@ const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const { logger, errorHandler } = require("../logs/logger");
 const { getRepoViews } = require("./GitHubApiCtrl");
 
+const getRepoWithTrafficBetween = require("../mongoQueries/getRepoWithTrafficBetween");
+const getRepoDataBetween = require("../mongoQueries/getUserReposWithTrafficBetween");
+const getUserSharedReposWithTrafficBetween = require("../mongoQueries/getUserSharedReposWithTrafficBetween");
+const getUserReposForLastXDays = require("../mongoQueries/getUserReposForLastXDays");
+
+const mongoose = require("mongoose");
+
 async function updateProfile(user) {
+  const t = await TokenModel.findOne({ _id: user.token_ref });
   let userDetails, userEmails;
 
   try {
-    userDetails = await GitHubApiCtrl.getUserProfile(user.token_ref.value);
-    userEmails = await GitHubApiCtrl.getUserEmails(user.token_ref.value);
+    userDetails = await GitHubApiCtrl.getUserProfile(t.value);
+    userEmails = await GitHubApiCtrl.getUserEmails(t.value);
   } catch (err) {
     errorHandler(
       `${arguments.callee.name}: Error caught when getting from GitHub API emails or details for user with _id ${user._id}.`,
@@ -22,13 +30,13 @@ async function updateProfile(user) {
   }
 
   if (userDetails === undefined || userEmails === undefined) {
-    logger.warning(
+    logger.warn(
       `Fail when getting from GitHub API emails or details for user with _id ${user._id}.`
     );
     return false;
   }
   if (!userDetails.success || !userEmails.success) {
-    logger.warning(
+    logger.warn(
       `Getting emails or details for user with _id ${user._id} was not completed successfully.`
     );
     return false;
@@ -112,40 +120,220 @@ async function getWhereUsernameStartsWith(req, res) {
 
 async function getData(req, res) {
   if (req.isAuthenticated()) {
-    let userRepos, usersWithSharedRepos, aggregateCharts;
-    try {
-      const user_id = req.user._id;
-      userRepos = await RepositoryModel.find({ users: { $eq: user_id } });
-      usersWithSharedRepos = await UserModel.findById(user_id).populate(
-        "sharedRepos"
-      );
+    const { repo_id, start, end } = req.query;
 
-      aggregateCharts = await AggregateChartModel.find({
-        user: req.user._id,
-      });
-    } catch (err) {
-      res.send({
-        success: false,
-        error: `Error getting data from database.`,
-      });
-      errorHandler(
-        `${arguments.callee.name}: Error getting repos, shared repos and aggregate charts from database for user with id ${req.user._id}.`,
-        err
-      );
+    const dateStart = new Date(start);
+    const dateEnd = new Date(end);
+
+    function isValidDate(d) {
+      return d instanceof Date && !isNaN(d);
     }
 
-    const { sharedRepos, githubId } = usersWithSharedRepos;
-    const dataToPlot = {
-      userRepos,
-      sharedRepos,
-      aggregateCharts,
-      githubId,
-    };
+    if (repo_id) {
+      let repoWithTraffic;
+      try {
+        if (dateStart && dateEnd) {
+          const repoWithTrafficRes = await getRepoBetween(
+            repo_id,
+            dateStart,
+            dateEnd
+          );
+          if (repoWithTrafficRes.success === fasle) {
+            res.send({
+              success: false,
+              error: `Error getting data.`,
+            });
+            return;
+          }
 
-    res.json(dataToPlot);
+          repoWithTraffic = repoWithTrafficRes.data;
+        } else {
+          repoWithTraffic = await RepositoryModel.findOne({
+            _id: repo_id,
+          });
+        }
+      } catch (err) {
+        res.send({
+          success: false,
+          error: `Error getting data from database.`,
+        });
+        errorHandler(
+          `${arguments.callee.name}: Error getting repos, shared repos and aggregate charts from database for user with id ${req.user._id}.`,
+          err
+        );
+      }
+      res.json({ success: true, repoWithTraffic });
+    } else {
+      let userRepos, usersWithSharedRepos, aggregateCharts;
+      try {
+        if (isValidDate(dateStart) && isValidDate(dateEnd)) {
+          const userReposRes = await getUserReposBetween(
+            req.user._id,
+            dateStart,
+            dateEnd
+          );
+
+          if (userReposRes.success === false) {
+            res.send({
+              success: false,
+              error: `Error getting data.`,
+            });
+            return;
+          }
+          userRepos = userReposRes.data;
+
+          console.log("dateStart, dateEnd: ", dateStart, dateEnd);
+
+          const usersWithSharedReposRes = await getUserAndPopulateSharedReposBetween(
+            req.user._id,
+            dateStart,
+            dateEnd
+          );
+
+          if (usersWithSharedReposRes.success === false) {
+            res.send({
+              success: false,
+              error: `Error getting data.`,
+            });
+            return;
+          }
+
+          // console.log(
+          //   "usersWithSharedReposRes.data: ",
+          //   JSON.stringify(usersWithSharedReposRes.data, null, 2)
+          // );
+
+          usersWithSharedRepos = usersWithSharedReposRes.data;
+
+          aggregateCharts = await AggregateChartModel.find({
+            user: req.user._id,
+          });
+        } else {
+          // const user_id = "5dd7ec444a2f11001f95ba25";
+          const user_id = req.user._id;
+
+          userRepos = await RepositoryModel.find({
+            users: { $eq: user_id },
+          });
+
+          usersWithSharedRepos = await UserModel.findById(user_id).populate(
+            "sharedRepos"
+          );
+
+          aggregateCharts = await AggregateChartModel.find({
+            user: user_id,
+          });
+        }
+      } catch (err) {
+        res.send({
+          success: false,
+          error: `Error getting data from database.`,
+        });
+        errorHandler(
+          `${arguments.callee.name}: Error getting repos, shared repos and aggregate charts from database for user with id ${req.user._id}.`,
+          err
+        );
+      }
+
+      const { sharedRepos, githubId } = usersWithSharedRepos;
+
+      const dataToPlot = {
+        userRepos,
+        sharedRepos,
+        aggregateCharts,
+        githubId,
+      };
+
+      res.json({ success: true, dataToPlot });
+    }
   } else {
     res.status(404).send("not authenticated");
   }
+}
+
+async function getRepoBetween(repo_id, dateStart, dateEnd) {
+  if (!repo_id) {
+    return { success: false };
+  }
+
+  let repos;
+  try {
+    repos = await RepositoryModel.aggregate(
+      getRepoWithTrafficBetween(repo_id, dateStart, dateEnd)
+    );
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught while getting all repos from database.`,
+      err
+    );
+    return { success: false };
+  }
+
+  if (repo.length !== 1) {
+    return { success: false };
+  }
+
+  return { success: true, data: repos[0] };
+}
+
+async function getUserReposBetween(user_id, dateStart, dateEnd) {
+  if (!user_id) {
+    return { success: false, data: [] };
+  }
+
+  let repos;
+  try {
+    repos = await RepositoryModel.aggregate(
+      getRepoDataBetween(
+        {
+          not_found: false,
+          users: { $eq: user_id },
+        },
+        dateStart,
+        dateEnd
+        // new Date("Mon, 31 Aug 2020 21:00:00 GMT"),
+        // new Date("Thu, 01 Oct 2020 20:59:59 GMT")
+      )
+    );
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught while getting all repos from database.`,
+      err
+    );
+    return { success: false, data: [] };
+  }
+
+  return { success: true, data: repos };
+}
+
+async function getUserAndPopulateSharedReposBetween(
+  user_id,
+  dateStart,
+  dateEnd
+) {
+  if (!user_id) {
+    return { success: false };
+  }
+
+  let users;
+  try {
+    users = await UserModel.aggregate(
+      getUserSharedReposWithTrafficBetween(user_id, dateStart, dateEnd)
+    );
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught while getting all repos from database.`,
+      err
+    );
+    return { success: false };
+  }
+
+  if (users.length !== 1) {
+    logger.warn(`${arguments.callee.name}: Error expected.`);
+    return { success: false };
+  }
+
+  return { success: true, data: users[0] };
 }
 
 async function getLastXDaysData(user, xDays) {
@@ -159,93 +347,9 @@ async function getLastXDaysData(user, xDays) {
 
   let repos;
   try {
-    repos = await RepositoryModel.aggregate([
-      {
-        $match: {
-          not_found: false,
-          users: { $eq: user._id },
-        },
-      },
-      {
-        $project: {
-          reponame: true,
-          views: {
-            data: {
-              $filter: {
-                input: "$views.data",
-                as: "view",
-                cond: {
-                  $gte: ["$$view.timestamp", oneMonthAgo],
-                },
-              },
-            },
-          },
-          clones: {
-            data: {
-              $filter: {
-                input: "$clones.data",
-                as: "clone",
-                cond: {
-                  $gte: ["$$clone.timestamp", oneMonthAgo],
-                },
-              },
-            },
-          },
-          forks: {
-            data: {
-              $filter: {
-                input: "$forks.data",
-                as: "fork",
-                cond: {
-                  $gte: ["$$fork.timestamp", oneMonthAgo],
-                },
-              },
-            },
-          },
-        },
-      },
-      {
-        $unwind: { path: "$views.data", preserveNullAndEmptyArrays: true },
-      },
-      {
-        $group: {
-          _id: "$_id",
-          reponame: { $first: "$reponame" },
-          views_count: { $sum: "$views.data.count" },
-          views_uniques: { $sum: "$views.data.uniques" },
-          clones: { $first: "$clones" },
-          forks: { $first: "$forks" },
-        },
-      },
-      {
-        $unwind: { path: "$clones.data", preserveNullAndEmptyArrays: true },
-      },
-      {
-        $group: {
-          _id: "$_id",
-          reponame: { $first: "$reponame" },
-          views_count: { $first: "$views_count" },
-          views_uniques: { $first: "$views_uniques" },
-          clones_count: { $sum: "$clones.data.count" },
-          clones_uniques: { $sum: "$clones.data.uniques" },
-          forks: { $first: "$forks" },
-        },
-      },
-      {
-        $unwind: { path: "$forks.data", preserveNullAndEmptyArrays: true },
-      },
-      {
-        $group: {
-          _id: "$_id",
-          reponame: { $first: "$reponame" },
-          views_count: { $first: "$views_count" },
-          views_uniques: { $first: "$views_uniques" },
-          clones_count: { $first: "$clones_count" },
-          clones_uniques: { $first: "$clones_uniques" },
-          forks_count: { $sum: "$forks.data.count" },
-        },
-      },
-    ]);
+    repos = await RepositoryModel.aggregate(
+      getUserReposForLastXDays(user, xDays)
+    );
   } catch (err) {
     errorHandler(
       `${arguments.callee.name}: Error caught while getting all repos from database.`,

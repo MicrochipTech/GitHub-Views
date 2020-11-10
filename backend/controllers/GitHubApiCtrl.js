@@ -91,7 +91,7 @@ async function getUserProfile(token) {
   }
 
   if (response.status !== 200) {
-    return { success: false, data: res.status };
+    return { success: false, data: response.status };
   }
 
   let responseJson;
@@ -125,7 +125,7 @@ async function getUserEmails(token) {
   }
 
   if (response.status !== 200) {
-    return { success: false, data: res.status };
+    return { success: false, data: response.status };
   }
 
   let responseJson;
