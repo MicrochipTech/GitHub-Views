@@ -9,7 +9,24 @@ async function updateRepositoriesAsynch() {
 
   let repos;
   try {
-    repos = await RepositoryModel.find({ not_found: false });
+    repos = await RepositoryModel.aggregate([
+      {
+        $match: { not_found: false },
+      },
+      {
+        $project: {
+          github_repo_id: 1,
+          reponame: 1,
+          "referrers.name": 1,
+          "contents.path": 1,
+          views_length: { $size: "$views.data" },
+          last_view: { $arrayElemAt: ["$views.data", -1] },
+          clones_length: { $size: "$clones.data" },
+          last_clone: { $arrayElemAt: ["$clones.data", -1] },
+          forks_sum: { $sum: "$forks.data.count" },
+        },
+      },
+    ]);
   } catch (err) {
     errorHandler(
       `${arguments.callee.name}: Error caught while getting all repos from database.`,
@@ -37,6 +54,7 @@ async function updateRepositoriesAsynch() {
   }
 
   const newRepoRequests = {};
+  const processedRepos = [];
 
   const userPromises = users.map(async (user) => {
     /* For each user update the repos which contains its id in the users list */
@@ -50,6 +68,10 @@ async function updateRepositoriesAsynch() {
         `${arguments.callee.name}: Error caught while getting repository details with GitHub API for user ${user.username}.`,
         err
       );
+    }
+
+    if (user.username === "johanlofstad") {
+      console.log("token: ", token);
     }
 
     if (githubRepos.success === false) {
@@ -67,9 +89,9 @@ async function updateRepositoriesAsynch() {
 
     const updateReposPromises = githubRepos.data.map(async (githubRepo, j) => {
       /* For each repo which is included in the request, update the latest traffic infos */
-      logger.info(
-        `${arguments.callee.name}: Checking ${githubRepo.full_name}, ${j}`
-      );
+      // logger.info(
+      //   `${arguments.callee.name}: Checking ${githubRepo.full_name}, ${j}`
+      // );
 
       /* Search in the database the repository which will be updated */
       const repoEntry = repos.find(
@@ -112,20 +134,43 @@ async function updateRepositoriesAsynch() {
           newRepoRequests[githubRepo.full_name].users.push(user._id);
         }
       } else {
-        /* The repository still exists on GitHub */
-        repoEntry.not_found = false;
+        // The repository still exists on GitHub
+        // repoEntry.not_found = false;
+        // Update forks
+        // repoEntry.forks.tree_updated = false;
+        // Update commits update variable
+        // repoEntry.commits.updated = false;
+
+        if (processedRepos.indexOf(repoEntry._id) !== -1) {
+          return;
+        }
+
+        processedRepos.push(repoEntry._id);
+
+        RepositoryModel.updateOne(
+          { _id: repoEntry._id },
+          {
+            // not_found: false,
+            "forks.tree_updated": false,
+            "commits.updated": false,
+          }
+        ).exec();
 
         /* Update repository name, if changed */
         if (repoEntry.reponame !== githubRepo.full_name) {
-          repoEntry.nameHistory.push({
-            date: new Date(),
-            change: `${repoEntry.reponame} -> ${githubRepo.full_name}`,
-          });
-          repoEntry.reponame = githubRepo.full_name;
+          RepositoryModel.updateOne(
+            { _id: repoEntry._id },
+            {
+              reponame: githubRepo.full_name,
+              $push: {
+                nameHistory: {
+                  date: new Date(),
+                  change: `${repoEntry.reponame} -> ${githubRepo.full_name}`,
+                },
+              },
+            }
+          ).exec();
         }
-
-        /* Update forks */
-        repoEntry.forks.tree_updated = false;
 
         /* today variable is used to store the timestamp */
         const today = new Date();
@@ -133,19 +178,20 @@ async function updateRepositoriesAsynch() {
 
         /* Details from githubRepo variable, contains also the current forks count number.
         forks.data contains the variation of the forks, when the forks number is changed. */
-        const forks_sum = repoEntry.forks.data.reduce(
-          (total, currentValue) => total + currentValue.count,
-          0
-        );
-        if (forks_sum !== githubRepo.forks_count) {
-          repoEntry.forks.data.push({
-            timestamp: today.toISOString(),
-            count: githubRepo.forks_count - forks_sum,
-          });
-        }
 
-        /* Update commits update variable */
-        repoEntry.commits.updated = false;
+        if (repoEntry.forks_sum !== githubRepo.forks_count) {
+          RepositoryModel.updateOne(
+            { _id: repoEntry._id },
+            {
+              $push: {
+                "forks.data": {
+                  timestamp: today.toISOString(),
+                  count: githubRepo.forks_count - repoEntry.forks_sum,
+                },
+              },
+            }
+          ).exec();
+        }
 
         /* Update traffic (views, clones, referrers, contents) */
         let repoTraffic;
@@ -204,7 +250,11 @@ async function updateRepositoriesAsynch() {
     );
   }
 
-  const updateRepos = repos.map((repo) => repo.save());
+  const updateRepos = repos.map(async (repo) => {
+    if (processedRepos.indexOf(repo._id) === -1) {
+      await RepositoryModel.updateOne({ _id: repo._id }, { not_found: true });
+    }
+  });
   try {
     await Promise.all(updateRepos);
   } catch (err) {

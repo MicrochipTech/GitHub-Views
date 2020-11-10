@@ -96,10 +96,16 @@ function sendMail(to, subject, html) {
 }
 
 function errorHandler(msg, err, email = true) {
-  logger.error({
-    message: msg,
-    stack: err.stack,
-  });
+  logger.error(
+    JSON.stringify(
+      {
+        message: msg,
+        stack: err.stack,
+      },
+      null,
+      1
+    )
+  );
 
   if (email) {
     sendMail(

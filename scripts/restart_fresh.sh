@@ -1,7 +1,7 @@
 docker-compose stop
 docker rm github-views_mongo_1
 docker-compose up -d
-docker exec github-views_mongo_1 mongorestore -uroot -pexample /backup
+docker exec github-views_mongo_1 mongorestore -uroot -pexample $1
 docker logs github-views_backend_1 --tail=100 -f
 
 # mongo_container_id=$(docker ps --filter "name=mongo_1" -q)

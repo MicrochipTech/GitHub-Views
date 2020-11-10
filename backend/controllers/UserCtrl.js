@@ -209,16 +209,19 @@ async function getData(req, res) {
             user: req.user._id,
           });
         } else {
+          // const user_id = "5dd7ec444a2f11001f95ba25";
+          const user_id = req.user._id;
+
           userRepos = await RepositoryModel.find({
-            users: { $eq: req.user._id },
+            users: { $eq: user_id },
           });
 
-          usersWithSharedRepos = await UserModel.findById(
-            req.user._id
-          ).populate("sharedRepos");
+          usersWithSharedRepos = await UserModel.findById(user_id).populate(
+            "sharedRepos"
+          );
 
           aggregateCharts = await AggregateChartModel.find({
-            user: req.user._id,
+            user: user_id,
           });
         }
       } catch (err) {
