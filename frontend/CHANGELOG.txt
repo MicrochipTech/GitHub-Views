@@ -1,0 +1,4 @@
+1.2.5
+
+ - Don`t filer repos by reponame on aggregate charts page
+ - Check for undefined in the computes lis of repos for an aggregate chart (might happen if the repo is not in the database any more, or has a diffrent _id)

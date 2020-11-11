@@ -23,15 +23,15 @@ function Dashboard() {
   const [infoIcon, setInfoIcon] = React.useState(null);
 
   console.log(repos, page);
-  const reposMatchingSerach = repos[page]
-    .filter(
-      (d) =>
-        !d.reponame ||
-        d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
-    )
-    .sort((a, b) =>
+  const reposMatchingSerach = repos[page].filter(
+    (d) =>
+      !d.reponame || d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
+  );
+  if (page !== "aggregateCharts") {
+    reposMatchingSerach.sort((a, b) =>
       a.reponame.toLowerCase() < b.reponame.toLowerCase() ? -1 : 1
     );
+  }
   console.log("reposMatchingSerach: ", reposMatchingSerach);
   const totalCount = reposMatchingSerach.length;
 
