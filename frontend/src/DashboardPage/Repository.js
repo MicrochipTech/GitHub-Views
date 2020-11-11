@@ -27,12 +27,16 @@ function Repository({ index, style, data }) {
   let labels = [];
   let plotData = null;
   if (page === "aggregateCharts") {
-    dataD = d.repo_list.map(
-      (r) =>
+    console.log("dataD: ", dataD);
+    dataD = d.repo_list
+      .map((r) =>
         repos["userRepos"]
           .concat(repos["sharedRepos"])
-          .filter((m) => m._id === r)[0]
-    );
+          .concat(repos["zombieRepos"])
+          .find((m) => m._id === r)
+      )
+      .filter((el) => el !== undefined);
+    console.log("dataD: ", dataD);
 
     const maximumTimetamp = new Date();
     maximumTimetamp.setUTCHours(0, 0, 0, 0);
