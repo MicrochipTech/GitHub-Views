@@ -70,10 +70,6 @@ async function updateRepositoriesAsynch() {
       );
     }
 
-    if (user.username === "johanlofstad") {
-      console.log("token: ", token);
-    }
-
     if (githubRepos.success === false) {
       /* If the request to get the repos of the user with traffic details fails,
       then return */
@@ -145,8 +141,6 @@ async function updateRepositoriesAsynch() {
           return;
         }
 
-        processedRepos.push(repoEntry._id);
-
         RepositoryModel.updateOne(
           { _id: repoEntry._id },
           {
@@ -210,6 +204,8 @@ async function updateRepositoriesAsynch() {
         const { status, data: traffic } = repoTraffic;
 
         if (status === true) {
+          processedRepos.push(repoEntry._id);
+
           RepositoryCtrl.updateRepoTraffic(repoEntry, traffic);
         } else {
           logger.warn(

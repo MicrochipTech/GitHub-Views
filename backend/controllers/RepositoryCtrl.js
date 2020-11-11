@@ -55,10 +55,7 @@ async function getRepoTraffic(reponame, token) {
     responseJson: viewsResponseJson,
   } = repoViews;
 
-  if (
-    viewsResponse.status === 403 &&
-    viewsResponse.headers.get("x-ratelimit-remaining") === "0"
-  ) {
+  if (viewsResponse.status !== 200) {
     return {
       status: false,
       data: viewsResponse.headers.get("x-ratelimit-reset"),
@@ -79,10 +76,7 @@ async function getRepoTraffic(reponame, token) {
     responseJson: cloneResponseJson,
   } = repoClones;
 
-  if (
-    cloneResponse.status === 403 &&
-    cloneResponse.headers.get("x-ratelimit-remaining") === "0"
-  ) {
+  if (cloneResponse.status !== 200) {
     return {
       status: false,
       data: cloneResponse.headers.get("x-ratelimit-reset"),
@@ -106,10 +100,7 @@ async function getRepoTraffic(reponame, token) {
     responseJson: referrerResponseJson,
   } = repoPopularReferrers;
 
-  if (
-    referrerResponse.status === 403 &&
-    referrerResponse.headers.get("x-ratelimit-remaining") === "0"
-  ) {
+  if (referrerResponse.status !== 200) {
     return {
       status: false,
       data: referrerResponse.headers.get("x-ratelimit-reset"),
@@ -131,10 +122,7 @@ async function getRepoTraffic(reponame, token) {
     responseJson: pathResponseJson,
   } = repoPopularPaths;
 
-  if (
-    pathResponse.status === 403 &&
-    pathResponse.headers.get("x-ratelimit-remaining") === "0"
-  ) {
+  if (pathResponse.status !== 200) {
     return {
       status: false,
       data: pathResponse.headers.get("x-ratelimit-reset"),
@@ -279,10 +267,6 @@ function updateRepoTraffic(repo, traffic) {
     repo.clones_length,
     repo.last_clone
   );
-
-  if (String(repo._id) === "5f467a18b93370001fe850ab") {
-    console.log("viewsToUpdate: ", viewsToUpdate);
-  }
 
   RepositoryModel.updateOne(
     { _id: repo._id },
