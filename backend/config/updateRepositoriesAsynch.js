@@ -56,8 +56,10 @@ async function updateRepositoriesAsynch() {
   const newRepoRequests = {};
   const processedRepos = [];
 
-  const userPromises = users.map(async (user) => {
+  // const userPromises = users.map(async (user) => {
+  for (const i in users) {
     /* For each user update the repos which contains its id in the users list */
+    const user = users[i];
     const token = user.token_ref.value;
 
     let githubRepos;
@@ -204,10 +206,10 @@ async function updateRepositoriesAsynch() {
         const { status, data: traffic } = repoTraffic;
 
         if (status === true) {
-          processedRepos.push(repoEntry._id);
-
           RepositoryCtrl.updateRepoTraffic(repoEntry, traffic);
+          processedRepos.push(repoEntry._id);
         } else {
+          // processedRepos.splice(processedRepos.indexOf(repoEntry._id), 1);
           logger.warn(
             `${arguments.callee.name}: Fail getting traffic data for repo ${repoEntry.reponame}.`
           );
@@ -223,7 +225,8 @@ async function updateRepositoriesAsynch() {
         err
       );
     }
-  });
+    // });
+  }
 
   try {
     await Promise.all(userPromises);
