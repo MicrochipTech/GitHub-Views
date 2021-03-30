@@ -118,6 +118,18 @@ async function getWhereUsernameStartsWith(req, res) {
   res.send(usersList);
 }
 
+async function getDataSingleRepo(req, res) {
+  console.log({
+    _id: req.params.id,
+    users: { $eq: req.user._id },
+  });
+  const repo = await RepositoryModel.findOne({
+    _id: req.params.id,
+    users: { $eq: req.user._id },
+  });
+  res.json(repo);
+}
+
 async function getData(req, res) {
   if (req.isAuthenticated()) {
     const { repo_id, start, end } = req.query;
@@ -209,12 +221,17 @@ async function getData(req, res) {
             user: req.user._id,
           });
         } else {
-          // const user_id = "5dd7ec444a2f11001f95ba25";
           const user_id = req.user._id;
 
-          userRepos = await RepositoryModel.find({
-            users: { $eq: user_id },
-          });
+          userRepos = await RepositoryModel.find(
+            {
+              users: { $eq: user_id },
+            },
+            {
+              content: 0,
+              referrers: 0,
+            }
+          );
 
           usersWithSharedRepos = await UserModel.findById(user_id).populate(
             "sharedRepos"
@@ -535,4 +552,5 @@ module.exports = {
   sync,
   unfollowSharedRepo,
   checkForNewRepos,
+  getDataSingleRepo,
 };

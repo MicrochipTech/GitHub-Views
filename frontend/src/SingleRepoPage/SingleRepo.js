@@ -1,9 +1,9 @@
 import React from "react";
 import { useParams, Link } from "react-router-dom";
-import { DataContext } from "../Data";
 import { Grid, Typography, CircularProgress } from "@material-ui/core";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 import Header from "../common/Header";
+import useSingleRepo from "./useSingleRepos";
 
 import "./SingleRepo.css";
 
@@ -25,10 +25,10 @@ function SingleRepo() {
   };
 
   const { repoId } = useParams();
-  const { repos, loadingData } = React.useContext(DataContext);
+  const { loading, data: repo, error } = useSingleRepo(repoId);
   const [curretTab, setCurrentTab] = React.useState(Object.keys(tabOptions)[0]);
 
-  if (loadingData) {
+  if (loading) {
     return (
       <Grid container className="dashboardWrapper">
         <Grid item xs={12}>
@@ -41,10 +41,8 @@ function SingleRepo() {
     );
   }
 
-  const repo = repos.userRepos
-    .concat(repos.sharedRepos)
-    .concat(repos.zombieRepos)
-    .find((r) => r._id === repoId);
+  if (error) return <p>{error}</p>;
+
   const TheTab = tabOptions[curretTab];
 
   return (
