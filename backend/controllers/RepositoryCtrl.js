@@ -10,6 +10,7 @@ async function nameContains(req, res) {
   try {
     repos = await RepositoryModel.find(
       {
+        not_found: false,
         reponame: {
           $regex: `${q}.*`,
         },

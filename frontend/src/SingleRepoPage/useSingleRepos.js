@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { prepareRepo } from "../utils";
 
 function useSingleRepo(id) {
   const [loading, setLoading] = useState(true);
@@ -11,7 +12,7 @@ function useSingleRepo(id) {
         const r = await fetch(`/api/user/getData/${id}`);
         console.log("r: ", r);
         const res = await r.json();
-        setData(res);
+        setData(prepareRepo(res));
         console.log("res: ", res);
         setLoading(false);
       } catch (e) {

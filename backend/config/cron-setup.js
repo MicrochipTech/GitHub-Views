@@ -1,5 +1,6 @@
 const cron = require("node-cron");
 const { logger, errorHandler } = require("../logs/logger");
+const cleanDuplicates = require("../scripts/cleanDuplicates");
 const sendMonthlyReports = require("./montlyEmailReport");
 const updateRepositoriesAsynch = require("./updateRepositoriesAsynch");
 const {
@@ -44,6 +45,10 @@ async function updateRepositoriesTask() {
   } else {
     try {
       await updateRepositoriesAsynch();
+      // WARNING: running cleanDuplicates here is a dirty find
+      // TODO: the root cause of the duplicates creation should be fixed
+      // INFO: this will require in-depts debugging of the updateRepositoriesAsynch function
+      await cleanDuplicates();
     } catch (err) {
       errorHandler(
         `${arguments.callee.name}: Error caught in daily repositories update.`,

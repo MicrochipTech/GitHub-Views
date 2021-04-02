@@ -17,6 +17,7 @@
     "express": "~4.16.0",
     "http-errors": "~1.6.2",
     "kind-of": "^6.0.3",
+    "lodash": "^4.17.21",
     "minimist": "^1.2.3",
     "mongoose": "^5.7.5",
     "mongoose-encryption": "^2.0.2",

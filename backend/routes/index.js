@@ -8,6 +8,7 @@ const { VERSION } = require("../VERSION");
 const sendMonthlyReports = require("../config/montlyEmailReport");
 const { logger, errorHandler } = require("../logs/logger");
 const UserModel = require("../models/User");
+const cleanDuplicates = require("../scripts/cleanDuplicates");
 
 router.get("/remove_tokens", async (req, res) => {
   res.send("ok started");
@@ -37,18 +38,24 @@ router.get("/remove_tokens", async (req, res) => {
   logger.info("Delete tokens completed.");
 });
 
-router.get("/VERSION", (req, res) => {
+router.get("/VERSION", (_req, res) => {
   res.send(VERSION);
 });
 
-router.get("/forceUpdate", async (req, res) => {
+router.get("/forceUpdate", async (_req, res) => {
   updateRepositoriesTask();
   res.send("ok started");
 });
 
-router.get("/sendReports", (req, res) => {
+router.get("/sendReports", (_req, res) => {
   sendMonthlyReports();
   res.send("started");
+});
+
+router.get("/cleanDuplicates", async (_req, res) => {
+  res.send("Started.");
+  await cleanDuplicates();
+  console.log("Done");
 });
 
 router.use("/auth", authRoutes);
