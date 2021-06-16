@@ -339,7 +339,7 @@ function contentsCsv(concatRepos) {
   return rows;
 }
 
-function downlaodDaily(concatRepos, sheets) {
+function downloadDaily(concatRepos, sheets) {
   const sheetsDict = {};
   sheets.forEach((s) => (sheetsDict[s.name] = s.checked));
 
@@ -439,7 +439,7 @@ function reduceToMonthly(rows, dateIndex) {
   return rowsMapReduced;
 }
 
-function downlaodMonthly(concatRepos, sheets) {
+function downloadMonthly(concatRepos, sheets) {
   const sheetsDict = {};
   sheets.forEach((s) => (sheetsDict[s.name] = s.checked));
 
@@ -511,13 +511,13 @@ function DownloadButton() {
           onDownload={(selectedRepos, sheets) => {
             switch (viewToDownload) {
               case "monthly":
-                downlaodMonthly(selectedRepos, sheets);
+                downloadMonthly(selectedRepos, sheets);
                 break;
               case "daily":
-                downlaodDaily(selectedRepos, sheets);
+                downloadDaily(selectedRepos, sheets);
                 break;
               default:
-                throw Error("Unknown downlaod type requested.");
+                throw Error("Unknown download type requested.");
             }
           }}
           onClose={() => {
