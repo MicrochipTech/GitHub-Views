@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import produce from "immer";
 import axios from "axios";
 import { add0s } from "./utils";
@@ -17,7 +17,8 @@ const reducer = (state, action) =>
         draft.loadingData = false;
         return draft;
       case "DATA_READY":
-        draft.repos = action.payload;
+        draft.repos = action.payload.dataToPlot;
+        draft.names = action.payload.names;
         draft.loadingData = false;
         return draft;
       case "UPDATE_CHART":
@@ -88,19 +89,28 @@ const reposInit = {
 };
 
 function DataProvider({ children }) {
+  const [page_no, setPageNo] = useState(0);
+  const [page_size, setPageSize] = useState(30);
+  const [search, setSearch] = useState("");
+
   const [data, dispatch] = React.useReducer(reducer, {
     repos: reposInit,
+    names: [],
     loadingData: true,
   });
 
   React.useEffect(
     (_) => {
       const getData = async (_) => {
-        const res = await axios.get("/api/user/getData").catch((e) => {});
+        dispatch({ type: "START_LOADING" });
+        const res = await axios.get(`/api/user/getData?page_no=${page_no}&page_size=${page_size}&search=${search}`).catch((e) => {});
         if (res != null) {
           dispatch({
             type: "DATA_READY",
-            payload: prepareData(res.data.dataToPlot),
+            payload: {
+              dataToPlot: prepareData(res.data.dataToPlot),
+              names: res.data.names,
+            },
           });
         } else {
           dispatch({ type: "DATA_READY", payload: reposInit });
@@ -108,7 +118,7 @@ function DataProvider({ children }) {
       };
       getData();
     },
-    [dispatch]
+    [dispatch, page_no, page_size, search]
   );
 
   const syncRepos = async (_) => {
@@ -163,6 +173,9 @@ function DataProvider({ children }) {
         deleteAggregateChart,
         addSharedRepo,
         unfollowSharedRepo,
+        page_size, page_no,
+        setPageNo,setPageSize,
+        search, setSearch
       }}
     >
       {children}

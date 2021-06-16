@@ -52,7 +52,7 @@ function AppRouter() {
         )}
 
         <PrivateRoute
-          path="/dashboard/:page"
+          path="/dashboard/:section"
           component={Dashboard}
           authenticated={authenticated}
         />

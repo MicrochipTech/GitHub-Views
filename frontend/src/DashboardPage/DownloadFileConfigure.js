@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState, useEffect, useContext} from "react";
 import axios from "axios";
 import moment from "moment";
 import { DataContext } from "../Data";
@@ -22,46 +22,111 @@ const STRATEGY_ALL = 1,
   STRATEGY_CUSTOM = 3;
 
 function DownloadFileConfigure({ open, onDownload, onClose }) {
-  const { repos } = React.useContext(DataContext);
+  const { repos, names } = useContext(DataContext);
 
-  const [reposToDownload, setReposToDownload] = React.useState([]);
+  const [reposToDownload, setReposToDownload] = useState([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const reposToDownload =  [...names, ...repos.sharedRepos].map((r) => r._id)
+  
     setReposToDownload(
-      [...repos.userRepos, ...repos.sharedRepos].map((r) => r._id)
+     reposToDownload
     );
-  }, [repos]);
+  }, [repos, names]);
 
-  const [sheets, setSheets] = React.useState([
+  /*************************************************************************************/
+  
+  const [sheets, setSheets] = useState([
     { name: "Views", checked: true },
     { name: "Clones", checked: true },
     { name: "Forks", checked: true },
     { name: "Referring Sites", checked: false },
     { name: "Popular Content", checked: false },
   ]);
-  const [step, setStep] = React.useState(0);
-  const [selectStrategy, setSelectStrategy] = React.useState(STRATEGY_ALL);
-  const [interval, setInterval] = React.useState([
+
+  const [step, setStep] = useState(0);
+  
+  const [selectStrategy, setSelectStrategy] = useState(STRATEGY_ALL);
+  
+  const [interval, setInterval] = useState([
     moment().subtract(1, "month").toDate(),
     moment().toDate(),
   ]);
-  const [allTime, setAllTime] = React.useState(true);
-  const [fetching, setFetching] = React.useState(false);
+  const [allTime, setAllTime] = useState(true);
+  const [fetching, setFetching] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectStrategy === STRATEGY_ALL) {
       setReposToDownload(
-        [...repos.userRepos, ...repos.sharedRepos].map((r) => r._id)
+        [...names, ...repos.sharedRepos].map((r) => r._id)
       );
     } else if (selectStrategy === STRATEGY_NONE) {
       setReposToDownload([]);
     }
   }, [selectStrategy]);
 
+  const onDownloadBtnClick = async () => {
+    let query = "";
+    let finalResponse = {
+      data: {
+        dataToPlot: {
+          userRepos: [],
+          sharedRepos: [],
+          aggregateCharts: [],
+          githubId: null,
+        }
+      }
+    };
+
+    if (!allTime) {
+      query = `?start=${interval[0].toISOString()}&end=${interval[1].toISOString()}`;
+      setFetching(true);
+      const res = await axios.get(`/api/user/getData${query}`);
+      setFetching(false);
+
+      if (res === null) {
+        alert("There was an error.");
+        return;
+      }
+      finalResponse = res;
+    } else {
+      setFetching(true);
+      let res;
+      let cur_page = 0
+      do {
+        res = await axios.get(`/api/user/getData?page_size=100&page_no=${cur_page++}`);
+        finalResponse.data.dataToPlot.userRepos.push(...res.data.dataToPlot.userRepos);
+      }while(res.data.dataToPlot.userRepos.length > 0);
+      finalResponse.data.dataToPlot = {
+        ...res.data.dataToPlot,
+        userRepos: finalResponse.data.dataToPlot.userRepos
+      }
+      setFetching(false);
+    }    
+
+    const data = prepareData(finalResponse.data.dataToPlot);
+
+    const selectedRepos = [
+      ...data.userRepos,
+      ...data.sharedRepos,
+    ]
+      .filter((r) => reposToDownload.indexOf(r._id) !== -1)
+      .sort((a, b) =>
+        a.reponame.toLowerCase() < b.reponame.toLowerCase()
+          ? -1
+          : 1
+      );
+
+    console.log(selectedRepos)
+    onDownload(selectedRepos, sheets);
+  }
+
   return (
     <Modal open={open} onClose={onClose}>
       <div>
         <div className="bareModal">
+
+          
           {step === 0 && (
             <div>
               <div
@@ -106,7 +171,7 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
               >
                 <FilterableRepos
                   allRepos={[
-                    ...repos.userRepos,
+                    ...names,
                     ...repos.sharedRepos,
                   ].sort((a, b) =>
                     a.reponame.toLowerCase() < b.reponame.toLowerCase() ? -1 : 1
@@ -135,6 +200,11 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
               </div>
             </div>
           )}
+
+
+
+
+
           {step === 1 && (
             <div>
               <div
@@ -150,7 +220,7 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
                 </Typography>
                 <Grid container>
                   {sheets.map((s, idx) => (
-                    <Grid item xs={3}>
+                    <Grid key={idx} item xs={3}>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -209,40 +279,8 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
                   <Button onClick={() => setStep(0)}>Back</Button>
                   <Button
                     disabled={sheets.filter((s) => s.checked).length === 0}
-                    onClick={async () => {
-                      let query = "";
-                      setFetching(true);
-
-                      if (!allTime) {
-                        query = `?start=${interval[0].toISOString()}&end=${interval[1].toISOString()}`;
-                      }
-
-                      const res = await axios.get(`/api/user/getData${query}`);
-                      setFetching(false);
-
-                      if (res === null) {
-                        alert("There was an error.");
-                        return;
-                      }
-
-                      console.log("res.data.dataToPlot: ", res.data.dataToPlot);
-                      const data = prepareData(res.data.dataToPlot);
-                      console.log("data: ", data);
-
-                      const selectedRepos = [
-                        ...data.userRepos,
-                        ...data.sharedRepos,
-                      ]
-                        .filter((r) => reposToDownload.indexOf(r._id) !== -1)
-                        .sort((a, b) =>
-                          a.reponame.toLowerCase() < b.reponame.toLowerCase()
-                            ? -1
-                            : 1
-                        );
-                      onDownload(selectedRepos, sheets);
-                    }}
-                  >
-                    {fetching && <CircularProgress size={14} />}
+                    onClick={onDownloadBtnClick}>
+                    {fetching && <CircularProgress size={14} />}&nbsp;
                     Download
                   </Button>
                 </Box>
