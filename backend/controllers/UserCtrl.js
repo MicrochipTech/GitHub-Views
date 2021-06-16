@@ -14,6 +14,10 @@ const getUserReposForLastXDays = require("../mongoQueries/getUserReposForLastXDa
 
 const mongoose = require("mongoose");
 
+function isValidDate(d) {
+  return d instanceof Date && !isNaN(d);
+}
+
 async function updateProfile(user) {
   const t = await TokenModel.findOne({ _id: user.token_ref });
   let userDetails, userEmails;
@@ -119,6 +123,8 @@ async function getWhereUsernameStartsWith(req, res) {
 }
 
 async function getDataSingleRepo(req, res) {
+  console.log(1);
+  
   const repo = await RepositoryModel.findOne({
     _id: req.params.id,
     users: { $eq: req.user._id },
@@ -127,141 +133,108 @@ async function getDataSingleRepo(req, res) {
 }
 
 async function getData(req, res) {
-  if (req.isAuthenticated()) {
-    const { repo_id, start, end } = req.query;
-
-    const dateStart = new Date(start);
-    const dateEnd = new Date(end);
-
-    function isValidDate(d) {
-      return d instanceof Date && !isNaN(d);
-    }
-
-    if (repo_id) {
-      let repoWithTraffic;
-      try {
-        if (dateStart && dateEnd) {
-          const repoWithTrafficRes = await getRepoBetween(
-            repo_id,
-            dateStart,
-            dateEnd
-          );
-          if (repoWithTrafficRes.success === fasle) {
-            res.send({
-              success: false,
-              error: `Error getting data.`,
-            });
-            return;
-          }
-
-          repoWithTraffic = repoWithTrafficRes.data;
-        } else {
-          repoWithTraffic = await RepositoryModel.findOne({
-            _id: repo_id,
-          });
-        }
-      } catch (err) {
-        res.send({
-          success: false,
-          error: `Error getting data from database.`,
-        });
-        errorHandler(
-          `${arguments.callee.name}: Error getting repos, shared repos and aggregate charts from database for user with id ${req.user._id}.`,
-          err
-        );
-      }
-      res.json({ success: true, repoWithTraffic });
-    } else {
-      let userRepos, usersWithSharedRepos, aggregateCharts;
-      try {
-        if (isValidDate(dateStart) && isValidDate(dateEnd)) {
-          const userReposRes = await getUserReposBetween(
-            req.user._id,
-            dateStart,
-            dateEnd
-          );
-
-          if (userReposRes.success === false) {
-            res.send({
-              success: false,
-              error: `Error getting data.`,
-            });
-            return;
-          }
-          userRepos = userReposRes.data;
-
-          console.log("dateStart, dateEnd: ", dateStart, dateEnd);
-
-          const usersWithSharedReposRes = await getUserAndPopulateSharedReposBetween(
-            req.user._id,
-            dateStart,
-            dateEnd
-          );
-
-          if (usersWithSharedReposRes.success === false) {
-            res.send({
-              success: false,
-              error: `Error getting data.`,
-            });
-            return;
-          }
-
-          // console.log(
-          //   "usersWithSharedReposRes.data: ",
-          //   JSON.stringify(usersWithSharedReposRes.data, null, 2)
-          // );
-
-          usersWithSharedRepos = usersWithSharedReposRes.data;
-
-          aggregateCharts = await AggregateChartModel.find({
-            user: req.user._id,
-          });
-        } else {
-          const user_id = req.user._id;
-
-          userRepos = await RepositoryModel.find(
-            {
-              users: { $eq: user_id },
-            },
-            {
-              content: 0,
-              referrers: 0,
-            }
-          );
-
-          usersWithSharedRepos = await UserModel.findById(user_id).populate(
-            "sharedRepos"
-          );
-
-          aggregateCharts = await AggregateChartModel.find({
-            user: user_id,
-          });
-        }
-      } catch (err) {
-        res.send({
-          success: false,
-          error: `Error getting data from database.`,
-        });
-        errorHandler(
-          `${arguments.callee.name}: Error getting repos, shared repos and aggregate charts from database for user with id ${req.user._id}.`,
-          err
-        );
-      }
-
-      const { sharedRepos, githubId } = usersWithSharedRepos;
-
-      const dataToPlot = {
-        userRepos,
-        sharedRepos,
-        aggregateCharts,
-        githubId,
-      };
-
-      res.json({ success: true, dataToPlot });
-    }
-  } else {
+  if (!req.isAuthenticated()) {
     res.status(404).send("not authenticated");
+    return;
   }
+
+  const { start, end, page_no=0, page_size=15, search="" } = req.query;
+
+  const dateStart = new Date(start);
+  const dateEnd = new Date(end);
+ 
+  let userRepos, usersWithSharedRepos, aggregateCharts, names;
+  try {
+    if (isValidDate(dateStart) && isValidDate(dateEnd)) {
+      const userReposRes = await getUserReposBetween(
+        req.user._id,
+        dateStart,
+        dateEnd
+      );
+
+      if (userReposRes.success === false) {
+        res.send({
+          success: false,
+          error: `Error getting data.`,
+        });
+        return;
+      }
+      userRepos = userReposRes.data;
+
+      console.log("dateStart, dateEnd: ", dateStart, dateEnd);
+
+      const usersWithSharedReposRes = await getUserAndPopulateSharedReposBetween(
+        req.user._id,
+        dateStart,
+        dateEnd
+      );
+
+      if (usersWithSharedReposRes.success === false) {
+        res.send({
+          success: false,
+          error: `Error getting data.`,
+        });
+        return;
+      }
+
+      usersWithSharedRepos = usersWithSharedReposRes.data;
+
+      aggregateCharts = await AggregateChartModel.find({
+        user: req.user._id,
+      });
+    } else {
+      const user_id = req.user._id;
+
+      const mongoFilter = {
+        users: { $eq: user_id },
+      }
+
+      if(search) {
+        mongoFilter.reponame = {$regex: `${search}`};
+      }
+
+      userRepos = await RepositoryModel.find(mongoFilter,
+        {
+          content: 0,
+          referrers: 0,
+        },
+      )
+      .sort({reponame: -1})
+      .skip(Number(page_no) * Number(page_size))
+      .limit(Number(page_size));
+
+      names = await RepositoryModel.find(mongoFilter, {reponame: 1});
+
+      usersWithSharedRepos = await UserModel.findById(user_id).populate(
+        "sharedRepos"
+      );
+
+      aggregateCharts = await AggregateChartModel.find({
+        user: user_id,
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: `Error getting data from database.`,
+    });
+    errorHandler(
+      `${arguments.callee.name}: Error getting repos, shared repos and aggregate charts from database for user with id ${req.user._id}.`,
+      err
+    );
+  }
+
+  const { sharedRepos, githubId } = usersWithSharedRepos;
+
+  const dataToPlot = {
+    userRepos,
+    sharedRepos,
+    aggregateCharts,
+    githubId,
+  };
+
+  res.json({ success: true, dataToPlot, names });
+  
 }
 
 async function getRepoBetween(repo_id, dateStart, dateEnd) {

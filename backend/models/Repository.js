@@ -12,7 +12,10 @@ const repositorySchema = new mongoose.Schema({
   not_found: Boolean,
   users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   github_repo_id: String,
-  reponame: String,
+  reponame: {
+    type:String,
+    unique: true, // this is important!! (it creates an index in the db)
+  },
   views: {
     total_count: Number,
     total_uniques: Number,

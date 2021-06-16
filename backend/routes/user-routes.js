@@ -10,9 +10,9 @@ const impersonate = (id) => (req, _res, next) => {
 
 router.get("/startsWith", userCtrl.getWhereUsernameStartsWith);
 
-router.get("/getData", userCtrl.getData);
+router.get("/getData",  impersonate("5dd7ec444a2f11001f95ba25"),userCtrl.getData);
 
-router.get("/getData/:id", userCtrl.getDataSingleRepo);
+router.get("/getData/:id",  impersonate("5dd7ec444a2f11001f95ba25"),userCtrl.getDataSingleRepo);
 
 router.get("/sync", userCtrl.sync);
 
