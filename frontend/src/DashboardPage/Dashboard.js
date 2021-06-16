@@ -13,8 +13,6 @@ import SelfShare from "./SelfShare";
 import InfoIcon from "./InfoIcon"
 import "./Dashboard.css";
 
-// const ITEMS_PER_PAGE = 15;
-
 function Dashboard() {
   const { section } = useParams();
   const { repos, loadingData, 
@@ -23,28 +21,8 @@ function Dashboard() {
     page_size, setPageSize,
     names,
   } = React.useContext(DataContext);
-  // const [searchValue, setSearchValue] = React.useState("");
-  // const [activePage, setActivePage] = React.useState(1);
-
-  // const reposMatchingSearch = repos[section].filter(
-  //   (d) =>
-  //     !d.reponame || d.reponame.match(new RegExp(`${searchValue.trim()}`, "i"))
-  // );
-  // if (section !== "aggregateCharts") {
-  //   reposMatchingSearch.sort((a, b) =>
-  //     a.reponame.toLowerCase() < b.reponame.toLowerCase() ? -1 : 1
-  //   );
-  // }
-  // const totalCount = reposMatchingSearch.length;
-
-  // const visibleRepos = reposMatchingSearch.slice(
-  //   (activePage - 1) * ITEMS_PER_PAGE,
-  //   activePage * ITEMS_PER_PAGE
-  // );
-
-  // React.useEffect(() => {
-  //   setSearchValue("");
-  // }, [section]);
+  
+  // TODO: different components based on section, to clear the conditional mess below
 
   return (
     <Grid container className="dashboardWrapper">
@@ -72,7 +50,7 @@ function Dashboard() {
         {!loadingData && section !== "aggregateCharts" && ( <InfoIcon/>)}
 
         <div>
-            {!loadingData && names.length > page_size  && <Pagination
+            {!loadingData && names.length > page_size && section === "userRepos" && <Pagination
               activePage={page_no + 1}
               itemsCountPerPage={page_size}
               totalItemsCount={names.length}

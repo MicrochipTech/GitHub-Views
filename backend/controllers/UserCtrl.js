@@ -123,8 +123,6 @@ async function getWhereUsernameStartsWith(req, res) {
 }
 
 async function getDataSingleRepo(req, res) {
-  console.log(1);
-  
   const repo = await RepositoryModel.findOne({
     _id: req.params.id,
     users: { $eq: req.user._id },

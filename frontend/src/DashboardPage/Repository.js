@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import { Link } from "react-router-dom";
 import moment from "moment";
 import _ from "lodash";
@@ -8,6 +8,7 @@ import ChoseReposModal from "./ChoseReposModal";
 import { DataContext } from "../Data";
 import ShareButton from "./ShareButton";
 import LineChart from "../Chart/LineChart";
+import axios from "axios";
 
 function generateRandomColour(total, idx) {
   return `#${(0x1000000 + Math.random() * 0xffffff).toString(16).substr(1, 6)}`;
@@ -21,107 +22,117 @@ function Repository({ index, style, data }) {
     unfollowSharedRepo,
   } = React.useContext(DataContext);
   const { page, visibleRepos } = data;
-  const d = visibleRepos[index];
+  const [d] = useState(visibleRepos[index]);
+  const [plotData, setPlotData] = useState(null);
 
-  let dataD = [];
-  let labels = [];
-  let plotData = null;
-  if (page === "aggregateCharts") {
-    console.log("dataD: ", dataD);
-    dataD = d.repo_list
-      .map((r) =>
-        repos["userRepos"]
-          .concat(repos["sharedRepos"])
-          .concat(repos["zombieRepos"])
-          .find((m) => m._id === r)
-      )
-      .filter((el) => el !== undefined);
-    console.log("dataD: ", dataD);
+  useEffect(() => {
+    const calc = async() => {
+      let dataD = [];
+      let labels = [];
+      let plotData = null;
+      if (page === "aggregateCharts") {
 
-    const maximumTimetamp = new Date();
-    maximumTimetamp.setUTCHours(0, 0, 0, 0);
-    maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
+        dataD = await Promise.all(d.repo_list
+          .map(async (r) => {
+            const res = await axios.get(`/api/user/getData/${r}`);
+            return res.data
+          }));
 
-    let minimumTimetamp = new Date();
-    minimumTimetamp.setUTCHours(0, 0, 0, 0);
-    minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
-
-    minimumTimetamp = dataD.reduce((acc, repo) => {
-      const repoDate = new Date(repo.views.data[0].timestamp);
-
-      if (repoDate < acc) {
-        acc = repoDate;
-      }
-      return acc;
-    }, minimumTimetamp);
-
-    let timeIndex = new Date(minimumTimetamp.getTime());
-
-    while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
-      labels.push(moment(timeIndex).format("DD MMM YYYY"));
-
-      timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
-    }
-
-    plotData = {
-      timestamp: labels,
-      data: dataD.reduce((acc, e, idx) => {
-        const repo = e;
-        let views = repo.views.data.map((h) => h.count);
-        let uniques = repo.views.data.map((h) => h.uniques);
-
-        const limitTimestamp = new Date(repo.views.data[0].timestamp);
-
-        for (
-          let timeIndex = new Date(minimumTimetamp.getTime());
-          timeIndex.getTime() < limitTimestamp.getTime();
-          timeIndex.setUTCDate(timeIndex.getUTCDate() + 1)
-        ) {
-          views.unshift(0);
-          uniques.unshift(0);
-        }
-
-        acc.push(
-          {
-            label: `${repo.reponame} - Views`,
-            dataset: views,
-            color: generateRandomColour(),
-            _id: e._id,
-          },
-          {
-            label: `${repo.reponame} - Unique Views`,
-            dataset: uniques,
-            _id: e._id,
-            color: generateRandomColour(),
+    
+        const maximumTimetamp = new Date();
+        maximumTimetamp.setUTCHours(0, 0, 0, 0);
+        maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
+    
+        let minimumTimetamp = new Date();
+        minimumTimetamp.setUTCHours(0, 0, 0, 0);
+        minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
+    
+        minimumTimetamp = dataD.reduce((acc, repo) => {
+          const repoDate = new Date(repo.views.data[0].timestamp);
+    
+          if (repoDate < acc) {
+            acc = repoDate;
           }
-        );
-        return acc;
-      }, []),
-    };
-  } else {
-    dataD.push(d);
+          return acc;
+        }, minimumTimetamp);
+    
+        let timeIndex = new Date(minimumTimetamp.getTime());
+    
+        while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
+          labels.push(moment(timeIndex).format("DD MMM YYYY"));
+    
+          timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
+        }
+    
+        plotData = {
+          timestamp: labels,
+          data: dataD.reduce((acc, e, idx) => {
+            const repo = e;
+            let views = repo.views.data.map((h) => h.count);
+            let uniques = repo.views.data.map((h) => h.uniques);
+    
+            const limitTimestamp = new Date(repo.views.data[0].timestamp);
+    
+            for (
+              let timeIndex = new Date(minimumTimetamp.getTime());
+              timeIndex.getTime() < limitTimestamp.getTime();
+              timeIndex.setUTCDate(timeIndex.getUTCDate() + 1)
+            ) {
+              views.unshift(0);
+              uniques.unshift(0);
+            }
+    
+            acc.push(
+              {
+                label: `${repo.reponame} - Views`,
+                dataset: views,
+                color: generateRandomColour(),
+                _id: e._id,
+              },
+              {
+                label: `${repo.reponame} - Unique Views`,
+                dataset: uniques,
+                _id: e._id,
+                color: generateRandomColour(),
+              }
+            );
+            return acc;
+          }, []),
+        };
+      } else {
+        dataD.push(d);
+    
+        plotData = {
+          timestamp: d.views.data.map((h) =>
+            moment(h.timestamp).format("DD MMM YYYY")
+          ),
+          data: dataD.reduce((acc, e) => {
+            const repo = e;
+            const views = repo.views.data.map((h) => h.count);
+            const uniques = repo.views.data.map((h) => h.uniques);
+            acc.push({
+              label: `Views`,
+              dataset: views,
+              color: "#603A8B",
+            });
+            acc.push({
+              label: `Unique Views`,
+              dataset: uniques,
+              color: "#FDCB00",
+            });
+            return acc;
+          }, []),
+        };
+      }
 
-    plotData = {
-      timestamp: d.views.data.map((h) =>
-        moment(h.timestamp).format("DD MMM YYYY")
-      ),
-      data: dataD.reduce((acc, e) => {
-        const repo = e;
-        const views = repo.views.data.map((h) => h.count);
-        const uniques = repo.views.data.map((h) => h.uniques);
-        acc.push({
-          label: `Views`,
-          dataset: views,
-          color: "#603A8B",
-        });
-        acc.push({
-          label: `Unique Views`,
-          dataset: uniques,
-          color: "#FDCB00",
-        });
-        return acc;
-      }, []),
+      setPlotData(plotData)
     };
+    calc();
+
+  }, [d])
+
+  if(plotData === null) {
+    return <p>Loading</p>
   }
 
   return (
