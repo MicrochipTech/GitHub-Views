@@ -12,6 +12,7 @@ import Dashboard from "./DashboardPage/Dashboard";
 import Login from "./LoginPage/Login";
 import SingleRepo from "./SingleRepoPage/SingleRepo";
 import FeedbackBtn from "./common/FeedbackButton";
+import * as Sentry from "@sentry/react";
 
 import "./App.css";
 
@@ -75,11 +76,13 @@ function AppRouter() {
 
 function App() {
   return (
-    <AuthProvider>
-      <DataProvider>
-        <AppRouter />
-      </DataProvider>
-    </AuthProvider>
+    <Sentry.ErrorBoundary fallback={"An error has occurred"} showDialog>
+      <AuthProvider>
+        <DataProvider>
+          <AppRouter />
+        </DataProvider>
+      </AuthProvider>
+    </Sentry.ErrorBoundary>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 import produce from "immer";
 import axios from "axios";
 import { add0s } from "./utils";
@@ -103,7 +103,11 @@ function DataProvider({ children }) {
     (_) => {
       const getData = async (_) => {
         dispatch({ type: "START_LOADING" });
-        const res = await axios.get(`/api/user/getData?page_no=${page_no}&page_size=${page_size}&search=${search}`).catch((e) => {});
+        const res = await axios
+          .get(
+            `/api/user/getData?page_no=${page_no}&page_size=${page_size}&search=${search}`
+          )
+          .catch((e) => {});
         if (res != null) {
           dispatch({
             type: "DATA_READY",
@@ -127,7 +131,13 @@ function DataProvider({ children }) {
     const json = await res.json();
     console.log(json);
     if (json.data) {
-      dispatch({ type: "DATA_READY", payload: prepareData(json.data) });
+      dispatch({
+        type: "DATA_READY",
+        payload: {
+          dataToPlot: prepareData(json.data.dataToPlot),
+          names: json.data.names,
+        },
+      });
     } else {
       dispatch({ type: "STOP_LOADING" });
     }
@@ -173,9 +183,12 @@ function DataProvider({ children }) {
         deleteAggregateChart,
         addSharedRepo,
         unfollowSharedRepo,
-        page_size, page_no,
-        setPageNo,setPageSize,
-        search, setSearch
+        page_size,
+        page_no,
+        setPageNo,
+        setPageSize,
+        search,
+        setSearch,
       }}
     >
       {children}

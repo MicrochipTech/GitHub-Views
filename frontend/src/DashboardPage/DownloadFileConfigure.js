@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useContext} from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import moment from "moment";
 import { DataContext } from "../Data";
@@ -27,27 +27,23 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
   const [reposToDownload, setReposToDownload] = useState([]);
 
   useEffect(() => {
-    const reposToDownload =  [...names, ...repos.sharedRepos].map((r) => r._id)
-  
-    setReposToDownload(
-     reposToDownload
-    );
+    const reposToDownload = [...names, ...repos.sharedRepos].map((r) => r._id);
+
+    setReposToDownload(reposToDownload);
   }, [repos, names]);
 
   /*************************************************************************************/
-  
+
   const [sheets, setSheets] = useState([
     { name: "Views", checked: true },
     { name: "Clones", checked: true },
     { name: "Forks", checked: true },
-    { name: "Referring Sites", checked: false },
-    { name: "Popular Content", checked: false },
   ]);
 
   const [step, setStep] = useState(0);
-  
+
   const [selectStrategy, setSelectStrategy] = useState(STRATEGY_ALL);
-  
+
   const [interval, setInterval] = useState([
     moment().subtract(1, "month").toDate(),
     moment().toDate(),
@@ -57,9 +53,7 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
 
   useEffect(() => {
     if (selectStrategy === STRATEGY_ALL) {
-      setReposToDownload(
-        [...names, ...repos.sharedRepos].map((r) => r._id)
-      );
+      setReposToDownload([...names, ...repos.sharedRepos].map((r) => r._id));
     } else if (selectStrategy === STRATEGY_NONE) {
       setReposToDownload([]);
     }
@@ -74,8 +68,8 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
           sharedRepos: [],
           aggregateCharts: [],
           githubId: null,
-        }
-      }
+        },
+      },
     };
 
     if (!allTime) {
@@ -92,41 +86,38 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
     } else {
       setFetching(true);
       let res;
-      let cur_page = 0
+      let cur_page = 0;
       do {
-        res = await axios.get(`/api/user/getData?page_size=100&page_no=${cur_page++}`);
-        finalResponse.data.dataToPlot.userRepos.push(...res.data.dataToPlot.userRepos);
-      }while(res.data.dataToPlot.userRepos.length > 0);
+        res = await axios.get(
+          `/api/user/getData?page_size=100&page_no=${cur_page++}`
+        );
+        finalResponse.data.dataToPlot.userRepos.push(
+          ...res.data.dataToPlot.userRepos
+        );
+      } while (res.data.dataToPlot.userRepos.length > 0);
       finalResponse.data.dataToPlot = {
         ...res.data.dataToPlot,
-        userRepos: finalResponse.data.dataToPlot.userRepos
-      }
+        userRepos: finalResponse.data.dataToPlot.userRepos,
+      };
       setFetching(false);
-    }    
+    }
 
     const data = prepareData(finalResponse.data.dataToPlot);
 
-    const selectedRepos = [
-      ...data.userRepos,
-      ...data.sharedRepos,
-    ]
+    const selectedRepos = [...data.userRepos, ...data.sharedRepos]
       .filter((r) => reposToDownload.indexOf(r._id) !== -1)
       .sort((a, b) =>
-        a.reponame.toLowerCase() < b.reponame.toLowerCase()
-          ? -1
-          : 1
+        a.reponame.toLowerCase() < b.reponame.toLowerCase() ? -1 : 1
       );
 
-    console.log(selectedRepos)
+    console.log(selectedRepos);
     onDownload(selectedRepos, sheets);
-  }
+  };
 
   return (
     <Modal open={open} onClose={onClose}>
       <div>
         <div className="bareModal">
-
-          
           {step === 0 && (
             <div>
               <div
@@ -170,10 +161,7 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
                 }}
               >
                 <FilterableRepos
-                  allRepos={[
-                    ...names,
-                    ...repos.sharedRepos,
-                  ].sort((a, b) =>
+                  allRepos={[...names, ...repos.sharedRepos].sort((a, b) =>
                     a.reponame.toLowerCase() < b.reponame.toLowerCase() ? -1 : 1
                   )}
                   selectedRepos={reposToDownload}
@@ -200,10 +188,6 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
               </div>
             </div>
           )}
-
-
-
-
 
           {step === 1 && (
             <div>
@@ -279,9 +263,9 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
                   <Button onClick={() => setStep(0)}>Back</Button>
                   <Button
                     disabled={sheets.filter((s) => s.checked).length === 0}
-                    onClick={onDownloadBtnClick}>
-                    {fetching && <CircularProgress size={14} />}&nbsp;
-                    Download
+                    onClick={onDownloadBtnClick}
+                  >
+                    {fetching && <CircularProgress size={14} />}&nbsp; Download
                   </Button>
                 </Box>
               </div>
