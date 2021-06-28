@@ -123,10 +123,16 @@ async function getWhereUsernameStartsWith(req, res) {
 }
 
 async function getDataSingleRepo(req, res) {
-  const repo = await RepositoryModel.findOne({
+  let query = {
     _id: req.params.id,
-    users: { $eq: req.user._id },
-  });
+  };
+
+  if (!req.user.sharedRepos.includes(req.params.id)) {
+    // If this is not  a shared repo then the current user must be in the list of repo users
+    query.users = { $eq: req.user._id };
+  }
+
+  const repo = await RepositoryModel.findOne(query);
   res.json(repo);
 }
 
@@ -136,11 +142,11 @@ async function getData(req, res) {
     return;
   }
 
-  const { start, end, page_no=0, page_size=15, search="" } = req.query;
+  const { start, end, page_no = 0, page_size = 15, search = "" } = req.query;
 
   const dateStart = new Date(start);
   const dateEnd = new Date(end);
- 
+
   let userRepos, usersWithSharedRepos, aggregateCharts, names;
   try {
     if (isValidDate(dateStart) && isValidDate(dateEnd)) {
@@ -185,23 +191,21 @@ async function getData(req, res) {
 
       const mongoFilter = {
         users: { $eq: user_id },
+      };
+
+      if (search) {
+        mongoFilter.reponame = { $regex: `${search}` };
       }
 
-      if(search) {
-        mongoFilter.reponame = {$regex: `${search}`};
-      }
+      userRepos = await RepositoryModel.find(mongoFilter, {
+        content: 0,
+        referrers: 0,
+      })
+        .sort({ reponame: -1 })
+        .skip(Number(page_no) * Number(page_size))
+        .limit(Number(page_size));
 
-      userRepos = await RepositoryModel.find(mongoFilter,
-        {
-          content: 0,
-          referrers: 0,
-        },
-      )
-      .sort({reponame: -1})
-      .skip(Number(page_no) * Number(page_size))
-      .limit(Number(page_size));
-
-      names = await RepositoryModel.find(mongoFilter, {reponame: 1});
+      names = await RepositoryModel.find(mongoFilter, { reponame: 1 });
 
       usersWithSharedRepos = await UserModel.findById(user_id).populate(
         "sharedRepos"
@@ -232,7 +236,6 @@ async function getData(req, res) {
   };
 
   res.json({ success: true, dataToPlot, names });
-  
 }
 
 async function getRepoBetween(repo_id, dateStart, dateEnd) {
