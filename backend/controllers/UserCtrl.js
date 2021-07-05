@@ -12,6 +12,9 @@ const getRepoDataBetween = require("../mongoQueries/getUserReposWithTrafficBetwe
 const getUserSharedReposWithTrafficBetween = require("../mongoQueries/getUserSharedReposWithTrafficBetween");
 const getUserReposForLastXDays = require("../mongoQueries/getUserReposForLastXDays");
 
+const batch = require("async-batch").default;
+const to = require("await-to-js").default;
+
 const mongoose = require("mongoose");
 
 function isValidDate(d) {
@@ -373,13 +376,21 @@ async function checkForNewRepos(user, token) {
     return;
   }
 
-  const updateReposPromises = githubRepos.data.map(async (githubRepo) => {
+  const updateRepoFn = async (githubRepo) => {
     let repos;
     try {
-      repos = await RepositoryModel.find({
-        github_repo_id: String(githubRepo.id),
-        not_found: false,
-      });
+      repos = await RepositoryModel.find(
+        {
+          github_repo_id: String(githubRepo.id),
+          not_found: false,
+        },
+        {
+          views: 0,
+          clones: 0,
+          contents: 0,
+          referrers: 0,
+        }
+      );
     } catch (err) {
       errorHandler(
         `${arguments.callee.name}: Error caught while getting repo from database with GitHub repo id ${githubRepo.id}.`,
@@ -460,10 +471,11 @@ async function checkForNewRepos(user, token) {
       logList = repos.map((r) => [r.reponame, user.username, r.github_repo_id]);
       logger.warn(`Found more repos with the same name in database ${logList}`);
     }
-  });
-  try {
-    await Promise.all(updateReposPromises);
-  } catch (err) {
+  };
+
+  const [err] = await to(batch(githubRepos.data, updateRepoFn, 50));
+
+  if (err) {
     errorHandler(
       `${arguments.callee.name}: Error caught while updating repositories for user ${user.username}.`,
       err
