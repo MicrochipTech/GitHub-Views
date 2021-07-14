@@ -143,6 +143,7 @@ pipeline {
                             The Artifactory Push path is: ${dockerImageRegistryPath}
                             Another echo: $artifactoryURL/$dockerRepoPath/$dockerImage:$dockerVersion
                             """;
+                            def ideImageName = "artifacts.microchip.com:7999/${env.IDE_CITD_DOCKER_ARTIFACTORY_PATH}"
                             withCredentials([usernamePassword(credentialsId: 'artifacts.microchip.com', usernameVariable: 'USER_NAME', passwordVariable: 'USER_PASS' )]){
                                     writeFile(file: 'config.json',
                                       text:"""{"auths":{"${ideImageName}":\
