@@ -1,3 +1,7 @@
+const batch = require("async-batch").default;
+const to = require("await-to-js").default;
+const mongoose = require("mongoose");
+
 const UserModel = require("../models/User");
 const RepositoryModel = require("../models/Repository");
 const AggregateChartModel = require("../models/AggregateChart");
@@ -11,11 +15,7 @@ const getRepoWithTrafficBetween = require("../mongoQueries/getRepoWithTrafficBet
 const getRepoDataBetween = require("../mongoQueries/getUserReposWithTrafficBetween");
 const getUserSharedReposWithTrafficBetween = require("../mongoQueries/getUserSharedReposWithTrafficBetween");
 const getUserReposForLastXDays = require("../mongoQueries/getUserReposForLastXDays");
-
-const batch = require("async-batch").default;
-const to = require("await-to-js").default;
-
-const mongoose = require("mongoose");
+const getUserSharedReposFilteredByName = require("../mongoQueries/getUserSharedReposFilteredByName");
 
 function isValidDate(d) {
   return d instanceof Date && !isNaN(d);
@@ -173,7 +173,8 @@ async function getData(req, res) {
       const usersWithSharedReposRes = await getUserAndPopulateSharedReposBetween(
         req.user._id,
         dateStart,
-        dateEnd
+        dateEnd,
+        search
       );
 
       if (usersWithSharedReposRes.success === false) {
@@ -210,9 +211,8 @@ async function getData(req, res) {
 
       names = await RepositoryModel.find(mongoFilter, { reponame: 1 });
 
-      usersWithSharedRepos = await UserModel.findById(user_id).populate(
-        "sharedRepos"
-      );
+      usersWithSharedRepos = await UserModel.aggregate(getUserSharedReposFilteredByName(user_id, search));
+      usersWithSharedRepos = usersWithSharedRepos[0];
 
       aggregateCharts = await AggregateChartModel.find({
         user: user_id,
@@ -299,7 +299,8 @@ async function getUserReposBetween(user_id, dateStart, dateEnd) {
 async function getUserAndPopulateSharedReposBetween(
   user_id,
   dateStart,
-  dateEnd
+  dateEnd,
+  search
 ) {
   if (!user_id) {
     return { success: false };
@@ -308,7 +309,7 @@ async function getUserAndPopulateSharedReposBetween(
   let users;
   try {
     users = await UserModel.aggregate(
-      getUserSharedReposWithTrafficBetween(user_id, dateStart, dateEnd)
+      getUserSharedReposWithTrafficBetween(user_id, dateStart, dateEnd, search)
     );
   } catch (err) {
     errorHandler(
