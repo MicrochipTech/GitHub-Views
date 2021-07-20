@@ -148,7 +148,7 @@ pipeline {
                                     writeFile(file: 'config.json',
                                       text:"""{"auths":{"${ideImageName}":\
                                           {"username":"${USER_NAME}","password":"${USER_PASS}"}}}""")
-                                          
+                                    sh "mkdir -p /kaniko/.docker && mv config.json /kaniko/.docker/config.json"
                                     sh(script: """ 
                                         /kaniko/executor \
                                         --context ${WORKSPACE}/${dockerImage} \
