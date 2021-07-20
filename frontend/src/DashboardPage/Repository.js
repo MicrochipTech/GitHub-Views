@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import moment from "moment";
 import _ from "lodash";
@@ -17,6 +17,7 @@ function generateRandomColour(total, idx) {
 function Repository({ index, style, data }) {
   const {
     repos,
+    names,
     updateAggregateChart,
     deleteAggregateChart,
     unfollowSharedRepo,
@@ -26,53 +27,58 @@ function Repository({ index, style, data }) {
   const [plotData, setPlotData] = useState(null);
 
   useEffect(() => {
-    const calc = async() => {
+    const calc = async () => {
       let dataD = [];
       let labels = [];
       let plotData = null;
       if (page === "aggregateCharts") {
-
-        dataD = await Promise.all(d.repo_list
-          .map(async (r) => {
+        dataD = await Promise.all(
+          d.repo_list.map(async (r) => {
             const res = await axios.get(`/api/user/getData/${r}`);
-            return res.data
-          }));
+            return res.data;
+          })
+        );
+        // Some repos can return null if the user does not have
+        // access to them. This should be fixed by refactoring the
+        // API to provide proper http response code and
+        // also handle permissions more robus.
+        // Following is just a dirty fix
+        dataD = dataD.filter((r) => r !== null);
 
-    
         const maximumTimetamp = new Date();
         maximumTimetamp.setUTCHours(0, 0, 0, 0);
         maximumTimetamp.setUTCDate(maximumTimetamp.getUTCDate() - 1);
-    
+
         let minimumTimetamp = new Date();
         minimumTimetamp.setUTCHours(0, 0, 0, 0);
         minimumTimetamp.setUTCDate(minimumTimetamp.getUTCDate() - 1);
-    
+
         minimumTimetamp = dataD.reduce((acc, repo) => {
           const repoDate = new Date(repo.views.data[0].timestamp);
-    
+
           if (repoDate < acc) {
             acc = repoDate;
           }
           return acc;
         }, minimumTimetamp);
-    
+
         let timeIndex = new Date(minimumTimetamp.getTime());
-    
+
         while (timeIndex.getTime() <= maximumTimetamp.getTime()) {
           labels.push(moment(timeIndex).format("DD MMM YYYY"));
-    
+
           timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
         }
-    
+
         plotData = {
           timestamp: labels,
           data: dataD.reduce((acc, e, idx) => {
             const repo = e;
             let views = repo.views.data.map((h) => h.count);
             let uniques = repo.views.data.map((h) => h.uniques);
-    
+
             const limitTimestamp = new Date(repo.views.data[0].timestamp);
-    
+
             for (
               let timeIndex = new Date(minimumTimetamp.getTime());
               timeIndex.getTime() < limitTimestamp.getTime();
@@ -81,7 +87,7 @@ function Repository({ index, style, data }) {
               views.unshift(0);
               uniques.unshift(0);
             }
-    
+
             acc.push(
               {
                 label: `${repo.reponame} - Views`,
@@ -101,7 +107,7 @@ function Repository({ index, style, data }) {
         };
       } else {
         dataD.push(d);
-    
+
         plotData = {
           timestamp: d.views.data.map((h) =>
             moment(h.timestamp).format("DD MMM YYYY")
@@ -125,14 +131,13 @@ function Repository({ index, style, data }) {
         };
       }
 
-      setPlotData(plotData)
+      setPlotData(plotData);
     };
     calc();
+  }, [d, page]);
 
-  }, [d])
-
-  if(plotData === null) {
-    return <p>Loading</p>
+  if (plotData === null) {
+    return <p>Loading</p>;
   }
 
   return (
@@ -150,7 +155,7 @@ function Repository({ index, style, data }) {
         {page === "aggregateCharts" && (
           <div style={{ display: "flex" }}>
             <ChoseReposModal
-              allRepos={[...repos["userRepos"], ...repos["sharedRepos"]]}
+              allRepos={[...names, ...repos["sharedRepos"]]}
               selectedRepos={plotData.data.map((r) => r._id)}
               onChange={(id, state) => {
                 updateAggregateChart(d._id, id, state);
