@@ -37,6 +37,7 @@
     "react-scripts": "3.4.0",
     "typeface-fjalla-one": "0.0.72",
     "typeface-noto-sans": "0.0.72",
+    "use-debounce": "^7.0.0",
     "xlsx": "^0.16.6"
   },
   "scripts": {
