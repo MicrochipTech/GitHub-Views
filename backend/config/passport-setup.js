@@ -24,34 +24,6 @@ passport.deserializeUser(async (id, done) => {
   done(null, user);
 });
 
-/* The login in this application cand be done by users through the LocalStrategy
-or GitHub Strategy. */
-passport.use(
-  /* The LocalStrategy allows the users to access the applications, and visualize
-  data of other repositories, from GitHub users, which logged into the application. */
-  new LocalStrategy(function(username, password, callback) {
-    UserModel.findOne({ username }, function(err, user) {
-      if (err) {
-        return callback(err);
-      }
-
-      if (!user) {
-        return callback(null, false, { message: "No user found." });
-      }
-
-      user.verifyPassword(password, function(err, isMatch) {
-        if (err) {
-          return callback(err);
-        }
-        if (!isMatch) {
-          return callback(null, false, { message: "Invalid login." });
-        }
-        return callback(null, user);
-      });
-    });
-  })
-);
-
 passport.use(
   /* The GitHubStrategy allows GitHub users to track ther repositories for which
   they have push access */

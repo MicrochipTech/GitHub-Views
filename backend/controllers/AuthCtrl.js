@@ -22,30 +22,7 @@ module.exports = {
     res.redirect("/");
   },
 
-  localLogin: (req, res, next) => {
-    passport.authenticate("local", function(err, user, info) {
-      if (err) {
-        return next(err);
-      }
-      if (!user) {
-        return res.send({ info });
-      }
-      req.logIn(user, function(err) {
-        if (err) {
-          return next(err);
-        }
-        return res.send({ info });
-      });
-    })(req, res, next);
-  },
+  msft: () => {},
 
-  localRegister: async (req, res) => {
-    const { username, password } = req.body;
-    try {
-      const user = await UserModel({ username, password }).save();
-      res.json({ success: true, user });
-    } catch (error) {
-      res.send({ success: false, error });
-    }
-  },
+  msftRedirect: () => {},
 };
