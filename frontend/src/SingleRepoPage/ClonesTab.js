@@ -2,6 +2,7 @@ import React from "react";
 import moment from "moment";
 import { Grid } from "@material-ui/core";
 import LineChart from "../Chart/LineChart";
+import CardsList from "./CardsList";
 
 function ClonesTab({ repo }) {
   const clonesPlotData = {
@@ -28,6 +29,12 @@ function ClonesTab({ repo }) {
 
   return (
     <Grid item xs={12}>
+      <CardsList
+        data={[
+          { title: "Total Clones", text: repo.clones.total_count },
+          { title: "Unique Cloners", text: repo.clones.total_count },
+        ]}
+      />
       <LineChart data={clonesPlotData} />
     </Grid>
   );

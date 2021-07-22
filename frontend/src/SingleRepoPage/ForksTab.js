@@ -3,6 +3,7 @@ import moment from "moment";
 import { Grid } from "@material-ui/core";
 import LineChart from "../Chart/LineChart";
 import { add0s } from "../utils";
+import CardsList from "./CardsList";
 
 function ForksTab({ repo }) {
   const forksRaw = add0s([...repo.forks.data]);
@@ -22,6 +23,9 @@ function ForksTab({ repo }) {
   console.log(forksPlotData);
   return (
     <Grid item xs={12}>
+      <CardsList
+        data={[{ title: "Total Forks", text: repo.forks.data.length }]}
+      />
       <LineChart data={forksPlotData} />
     </Grid>
   );

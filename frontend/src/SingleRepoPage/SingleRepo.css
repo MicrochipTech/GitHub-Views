@@ -1,56 +1,65 @@
 .dashboardWrapper {
-    padding: 80px;
-    padding-top: 0px;
+  padding: 80px;
+  padding-top: 0px;
 }
 
 .backBtn {
-    padding: 10px;
-    margin-bottom: 10px;
-    margin-top: 10px;
-    cursor: pointer;
+  padding: 10px;
+  margin-bottom: 10px;
+  margin-top: 10px;
+  cursor: pointer;
 }
 
 .backBtnIcon {
-    vertical-align: middle;
-    margin-right: 5px;
+  vertical-align: middle;
+  margin-right: 5px;
 }
 
 .repoTitle {
-    font-size: 26px;
+  font-size: 26px;
 }
 
 .repoSectionTitle {
-    margin-top: 20px !important;
+  margin-top: 20px !important;
 }
 
 ul.dataNav {
-    padding: 0;
-    margin: 0;
-    margin-top: 20px;
+  padding: 0;
+  margin: 0;
+  margin-top: 20px;
 }
 
 ul.dataNav li {
-    list-style-type: none;
-    float: left;
-    padding: 20px;
-    cursor: pointer;
-    background-color: #dfdfdf;
+  list-style-type: none;
+  float: left;
+  padding: 20px;
+  cursor: pointer;
+  background-color: #dfdfdf;
 }
 
-ul.dataNav li.active, ul.dataNav li:hover {
-    background-color: #000;
-    color: #fff;
-    transition: 0.5s ease;
+ul.dataNav li.active,
+ul.dataNav li:hover {
+  background-color: #000;
+  color: #fff;
+  transition: 0.5s ease;
 }
 
 .downloadBtnOnTab {
-    list-style-type: none;
-    padding: 10px;
-    background-color: gray;
-    color: white;
-    width: max-content;
-    display: inline-block;
-    margin-top: 25px;
-    margin-left: 25px;
-    cursor: pointer;
+  list-style-type: none;
+  padding: 10px;
+  background-color: gray;
+  color: white;
+  width: max-content;
+  display: inline-block;
+  margin-top: 25px;
+  margin-left: 25px;
+  cursor: pointer;
+}
+
+.cardsList {
+  margin-bottom: 20px;
+  margin-left: 10px;
+  padding: 10px;
+  width: max-content;
+  background-color: #dfdfdf !important;
 }

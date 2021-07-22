@@ -2,6 +2,7 @@ import React from "react";
 import moment from "moment";
 import { Grid } from "@material-ui/core";
 import LineChart from "../Chart/LineChart";
+import CardsList from "./CardsList";
 
 function ViewsTab({ repo }) {
   const viewsPlotData = {
@@ -28,6 +29,12 @@ function ViewsTab({ repo }) {
 
   return (
     <Grid item xs={12}>
+      <CardsList
+        data={[
+          { title: "Total Views", text: repo.views.total_count },
+          { title: "Total Unique Views", text: repo.views.total_uniques },
+        ]}
+      />
       <LineChart data={viewsPlotData} />
     </Grid>
   );
