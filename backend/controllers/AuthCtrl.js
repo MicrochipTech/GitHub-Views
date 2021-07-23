@@ -22,7 +22,10 @@ module.exports = {
     res.redirect("/");
   },
 
-  msft: () => {},
-
-  msftRedirect: () => {},
+  msft: (req, res, next) => {
+    passport.authenticate("azuread-openidconnect", {
+      response: res,
+      failureRedirect: "/",
+    })(req, res, next);
+  },
 };

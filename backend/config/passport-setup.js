@@ -1,6 +1,6 @@
 const passport = require("passport");
-const LocalStrategy = require("passport-local").Strategy;
 const GitHubStrategy = require("passport-github").Strategy;
+const MsftOIDCStrategy = require("passport-azure-ad").OIDCStrategy;
 const UserCtrl = require("../controllers/UserCtrl");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const UserModel = require("../models/User");
@@ -23,6 +23,57 @@ passport.deserializeUser(async (id, done) => {
   }
   done(null, user);
 });
+
+console.log("process.env.k1: ", process.env.MSFT_COOKIE_ENC_KEY_1);
+
+passport.use(
+  new MsftOIDCStrategy(
+    {
+      identityMetadata: process.env.MSFT_IDENTITY_META,
+      clientID: process.env.MSFT_CLIENT_ID,
+      clientSecret: process.env.MSFT_CLIENT_SECRET,
+      responseType: "id_token",
+      responseMode: "form_post",
+      redirectUrl: process.env.MSFT_REDIRECT_URL,
+      allowHttpForRedirectUrl: true,
+      validateIssuer: false,
+      issuer: null,
+      passReqToCallback: false,
+      useCookieInsteadOfSession: true,
+      // Required if `useCookieInsteadOfSession` is set to true. You can provide multiple set of key/iv pairs for key
+      // rollover purpose. We always use the first set of key/iv pair to encrypt cookie, but we will try every set of
+      // key/iv pair to decrypt cookie. Key can be any string of length 32, and iv can be any string of length 12.
+      cookieEncryptionKeys: [
+        {
+          key: process.env.MSFT_COOKIE_ENC_KEY_1,
+          iv: process.env.MSFT_COOKIE_ENC_IV_1,
+        },
+        {
+          key: process.env.MSFT_COOKIE_ENC_KEY_2,
+          iv: process.env.MSFT_COOKIE_ENC_IV_2,
+        },
+      ],
+      scope: ["profile"],
+    },
+    async (iss, sub, profile, accessToken, refreshToken, done) => {
+      console.log("profile: ", profile);
+      if (!profile.oid) {
+        return done(new Error("No oid found"), null);
+      }
+      console.log("JSON.stringify(profile): ", JSON.stringify(profile));
+      const user = await UserModel.findOne({ msft_oid: profile.oid });
+      if (!user) {
+        const u = await new UserModel({
+          msft_oid: profile.oid,
+          username: profile._json.preferred_username,
+        }).save();
+        return done(null, u);
+      }
+
+      return done(null, user);
+    }
+  )
+);
 
 passport.use(
   /* The GitHubStrategy allows GitHub users to track ther repositories for which
