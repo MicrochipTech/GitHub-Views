@@ -11,7 +11,7 @@ async function updateRepositoriesAsynch() {
   try {
     repos = await RepositoryModel.aggregate([
       {
-        $match: { not_found: false },
+        $match: {},
       },
       {
         $project: {
@@ -146,7 +146,7 @@ async function updateRepositoriesAsynch() {
         RepositoryModel.updateOne(
           { _id: repoEntry._id },
           {
-            // not_found: false,
+            not_found: false,
             "forks.tree_updated": false,
             "commits.updated": false,
           }
