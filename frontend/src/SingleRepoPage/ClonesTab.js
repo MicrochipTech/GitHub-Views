@@ -27,14 +27,14 @@ function ClonesTab({ repo }) {
     }, []),
   };
 
+  const cardsData = [
+    { title: "Total Clones", text: repo.clones.total_count },
+    { title: "Unique Cloners", text: repo.clones.total_count },
+  ];
+
   return (
     <Grid item xs={12}>
-      <CardsList
-        data={[
-          { title: "Total Clones", text: repo.clones.total_count },
-          { title: "Unique Cloners", text: repo.clones.total_count },
-        ]}
-      />
+      <CardsList data={cardsData} />
       <LineChart data={clonesPlotData} />
     </Grid>
   );

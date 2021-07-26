@@ -21,11 +21,12 @@ function ForksTab({ repo }) {
     }, []),
   };
   console.log(forksPlotData);
+
+  const cardsData = [{ title: "Total Forks", text: repo.forks.data.length }];
+
   return (
     <Grid item xs={12}>
-      <CardsList
-        data={[{ title: "Total Forks", text: repo.forks.data.length }]}
-      />
+      <CardsList data={cardsData} />
       <LineChart data={forksPlotData} />
     </Grid>
   );

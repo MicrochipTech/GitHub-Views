@@ -27,14 +27,14 @@ function ViewsTab({ repo }) {
     }, []),
   };
 
+  const cardsData = [
+    { title: "Total Views", text: repo.views.total_count },
+    { title: "Total Unique Views", text: repo.views.total_uniques },
+  ];
+
   return (
     <Grid item xs={12}>
-      <CardsList
-        data={[
-          { title: "Total Views", text: repo.views.total_count },
-          { title: "Total Unique Views", text: repo.views.total_uniques },
-        ]}
-      />
+      <CardsList data={cardsData} />
       <LineChart data={viewsPlotData} />
     </Grid>
   );
