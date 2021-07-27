@@ -1,4 +1,4 @@
-module.exports = (user_id, dateStart, dateEnd) => [
+module.exports = (user_id, dateStart, dateEnd, search) => [
   {
     $match: {
       _id: user_id,
@@ -14,6 +14,7 @@ module.exports = (user_id, dateStart, dateEnd) => [
       pipeline: [
         {
           $match: {
+            reponame: { $regex: search },
             $expr: {
               $eq: ["$_id", "$$repo_id"],
             },

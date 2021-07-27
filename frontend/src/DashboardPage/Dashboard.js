@@ -10,18 +10,22 @@ import Navigation from "./Navigation";
 import Pagination from "react-js-pagination";
 import Repository from "./Repository";
 import SelfShare from "./SelfShare";
-import InfoIcon from "./InfoIcon"
+import InfoIcon from "./InfoIcon";
 import "./Dashboard.css";
 
 function Dashboard() {
   const { section } = useParams();
-  const { repos, loadingData, 
-    setPageNo, page_no,
-    setSearch, 
-    page_size, setPageSize,
+  const {
+    repos,
+    loadingData,
+    setPageNo,
+    page_no,
+    setSearch,
+    page_size,
+    setPageSize,
     names,
   } = React.useContext(DataContext);
-  
+
   // TODO: different components based on section, to clear the conditional mess below
 
   return (
@@ -47,16 +51,20 @@ function Dashboard() {
           }}
         />
 
-        {!loadingData && section !== "aggregateCharts" && ( <InfoIcon/>)}
+        {!loadingData && section === "userRepos" && <InfoIcon />}
 
         <div>
-            {!loadingData && names.length > page_size && section === "userRepos" && <Pagination
-              activePage={page_no + 1}
-              itemsCountPerPage={page_size}
-              totalItemsCount={names.length}
-              pageRangeDisplayed={15}
-              onChange={(p) => setPageNo(p-1)}
-            />}
+          {!loadingData &&
+            names.length > page_size &&
+            section === "userRepos" && (
+              <Pagination
+                activePage={page_no + 1}
+                itemsCountPerPage={page_size}
+                totalItemsCount={names.length}
+                pageRangeDisplayed={15}
+                onChange={(p) => setPageNo(p - 1)}
+              />
+            )}
 
           {!loadingData &&
             repos[section].length !== 0 &&
@@ -72,18 +80,18 @@ function Dashboard() {
             ))}
 
           {!loadingData && repos[section].length === 0 && (
-              <div>
-                <br />
-                <div className="nothing">
-                  Nothing to show here.
-                  {section === "aggregateCharts" && (
-                    <div>
-                      <NewAggregateChartButton text="Create First Aggregate Chart" />
-                    </div>
-                  )}
-                </div>
+            <div>
+              <br />
+              <div className="nothing">
+                Nothing to show here.
+                {section === "aggregateCharts" && (
+                  <div>
+                    <NewAggregateChartButton text="Create First Aggregate Chart" />
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          )}
 
           {!loadingData && section === "sharedRepos" && (
             <SelfShare
