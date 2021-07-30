@@ -166,6 +166,44 @@ pipeline {
                 }
             }
         }
+        stage('PR: Build and push Dockerfile') {
+            steps{
+                container('kaniko') {
+                    script {
+                        for (String item : dockerImages) {
+                            echo "running in script()"
+                            dockerImage = item
+                            dockerImageRegistryPath = "$artifactoryURL/$dockerRepoPath/$dockerImage"
+							dockerVersion = getVersion(dockerImage)
+							
+                            echo """
+                            Building $dockerImage
+                            The current WORKSPACE is: ${WORKSPACE}
+                            The Docker Repository Path is: ${dockerRepoPath}
+                            The Docker Image to build is: ${dockerImage}
+                            The Artifactory Push path is: ${dockerImageRegistryPath}
+                            Another echo: $artifactoryURL/$dockerRepoPath/$dockerImage:$dockerVersion
+                            """;
+                            def ideImageName = "artifacts.microchip.com:7999/${env.IDE_CITD_DOCKER_ARTIFACTORY_PATH}"
+                            withCredentials([usernamePassword(credentialsId: 'artifacts.microchip.com', usernameVariable: 'USER_NAME', passwordVariable: 'USER_PASS' )]){
+                                    writeFile(file: 'config.json',
+                                      text:"""{"auths":{"${ideImageName}":\
+                                          {"username":"${USER_NAME}","password":"${USER_PASS}"}}}""")
+                                    sh "mkdir -p /kaniko/.docker && mv config.json /kaniko/.docker/config.json"
+                                    sh(script: """ 
+                                        /kaniko/executor \
+                                        --context ${WORKSPACE}/${dockerImage} \
+                                        --dockerfile Dockerfile \
+                                        --destination=$dockerImageRegistryPath:$BRANCH_NAME
+
+                                    """, returnStdout: true)
+                            }  
+                            echo now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"))
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
