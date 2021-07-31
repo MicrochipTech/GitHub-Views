@@ -67,9 +67,10 @@ pipeline {
                             dockerImage   : $dockerImage
                             dockerVersion : $dockerVersion
                             """
+			    def ideImageName = "artifacts.microchip.com:7999/${env.IDE_CITD_DOCKER_ARTIFACTORY_PATH}"
                             withCredentials([usernamePassword(credentialsId: 'artifacts.microchip.com', usernameVariable: 'USER_NAME', passwordVariable: 'USER_PASS' )]){
                                     writeFile(file: 'config.json',
-                                      text:"""{"auths":{"${dockerImageRegistryPath}":\
+                                      text:"""{"auths":{"${ideImageName}":\
                                           {"username":"${USER_NAME}","password":"${USER_PASS}"}}}""")
                                     sh "mkdir -p /kaniko/.docker && mv config.json /kaniko/.docker/config.json"
                             sh(script: """ 
