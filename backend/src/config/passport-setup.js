@@ -24,8 +24,6 @@ passport.deserializeUser(async (id, done) => {
   done(null, user);
 });
 
-console.log("process.env.k1: ", process.env.MSFT_COOKIE_ENC_KEY_1);
-
 passport.use(
   new MsftOIDCStrategy(
     {

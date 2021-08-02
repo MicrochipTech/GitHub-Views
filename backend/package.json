@@ -3,7 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon -L ./bin/www --ignore public/",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "start:watch": "nodemon -L ./bin/www --ignore public/",
+    "dev": "npm-run-all --parallel build:watch start:watch",
+    "start": "node ./bin/www",
+    "prod": "npm-run-all build start",
     "test": "mocha test/*.test.js"
   },
   "dependencies": {
@@ -34,6 +39,10 @@
     "winston": "^3.3.3"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.2",
+    "@types/http-errors": "^1.8.1",
+    "@types/morgan": "^1.9.3",
+    "@types/node": "^16.4.10",
     "chai": "^4.2.0",
     "eslint": "^6.6.0",
     "eslint-config-airbnb": "^18.0.1",
@@ -43,7 +52,10 @@
     "mocha": "^8.1.0",
     "mongodb-memory-server": "^6.6.9",
     "nock": "^13.0.3",
+    "npm-run-all": "^4.1.5",
     "prettier": "^1.19.1",
-    "sinon": "^9.0.3"
+    "sinon": "^9.0.3",
+    "ts-node": "^10.1.0",
+    "typescript": "^4.3.5"
   }
 }

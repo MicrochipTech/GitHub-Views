@@ -30,7 +30,7 @@ const routes = require("./routes");
 
 const app = express();
 
-app.disable('etag');
+app.disable("etag");
 
 // app.use(bodyParser.urlencoded({ extended: false }));
 // app.use(bodyParser.json());
@@ -51,14 +51,14 @@ app.use(passport.session());
 app.use("/api", routes);
 
 // catch 404 and forward to error handler
-app.use((req, res, next) => {
+app.use((_req, _res, next) => {
   next(createError(404));
 });
 
 // Error handler
 // Error handler must have 4 parameters, even if not used
 // eslint-disable-next-line no-unused-vars
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};

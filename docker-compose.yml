@@ -41,7 +41,7 @@ services:
   backend:
     build: ./backend
     restart: always
-    command: npm start
+    command: npm run dev
     volumes:
       - ./backend:/usr/app/
     ports:

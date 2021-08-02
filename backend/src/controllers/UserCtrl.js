@@ -7,7 +7,7 @@ const RepositoryModel = require("../models/Repository");
 const AggregateChartModel = require("../models/AggregateChart");
 const TokenModel = require("../models/Token");
 const GitHubApiCtrl = require("./GitHubApiCtrl");
-const RepositoryCtrl = require("../controllers/RepositoryCtrl");
+const RepositoryCtrl = require("./RepositoryCtrl");
 const { logger, errorHandler } = require("../logs/logger");
 const { getRepoViews } = require("./GitHubApiCtrl");
 
@@ -23,7 +23,8 @@ function isValidDate(d) {
 
 async function updateProfile(user) {
   const t = await TokenModel.findOne({ _id: user.token_ref });
-  let userDetails, userEmails;
+  let userDetails;
+  let userEmails;
 
   try {
     userDetails = await GitHubApiCtrl.getUserProfile(t.value);
@@ -55,8 +56,8 @@ async function updateProfile(user) {
       {
         username: userDetails.data.login,
         githubEmails: userEmails.data.filter(
-          (emails) => emails.visibility !== null
-        ),
+          emails => emails.visibility !== null
+        )
       }
     );
   } catch (err) {
@@ -81,7 +82,7 @@ async function unfollowSharedRepo(req, res) {
   } catch (err) {
     res.send({
       success: false,
-      error: `Error updating user in database.`,
+      error: `Error updating user in database.`
     });
     errorHandler(
       `${arguments.callee.name}: Error caught when updating the shadedRepos list for user with id ${req.user._id}.`,
@@ -103,22 +104,22 @@ async function getWhereUsernameStartsWith(req, res) {
     users = await UserModel.find(
       {
         username: {
-          $regex: `${q}.*`,
-        },
+          $regex: `${q}.*`
+        }
       },
       { username: 1, _id: 0 }
     );
   } catch (err) {
     res.send({
       success: false,
-      error: `Error getting repos from database.`,
+      error: `Error getting repos from database.`
     });
     errorHandler(
       `${arguments.callee.name}: Error caught when getting from database repos which has the reponame starting with ${q}.`,
       err
     );
   }
-  const usersList = users.map((u) => u.username);
+  const usersList = users.map(u => u.username);
   if (usersList.indexOf(req.user.username) !== -1) {
     usersList.splice(usersList.indexOf(req.user.username), 1);
   }
@@ -129,7 +130,7 @@ async function msftUserAccessingMchpRepo(user, id) {
   if (!user.msft_oid) return false;
   const repo = await RepositoryModel.findOne({ _id: req.params.id });
   if (
-    process.env.PUBLIC_REPO_OWNERS.split(" ").some((o) =>
+    process.env.PUBLIC_REPO_OWNERS.split(" ").some(o =>
       repo.reponame.startsWith(`${o}/`)
     )
   )
@@ -138,8 +139,8 @@ async function msftUserAccessingMchpRepo(user, id) {
 }
 
 async function getDataSingleRepo(req, res) {
-  let query = {
-    _id: req.params.id,
+  const query = {
+    _id: req.params.id
   };
 
   if (
@@ -165,7 +166,10 @@ async function getData(req, res) {
   const dateStart = new Date(start);
   const dateEnd = new Date(end);
 
-  let userRepos, usersWithSharedRepos, aggregateCharts, names;
+  let userRepos;
+  let usersWithSharedRepos;
+  let aggregateCharts;
+  let names;
   try {
     if (isValidDate(dateStart) && isValidDate(dateEnd)) {
       const userReposRes = await getUserReposBetween(
@@ -177,7 +181,7 @@ async function getData(req, res) {
       if (userReposRes.success === false) {
         res.send({
           success: false,
-          error: `Error getting data.`,
+          error: `Error getting data.`
         });
         return;
       }
@@ -195,7 +199,7 @@ async function getData(req, res) {
       if (usersWithSharedReposRes.success === false) {
         res.send({
           success: false,
-          error: `Error getting data.`,
+          error: `Error getting data.`
         });
         return;
       }
@@ -203,13 +207,13 @@ async function getData(req, res) {
       usersWithSharedRepos = usersWithSharedReposRes.data;
 
       aggregateCharts = await AggregateChartModel.find({
-        user: req.user._id,
+        user: req.user._id
       });
     } else {
       const user_id = req.user._id;
 
       const mongoFilter = {
-        users: { $eq: user_id },
+        users: { $eq: user_id }
       };
 
       if (search) {
@@ -218,7 +222,7 @@ async function getData(req, res) {
 
       userRepos = await RepositoryModel.find(mongoFilter, {
         content: 0,
-        referrers: 0,
+        referrers: 0
       })
         .sort({ reponame: -1 })
         .skip(Number(page_no) * Number(page_size))
@@ -232,13 +236,13 @@ async function getData(req, res) {
       usersWithSharedRepos = usersWithSharedRepos[0];
 
       aggregateCharts = await AggregateChartModel.find({
-        user: user_id,
+        user: user_id
       });
     }
   } catch (err) {
     res.status(500).json({
       success: false,
-      error: `Error getting data from database.`,
+      error: `Error getting data from database.`
     });
     errorHandler(
       `${arguments.callee.name}: Error getting repos, shared repos and aggregate charts from database for user with id ${req.user._id}.`,
@@ -253,24 +257,24 @@ async function getData(req, res) {
     sharedRepos,
     aggregateCharts,
     githubId,
-    mchpRepos: [],
+    mchpRepos: []
   };
 
   if (req.user.msft_oid) {
     const mchpOrgs = process.env.PUBLIC_REPO_OWNERS.split(" ").join("|");
     const mongoFilter = {
       reponame: {
-        $regex: `(?=.*${search})(?=(^(${mchpOrgs})\/))`,
-      },
+        $regex: `(?=.*${search})(?=(^(${mchpOrgs})\/))`
+      }
     };
-    mchpRepos = await RepositoryModel.find(mongoFilter, {
+    const mchpRepos = await RepositoryModel.find(mongoFilter, {
       content: 0,
-      referrers: 0,
+      referrers: 0
     })
       .sort({ reponame: -1 })
       .skip(Number(page_no) * Number(page_size))
       .limit(Number(page_size));
-    dataToPlot["mchpRepos"] = mchpRepos;
+    dataToPlot.mchpRepos = mchpRepos;
     names = await RepositoryModel.find(mongoFilter, { reponame: 1 });
   }
 
@@ -313,7 +317,7 @@ async function getUserReposBetween(user_id, dateStart, dateEnd) {
       getRepoDataBetween(
         {
           not_found: false,
-          users: { $eq: user_id },
+          users: { $eq: user_id }
         },
         dateStart,
         dateEnd
@@ -368,7 +372,7 @@ async function getLastXDaysData(user, xDays) {
     return { success: false, data: [] };
   }
 
-  let oneMonthAgo = new Date();
+  const oneMonthAgo = new Date();
   oneMonthAgo.setUTCHours(0, 0, 0, 0);
   oneMonthAgo.setUTCDate(oneMonthAgo.getUTCDate() - xDays);
 
@@ -413,19 +417,19 @@ async function checkForNewRepos(user, token) {
     return;
   }
 
-  const updateRepoFn = async (githubRepo) => {
+  const updateRepoFn = async githubRepo => {
     let repos;
     try {
       repos = await RepositoryModel.find(
         {
           github_repo_id: String(githubRepo.id),
-          not_found: false,
+          not_found: false
         },
         {
           views: 0,
           clones: 0,
           contents: 0,
-          referrers: 0,
+          referrers: 0
         }
       );
     } catch (err) {
@@ -479,7 +483,7 @@ async function checkForNewRepos(user, token) {
       if (repo.reponame !== githubRepo.full_name) {
         repo.nameHistory.push({
           date: new Date(),
-          change: `${repo.reponame} -> ${githubRepo.full_name}`,
+          change: `${repo.reponame} -> ${githubRepo.full_name}`
         });
         repo.reponame = githubRepo.full_name;
         anyNewRepo = true;
@@ -487,7 +491,7 @@ async function checkForNewRepos(user, token) {
 
       /* Update users list if needed */
       const foundedUserId = repo.users.find(
-        (userId) => String(userId) === String(user._id)
+        userId => String(userId) === String(user._id)
       );
 
       if (foundedUserId === undefined) {
@@ -505,7 +509,7 @@ async function checkForNewRepos(user, token) {
       }
     } else {
       /* More than one element was found -> log an error */
-      logList = repos.map((r) => [r.reponame, user.username, r.github_repo_id]);
+      logList = repos.map(r => [r.reponame, user.username, r.github_repo_id]);
       logger.warn(`Found more repos with the same name in database ${logList}`);
     }
   };
@@ -530,7 +534,7 @@ async function sync(req, res) {
   } catch (err) {
     res.send({
       success: false,
-      error: `Error getting data from database.`,
+      error: `Error getting data from database.`
     });
     errorHandler(
       `${arguments.callee.name}: Error caught while getting token for user ${user.username}.`,
@@ -544,7 +548,7 @@ async function sync(req, res) {
   } catch (err) {
     res.send({
       success: false,
-      error: `Error sync.`,
+      error: `Error sync.`
     });
     errorHandler(
       `${arguments.callee.name}: Error caught while checking for new repos for user ${user.username}.`,
@@ -554,9 +558,9 @@ async function sync(req, res) {
 
   if (success) {
     getData(req, {
-      json: (data) => {
+      json: data => {
         res.json({ status: "ok", data });
-      },
+      }
     });
   } else {
     res.json({ status: "ok" });
@@ -571,5 +575,5 @@ module.exports = {
   sync,
   unfollowSharedRepo,
   checkForNewRepos,
-  getDataSingleRepo,
+  getDataSingleRepo
 };
