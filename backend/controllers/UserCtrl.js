@@ -125,12 +125,27 @@ async function getWhereUsernameStartsWith(req, res) {
   res.send(usersList);
 }
 
+async function msftUserAccessingMchpRepo(user, id) {
+  if (!user.msft_oid) return false;
+  const repo = await RepositoryModel.findOne({ _id: req.params.id });
+  if (
+    process.env.PUBLIC_REPO_OWNERS.split(" ").some((o) =>
+      repo.reponame.startsWith(`${o}/`)
+    )
+  )
+    return true;
+  return false;
+}
+
 async function getDataSingleRepo(req, res) {
   let query = {
     _id: req.params.id,
   };
 
-  if (!req.user.sharedRepos.includes(req.params.id)) {
+  if (
+    !req.user.sharedRepos.includes(req.params.id) &&
+    !msftUserAccessingMchpRepo(req.user, req.params.id)
+  ) {
     // If this is not  a shared repo then the current user must be in the list of repo users
     query.users = { $eq: req.user._id };
   }
@@ -211,7 +226,9 @@ async function getData(req, res) {
 
       names = await RepositoryModel.find(mongoFilter, { reponame: 1 });
 
-      usersWithSharedRepos = await UserModel.aggregate(getUserSharedReposFilteredByName(user_id, search));
+      usersWithSharedRepos = await UserModel.aggregate(
+        getUserSharedReposFilteredByName(user_id, search)
+      );
       usersWithSharedRepos = usersWithSharedRepos[0];
 
       aggregateCharts = await AggregateChartModel.find({
@@ -236,7 +253,26 @@ async function getData(req, res) {
     sharedRepos,
     aggregateCharts,
     githubId,
+    mchpRepos: [],
   };
+
+  if (req.user.msft_oid) {
+    const mchpOrgs = process.env.PUBLIC_REPO_OWNERS.split(" ").join("|");
+    const mongoFilter = {
+      reponame: {
+        $regex: `(?=.*${search})(?=(^(${mchpOrgs})\/))`,
+      },
+    };
+    mchpRepos = await RepositoryModel.find(mongoFilter, {
+      content: 0,
+      referrers: 0,
+    })
+      .sort({ reponame: -1 })
+      .skip(Number(page_no) * Number(page_size))
+      .limit(Number(page_size));
+    dataToPlot["mchpRepos"] = mchpRepos;
+    names = await RepositoryModel.find(mongoFilter, { reponame: 1 });
+  }
 
   res.json({ success: true, dataToPlot, names });
 }

@@ -22,7 +22,6 @@ function Dashboard() {
     page_no,
     setSearch,
     page_size,
-    setPageSize,
     names,
   } = React.useContext(DataContext);
 
@@ -51,12 +50,14 @@ function Dashboard() {
           }}
         />
 
-        {!loadingData && section === "userRepos" && <InfoIcon />}
+        {!loadingData && ["userRepos", "mchpRepos"].includes(section) && (
+          <InfoIcon />
+        )}
 
         <div>
           {!loadingData &&
             names.length > page_size &&
-            section === "userRepos" && (
+            ["userRepos", "mchpRepos"].includes(section) && (
               <Pagination
                 activePage={page_no + 1}
                 itemsCountPerPage={page_size}

@@ -83,6 +83,7 @@ const reducer = (state, action) =>
 
 const reposInit = {
   userRepos: [],
+  mchpRepos: [],
   sharedRepos: [],
   aggregateCharts: [],
   zombieRepos: [],
