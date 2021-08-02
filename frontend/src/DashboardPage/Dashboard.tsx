@@ -12,9 +12,12 @@ import Repository from "./Repository";
 import SelfShare from "./SelfShare";
 import InfoIcon from "./InfoIcon";
 import "./Dashboard.css";
+import Center from "../common/Center";
+
+type Repo = any; // untill a better typing
 
 function Dashboard() {
-  const { section } = useParams();
+  const { section } = useParams<{ section: string }>();
   const {
     repos,
     loadingData,
@@ -37,14 +40,14 @@ function Dashboard() {
 
       <Grid item md={10}>
         {loadingData && (
-          <center className="padding20">
+          <Center className="padding20">
             <CircularProgress />
-          </center>
+          </Center>
         )}
 
         <SearchBar
           show={!loadingData && section !== "aggregateCharts"}
-          onSearch={(q) => {
+          onSearch={(q: string) => {
             setPageNo(0);
             setSearch(q);
           }}
@@ -63,13 +66,13 @@ function Dashboard() {
                 itemsCountPerPage={page_size}
                 totalItemsCount={names.length}
                 pageRangeDisplayed={15}
-                onChange={(p) => setPageNo(p - 1)}
+                onChange={(p: number) => setPageNo(p - 1)}
               />
             )}
 
           {!loadingData &&
             repos[section].length !== 0 &&
-            repos[section].map((d, idx) => (
+            repos[section].map((d: Repo, idx: number) => (
               <Repository
                 key={d._id}
                 index={idx}
@@ -106,9 +109,9 @@ function Dashboard() {
           {!loadingData &&
             section === "aggregateCharts" &&
             repos[section].length > 0 && (
-              <center>
+              <Center>
                 <NewAggregateChartButton text="Create New Aggregate Chart" />
-              </center>
+              </Center>
             )}
         </div>
       </Grid>
