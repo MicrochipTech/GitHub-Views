@@ -8,7 +8,7 @@ spec:
   containers:
     - name: setup
       image: 'alpine/git'
-      imagePullPolicy: Always
+      imagePullPolicy: IfNotPresent
       command: ['cat']
       tty: true
       resources:

@@ -1,5 +1,5 @@
 # base image
-FROM node:12.2.0-alpine
+FROM artifacts.microchip.com:7999/microchip/citd/nodejs:12.x
  
 # set working directory
 WORKDIR /app
