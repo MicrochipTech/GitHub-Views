@@ -2,7 +2,7 @@ process.env.TOKEN_ENC_KEY = `W9fYNQnPD9Xw+S/lhJlJIoIVLIlYaN9VXuOKGNpleKY=`;
 process.env.TOKEN_SIG_KEY = `ET8V/w1JaNQrgRqeGzlFCoucarIrVktu1duJGnSVHlKzreSKQXLuoxEQhZYIGMdiVWfPmCZRBVeUALCgPjgPsw==`;
 const TokenModel = require("../models/Token");
 const UserModel = require("../models/User");
-const RepositoryModel = require("../models/Repository");
+const RepositoryModel = require("../models/Repository").default;
 
 const UserCtrl = require("../controllers/UserCtrl");
 

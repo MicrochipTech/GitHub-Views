@@ -1,8 +1,10 @@
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
-const RepositoryModel = require("../models/Repository");
+const RepositoryModel = require("../models/Repository").default;
 const UserModel = require("../models/User");
 const { logger, errorHandler } = require("../logs/logger");
+
+const repoHooks = require("../repoHooks").default
 
 async function updateRepositoriesAsynch() {
   logger.info(`${arguments.callee.name}: Updating local database...`);
@@ -238,7 +240,7 @@ async function updateRepositoriesAsynch() {
   }
 
   const saveNewRepos = Object.keys(newRepoRequests).map((k) =>
-    newRepoRequests[k].save()
+    newRepoRequests[k].save().then((repo) => repoHooks.onRepoCreate?.(repo))
   );
   try {
     await Promise.all(saveNewRepos);

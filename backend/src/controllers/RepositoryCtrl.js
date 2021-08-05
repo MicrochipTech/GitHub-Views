@@ -1,5 +1,5 @@
 const UserModel = require("../models/User");
-const RepositoryModel = require("../models/Repository");
+const RepositoryModel = require("../models/Repository").default;
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const { logger, errorHandler } = require("../logs/logger");
 const getRepoDataBetween = require("../mongoQueries/getUserReposWithTrafficBetween");

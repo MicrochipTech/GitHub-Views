@@ -13,6 +13,7 @@ import ReferringSitesTab from "./ReferringSitesTab";
 import PopularContentTab from "./PopularContentTab";
 import ForksTab from "./ForksTab";
 import ForksTreeTab from "./ForksTreeTab";
+import MetadataTab from "./MetadataTab"
 
 function SingleRepo() {
   const tabOptions = {
@@ -22,6 +23,7 @@ function SingleRepo() {
     "Popular Content": PopularContentTab,
     Forks: ForksTab,
     "Forks Tree": ForksTreeTab,
+    "Metadata": MetadataTab,
   };
 
   const history = useHistory();

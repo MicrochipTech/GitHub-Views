@@ -1,6 +1,29 @@
-const mongoose = require("mongoose");
+import mongoose, {Schema, Document} from "mongoose"
 
-const forkSchema = new mongoose.Schema();
+// TODO
+type User = any; 
+type Views = any;
+type Clones = any; 
+type Referrer = any;
+type Content = any;
+type NameHistory = any;
+type Commits = any;
+
+export interface IRepository extends Document {
+  not_found: boolean; 
+  users: string[] | User[];
+  github_repo_id: string;
+  reponame: string;
+  metadata: Object;
+  views: Views; 
+  clones: Clones; 
+  referrers: Referrer[],
+  contents: Content[],
+  nameHistory: NameHistory[],
+  commits: Commits,
+}
+
+const forkSchema: Schema = new mongoose.Schema();
 forkSchema.add({
   github_repo_id: String,
   reponame: String,
@@ -8,13 +31,16 @@ forkSchema.add({
   children: [forkSchema],
 });
 
-const repositorySchema = new mongoose.Schema({
+const repositorySchema: Schema = new mongoose.Schema({
   not_found: Boolean,
   users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   github_repo_id: String,
   reponame: {
     type:String,
     unique: true, // this is important!! (it creates an index in the db)
+  },
+  metadata: {
+    type: Object,
   },
   views: {
     total_count: Number,
@@ -91,6 +117,4 @@ const repositorySchema = new mongoose.Schema({
   },
 });
 
-const Repository = mongoose.model("Repository", repositorySchema);
-
-module.exports = Repository;
+export default mongoose.model<IRepository>("Repository", repositorySchema);
