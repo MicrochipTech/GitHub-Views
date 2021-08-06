@@ -150,6 +150,7 @@ async function createRepository(repoDetails, userId, token) {
     users: [userId],
     github_repo_id: repoDetails.id,
     reponame: repoDetails.full_name,
+    private: repoDetails.private,
     views: {
       total_count: 0,
       total_uniques: 0,

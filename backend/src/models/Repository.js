@@ -16,6 +16,7 @@ const repositorySchema = new mongoose.Schema({
     type:String,
     unique: true, // this is important!! (it creates an index in the db)
   },
+  private: Boolean,
   views: {
     total_count: Number,
     total_uniques: Number,

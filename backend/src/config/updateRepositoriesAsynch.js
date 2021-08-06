@@ -168,6 +168,16 @@ async function updateRepositoriesAsynch() {
           ).exec();
         }
 
+        /* Update repository private status, if changed */
+        if (repoEntry.private !== githubRepo.private) {
+          RepositoryModel.updateOne(
+            { _id: repoEntry._id },
+            {
+              private: githubRepo.private
+            }
+          ).exec();
+        }
+
         /* today variable is used to store the timestamp */
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
