@@ -5,7 +5,7 @@ def now = LocalDateTime.now()
 
 def artifactoryURL = "artifacts.microchip.com:7999/microchip"
 def dockerRepoPath = "default"
-def dockerImages = ["backend"]
+def dockerImages = ["backend", "frontend"]
 def dockerImage = "none"
 def dockerVersion = "latest"
 def dockerImageRegistryPath = "${artifactoryURL}/${dockerRepoPath}/${dockerImage}"
