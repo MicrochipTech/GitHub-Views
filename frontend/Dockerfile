@@ -7,8 +7,8 @@ WORKDIR /app
 # add `/app/node_modules/.bin` to $PATH
 ENV PATH /app/node_modules/.bin:$PATH
  
-RUN apt-get update && apt-get upgrade && \
-    apt-get -y add --no-cache bash git openssh
+RUN apt-get update -y && apt-get upgrade -y && \
+    apt-get add -y --no-cache bash git openssh
  
 # install and cache app dependencies
 COPY package.json /app/package.json
