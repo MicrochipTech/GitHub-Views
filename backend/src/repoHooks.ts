@@ -7,18 +7,41 @@ interface GhvRpoHooks {
 
 const onRepoCreate = (repo: IRepository) => {
   const ide = (() => {
-    if (repo.reponame.includes("mplab")) return "mplab";
-    if (repo.reponame.includes("studio")) return "studio";
+    const match = repo.reponame.match(/(-|^)(studio|mplab)(-|$)/i);
+    if (match) return match[2];
     return "";
   })();
 
   const codeConfigurator = (() => {
-    if (repo.reponame.includes("mcc")) return "mcc";
-    if (repo.reponame.includes("start")) return "start";
+    const match = repo.reponame.match(/(-|^)(start|mcc)(-|$)/i);
+    if (match) return match[2];
     return "";
   })();
 
-  const deviceFamily = repo.reponame;
+  const deviceFamily = (() => {
+    let match;
+    match = repo.reponame.match(/(avr)([0-9]*|-)(da|dd|db)/i);
+    if (match) {
+      return `${match[1]} ${match[3]}`;
+    }
+
+    match = repo.reponame.match(/at(tiny|mega)[0-9]{1,2}(0|1|2)[0-9]/i);
+    if (match) {
+      return `${match[1]}AVR ${match[2]}-series`;
+    }
+
+    match = repo.reponame.match(/PIC18F[0-9]{2}(Q|K)([0-9]{2})/i);
+    if (match) {
+      return `PIC18F${match[1]}${match[2]}`;
+    }
+
+    match = repo.reponame.match(/PIC16[F|LF]([0-9]{3})[0-9]{1,2}/i);
+    if (match) {
+      return `PIC16F${match[1]}`;
+    }
+
+    return "";
+  })();
 
   RepoModel.updateOne(
     { _id: repo._id },
@@ -31,7 +54,7 @@ const onRepoCreate = (repo: IRepository) => {
         },
       },
     }
-  );
+  ).exec();
 };
 
 const onRepoNameUpdate = (repo: IRepository) => {};

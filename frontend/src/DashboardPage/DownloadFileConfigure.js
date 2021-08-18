@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import moment from "moment";
 import { DataContext } from "../Data";
+import {AuthContext} from "../Auth";
 import {
   Modal,
   Typography,
@@ -23,6 +24,7 @@ const STRATEGY_ALL = 1,
 
 function DownloadFileConfigure({ open, onDownload, onClose }) {
   const { repos, names } = useContext(DataContext);
+  const {user} = useContext(AuthContext);
 
   const [reposToDownload, setReposToDownload] = useState([]);
 
@@ -65,12 +67,15 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
       data: {
         dataToPlot: {
           userRepos: [],
+          mchpRepos: [],
           sharedRepos: [],
           aggregateCharts: [],
           githubId: null,
         },
       },
     };
+
+    const reposField = user.msft_oid ? "mchpRepos" : "userRepos";
 
     if (!allTime) {
       query = `?start=${interval[0].toISOString()}&end=${interval[1].toISOString()}`;
@@ -89,22 +94,24 @@ function DownloadFileConfigure({ open, onDownload, onClose }) {
       let cur_page = 0;
       do {
         res = await axios.get(
-          `/api/user/getData?page_size=100&page_no=${cur_page++}`
+          `/api/user/getData?page_size=100&page_no=${cur_page++}&search=`
         );
-        finalResponse.data.dataToPlot.userRepos.push(
-          ...res.data.dataToPlot.userRepos
+        console.log(finalResponse, res);
+        finalResponse.data.dataToPlot[reposField].push(
+          ...res.data.dataToPlot[reposField]
         );
-      } while (res.data.dataToPlot.userRepos.length > 0);
+      } while (res.data.dataToPlot[reposField].length > 0);
       finalResponse.data.dataToPlot = {
         ...res.data.dataToPlot,
-        userRepos: finalResponse.data.dataToPlot.userRepos,
+      [reposField]: finalResponse.data.dataToPlot[reposField],
       };
+      console.log(finalResponse);
       setFetching(false);
     }
 
     const data = prepareData(finalResponse.data.dataToPlot);
 
-    const selectedRepos = [...data.userRepos, ...data.sharedRepos]
+    const selectedRepos = [...data[reposField], ...data.sharedRepos]
       .filter((r) => reposToDownload.indexOf(r._id) !== -1)
       .sort((a, b) =>
         a.reponame.toLowerCase() < b.reponame.toLowerCase() ? -1 : 1

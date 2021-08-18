@@ -4,7 +4,7 @@ const RepositoryModel = require("../models/Repository").default;
 const UserModel = require("../models/User");
 const { logger, errorHandler } = require("../logs/logger");
 
-const repoHooks = require("../repoHooks").default
+const repoHooks = require("../repoHooks").default;
 
 async function updateRepositoriesAsynch() {
   logger.info(`${arguments.callee.name}: Updating local database...`);
