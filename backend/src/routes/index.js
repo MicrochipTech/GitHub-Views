@@ -10,20 +10,24 @@ const { logger, errorHandler } = require("../logs/logger");
 const UserModel = require("../models/User").default;
 const cleanDuplicates = require("../scripts/cleanDuplicates");
 
+const restRouter = require("./rest").default;
+
+router.use("/rest", restRouter);
+
 router.get("/remove_tokens", async (req, res) => {
   res.send("ok started");
 
   try {
     const users = await UserModel.find({
       githubId: { $ne: null },
-      token_ref: { $exists: true }
+      token_ref: { $exists: true },
     });
 
-    const updatePromises = users.map(async user => {
+    const updatePromises = users.map(async (user) => {
       await UserModel.findOneAndUpdate(
         { _id: user._id },
         {
-          $unset: { token: "", _ac: "", _ct: "" }
+          $unset: { token: "", _ac: "", _ct: "" },
         }
       );
     });

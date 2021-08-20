@@ -3,7 +3,7 @@ const nock = require("nock");
 const { expect } = require("chai");
 const dbHandler = require("./db-handler");
 const UserModel = require("../models/User");
-const RepositoryModel = require("../models/Repository");
+const RepositoryModel = require("../models/Repository").default;
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 

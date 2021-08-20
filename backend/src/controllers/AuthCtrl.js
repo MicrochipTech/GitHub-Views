@@ -1,5 +1,6 @@
 const passport = require("passport");
 const UserModel = require("../models/User").default;
+const CfgModel = require("../models/Config").default;
 
 module.exports = {
   logout: (req, res) => {
@@ -8,8 +9,14 @@ module.exports = {
   },
 
   me: async (req, res) => {
-    if (req.user != null) res.json(req.user);
-    else res.status(404).send("No user");
+    if (req.user != null) {
+      const appConfig = {};
+      const allRepoConfig = await CfgModel.findOne({forRepos:"all"});
+      appConfig.forAllRepos = allRepoConfig;
+      res.json({...req.user.toJSON(), appConfig});
+    } else { 
+      res.status(404).send("No user");
+    }
   },
 
   github: passport.authenticate("github", {

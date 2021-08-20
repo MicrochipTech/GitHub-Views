@@ -16,7 +16,18 @@ const getUserReposForLastXDays = require("../mongoQueries/getUserReposForLastXDa
 const getUserSharedReposFilteredByName = require("../mongoQueries/getUserSharedReposFilteredByName");
 
 function isValidDate(d) {
-  return d instanceof Date && !Number.isNaN(d);
+  if (Object.prototype.toString.call(d) === "[object Date]") {
+    // it is a date
+    if (Number.isNaN(d.getTime())) {
+      // d.valueOf() could also work
+      // date is not valid
+      return false;
+    }
+    // date is valid
+    return true;
+  }
+  // not a date
+  return false;
 }
 
 async function updateProfile(user) {
