@@ -61,57 +61,21 @@ function Login({ authenticated }) {
           repositories you have access to.
         </p>
         <hr />
-        <p>
-          Login with username and password and you will still be able to view
-          repos from <b>"microchip-pic-avr-examples</b>,{" "}
-          <b>"microchip-pic-avr-solutions</b> and <b>MicrochipTech</b> <br />
-          organizations, plus what other repos other users share with you.
-        </p>
-        <div className="localLoginWrapper">
-          <div>
-            <TextField
-              label="Username"
-              variant="outlined"
-              style={{ width: "100%" }}
-              onChange={(e) => setUsername(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  login(username, password);
-                }
-              }}
-            />
-          </div>
-          <br />
-          <div>
-            <TextField
-              label="Password"
-              type="password"
-              variant="outlined"
-              style={{ width: "100%" }}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  login(username, password);
-                }
-              }}
-            />
-          </div>
-          <div align="center" style={{ background: "transparent" }}>
-            <Button
-              color="primary"
-              onClick={(_) => login(username, password)}
-              disabled={username === "" || password === ""}
-            >
-              Login
-            </Button>
-            <Button
-              color="primary"
-              onClick={(_) => register(username, password)}
-              disabled={username === "" || password === ""}
-            >
-              Register
-            </Button>
-          </div>
+        <br />
+        <div>
+          <Button
+            className="loginBtn"
+            color="primary"
+            variant="outlined"
+            onClick={(_) => window.location.replace("/api/auth/msft")}
+          >
+            Click Here to Login With Microsoft
+          </Button>
+          <p>
+            Login with Microsoft and you will still be able to view repos from
+            Microchip organizations, plus what other repos other users share
+            with you.
+          </p>
         </div>
         <small>
           Frontend version:{VERSION}

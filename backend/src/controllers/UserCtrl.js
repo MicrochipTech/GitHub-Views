@@ -1,15 +1,13 @@
 const batch = require("async-batch").default;
 const to = require("await-to-js").default;
-const mongoose = require("mongoose");
 
 const UserModel = require("../models/User");
-const RepositoryModel = require("../models/Repository");
+const RepositoryModel = require("../models/Repository").default;
 const AggregateChartModel = require("../models/AggregateChart");
 const TokenModel = require("../models/Token");
 const GitHubApiCtrl = require("./GitHubApiCtrl");
-const RepositoryCtrl = require("../controllers/RepositoryCtrl");
+const RepositoryCtrl = require("./RepositoryCtrl");
 const { logger, errorHandler } = require("../logs/logger");
-const { getRepoViews } = require("./GitHubApiCtrl");
 
 const getRepoWithTrafficBetween = require("../mongoQueries/getRepoWithTrafficBetween");
 const getRepoDataBetween = require("../mongoQueries/getUserReposWithTrafficBetween");
@@ -18,12 +16,24 @@ const getUserReposForLastXDays = require("../mongoQueries/getUserReposForLastXDa
 const getUserSharedReposFilteredByName = require("../mongoQueries/getUserSharedReposFilteredByName");
 
 function isValidDate(d) {
-  return d instanceof Date && !isNaN(d);
+  if (Object.prototype.toString.call(d) === "[object Date]") {
+    // it is a date
+    if (Number.isNaN(d.getTime())) {
+      // d.valueOf() could also work
+      // date is not valid
+      return false;
+    }
+    // date is valid
+    return true;
+  }
+  // not a date
+  return false;
 }
 
 async function updateProfile(user) {
   const t = await TokenModel.findOne({ _id: user.token_ref });
-  let userDetails, userEmails;
+  let userDetails;
+  let userEmails;
 
   try {
     userDetails = await GitHubApiCtrl.getUserProfile(t.value);
@@ -125,12 +135,27 @@ async function getWhereUsernameStartsWith(req, res) {
   res.send(usersList);
 }
 
+async function msftUserAccessingMchpRepo(user, id) {
+  if (!user.msft_oid) return false;
+  const repo = await RepositoryModel.findOne({ _id: id });
+  if (
+    process.env.PUBLIC_REPO_OWNERS.split(" ").some((o) =>
+      repo.reponame.startsWith(`${o}/`)
+    )
+  )
+    return true;
+  return false;
+}
+
 async function getDataSingleRepo(req, res) {
-  let query = {
+  const query = {
     _id: req.params.id,
   };
 
-  if (!req.user.sharedRepos.includes(req.params.id)) {
+  if (
+    !req.user.sharedRepos.includes(req.params.id) &&
+    !msftUserAccessingMchpRepo(req.user, req.params.id)
+  ) {
     // If this is not  a shared repo then the current user must be in the list of repo users
     query.users = { $eq: req.user._id };
   }
@@ -150,7 +175,10 @@ async function getData(req, res) {
   const dateStart = new Date(start);
   const dateEnd = new Date(end);
 
-  let userRepos, usersWithSharedRepos, aggregateCharts, names;
+  let userRepos;
+  let usersWithSharedRepos;
+  let aggregateCharts;
+  let names;
   try {
     if (isValidDate(dateStart) && isValidDate(dateEnd)) {
       const userReposRes = await getUserReposBetween(
@@ -211,7 +239,9 @@ async function getData(req, res) {
 
       names = await RepositoryModel.find(mongoFilter, { reponame: 1 });
 
-      usersWithSharedRepos = await UserModel.aggregate(getUserSharedReposFilteredByName(user_id, search));
+      usersWithSharedRepos = await UserModel.aggregate(
+        getUserSharedReposFilteredByName(user_id, search)
+      );
       usersWithSharedRepos = usersWithSharedRepos[0];
 
       aggregateCharts = await AggregateChartModel.find({
@@ -236,35 +266,54 @@ async function getData(req, res) {
     sharedRepos,
     aggregateCharts,
     githubId,
+    mchpRepos: [],
   };
+
+  if (req.user.msft_oid) {
+    const mchpOrgs = process.env.PUBLIC_REPO_OWNERS.split(" ").join("|");
+    const mongoFilter = {
+      reponame: {
+        $regex: `(?=.*${search})(?=(^(${mchpOrgs})\/))`,
+      },
+    };
+    const mchpRepos = await RepositoryModel.find(mongoFilter, {
+      content: 0,
+      referrers: 0,
+    })
+      .sort({ reponame: -1 })
+      .skip(Number(page_no) * Number(page_size))
+      .limit(Number(page_size));
+    dataToPlot.mchpRepos = mchpRepos;
+    names = await RepositoryModel.find(mongoFilter, { reponame: 1 });
+  }
 
   res.json({ success: true, dataToPlot, names });
 }
 
-async function getRepoBetween(repo_id, dateStart, dateEnd) {
-  if (!repo_id) {
-    return { success: false };
-  }
-
-  let repos;
-  try {
-    repos = await RepositoryModel.aggregate(
-      getRepoWithTrafficBetween(repo_id, dateStart, dateEnd)
-    );
-  } catch (err) {
-    errorHandler(
-      `${arguments.callee.name}: Error caught while getting all repos from database.`,
-      err
-    );
-    return { success: false };
-  }
-
-  if (repo.length !== 1) {
-    return { success: false };
-  }
-
-  return { success: true, data: repos[0] };
-}
+// async function getRepoBetween(repo_id, dateStart, dateEnd) {
+//   if (!repo_id) {
+//     return { success: false };
+//   }
+//
+//   let repos;
+//   try {
+//     repos = await RepositoryModel.aggregate(
+//       getRepoWithTrafficBetween(repo_id, dateStart, dateEnd)
+//     );
+//   } catch (err) {
+//     errorHandler(
+//       `${arguments.callee.name}: Error caught while getting all repos from database.`,
+//       err
+//     );
+//     return { success: false };
+//   }
+//
+//   if (repo.length !== 1) {
+//     return { success: false };
+//   }
+//
+//   return { success: true, data: repos[0] };
+// }
 
 async function getUserReposBetween(user_id, dateStart, dateEnd) {
   if (!user_id) {
@@ -332,7 +381,7 @@ async function getLastXDaysData(user, xDays) {
     return { success: false, data: [] };
   }
 
-  let oneMonthAgo = new Date();
+  const oneMonthAgo = new Date();
   oneMonthAgo.setUTCHours(0, 0, 0, 0);
   oneMonthAgo.setUTCDate(oneMonthAgo.getUTCDate() - xDays);
 

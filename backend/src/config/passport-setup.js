@@ -1,6 +1,6 @@
 const passport = require("passport");
-const LocalStrategy = require("passport-local").Strategy;
 const GitHubStrategy = require("passport-github").Strategy;
+const MsftOIDCStrategy = require("passport-azure-ad").OIDCStrategy;
 const UserCtrl = require("../controllers/UserCtrl");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const UserModel = require("../models/User");
@@ -24,32 +24,53 @@ passport.deserializeUser(async (id, done) => {
   done(null, user);
 });
 
-/* The login in this application cand be done by users through the LocalStrategy
-or GitHub Strategy. */
 passport.use(
-  /* The LocalStrategy allows the users to access the applications, and visualize
-  data of other repositories, from GitHub users, which logged into the application. */
-  new LocalStrategy(function(username, password, callback) {
-    UserModel.findOne({ username }, function(err, user) {
-      if (err) {
-        return callback(err);
+  new MsftOIDCStrategy(
+    {
+      identityMetadata: process.env.MSFT_IDENTITY_META,
+      clientID: process.env.MSFT_CLIENT_ID,
+      clientSecret: process.env.MSFT_CLIENT_SECRET,
+      responseType: "id_token",
+      responseMode: "form_post",
+      redirectUrl: process.env.MSFT_REDIRECT_URL,
+      allowHttpForRedirectUrl: true,
+      validateIssuer: false,
+      issuer: null,
+      passReqToCallback: false,
+      useCookieInsteadOfSession: true,
+      // Required if `useCookieInsteadOfSession` is set to true. You can provide multiple set of key/iv pairs for key
+      // rollover purpose. We always use the first set of key/iv pair to encrypt cookie, but we will try every set of
+      // key/iv pair to decrypt cookie. Key can be any string of length 32, and iv can be any string of length 12.
+      cookieEncryptionKeys: [
+        {
+          key: process.env.MSFT_COOKIE_ENC_KEY_1,
+          iv: process.env.MSFT_COOKIE_ENC_IV_1,
+        },
+        {
+          key: process.env.MSFT_COOKIE_ENC_KEY_2,
+          iv: process.env.MSFT_COOKIE_ENC_IV_2,
+        },
+      ],
+      scope: ["profile"],
+    },
+    async (iss, sub, profile, accessToken, refreshToken, done) => {
+      console.log("profile: ", profile);
+      if (!profile.oid) {
+        return done(new Error("No oid found"), null);
       }
-
+      console.log("JSON.stringify(profile): ", JSON.stringify(profile));
+      const user = await UserModel.findOne({ msft_oid: profile.oid });
       if (!user) {
-        return callback(null, false, { message: "No user found." });
+        const u = await new UserModel({
+          msft_oid: profile.oid,
+          username: profile._json.preferred_username,
+        }).save();
+        return done(null, u);
       }
 
-      user.verifyPassword(password, function(err, isMatch) {
-        if (err) {
-          return callback(err);
-        }
-        if (!isMatch) {
-          return callback(null, false, { message: "Invalid login." });
-        }
-        return callback(null, user);
-      });
-    });
-  })
+      return done(null, user);
+    }
+  )
 );
 
 passport.use(

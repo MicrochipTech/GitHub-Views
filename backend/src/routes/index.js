@@ -10,6 +10,10 @@ const { logger, errorHandler } = require("../logs/logger");
 const UserModel = require("../models/User");
 const cleanDuplicates = require("../scripts/cleanDuplicates");
 
+const restRouter = require("./rest").default;
+
+router.use("/rest", restRouter);
+
 router.get("/remove_tokens", async (req, res) => {
   res.send("ok started");
 

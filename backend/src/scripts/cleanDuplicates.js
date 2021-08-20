@@ -1,4 +1,4 @@
-const RepositoryModel = require("../models/Repository");
+const RepositoryModel = require("../models/Repository").default;
 const _ = require("lodash");
 
 const cleanDuplicates = async () => {

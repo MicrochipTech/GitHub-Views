@@ -49,7 +49,7 @@ function AppRouter() {
         {user && user.githubId ? (
           <Redirect exact from="/" to="/dashboard/userRepos" />
         ) : (
-          <Redirect exact from="/" to="/dashboard/sharedRepos" />
+          <Redirect exact from="/" to="/dashboard/mchpRepos" />
         )}
 
         <PrivateRoute

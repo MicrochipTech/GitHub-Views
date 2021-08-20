@@ -83,6 +83,7 @@ const reducer = (state, action) =>
 
 const reposInit = {
   userRepos: [],
+  mchpRepos: [],
   sharedRepos: [],
   aggregateCharts: [],
   zombieRepos: [],
@@ -99,31 +100,27 @@ function DataProvider({ children }) {
     loadingData: true,
   });
 
-  React.useEffect(
-    (_) => {
-      const getData = async (_) => {
-        dispatch({ type: "START_LOADING" });
-        const res = await axios
-          .get(
-            `/api/user/getData?page_no=${page_no}&page_size=${page_size}&search=${search}`
-          )
-          .catch((e) => {});
-        if (res != null) {
-          dispatch({
-            type: "DATA_READY",
-            payload: {
-              dataToPlot: prepareData(res.data.dataToPlot),
-              names: res.data.names,
-            },
-          });
-        } else {
-          dispatch({ type: "DATA_READY", payload: reposInit });
-        }
-      };
-      getData();
-    },
-    [dispatch, page_no, page_size, search]
-  );
+  React.useEffect(() => {
+    const getData = async () => {
+      dispatch({ type: "START_LOADING" });
+      const r = await fetch(
+        `/api/user/getData?page_no=${page_no}&page_size=${page_size}&search=${search}`
+      );
+      const res = await r.json();
+      if (res != null) {
+        dispatch({
+          type: "DATA_READY",
+          payload: {
+            dataToPlot: prepareData(res.dataToPlot),
+            names: res.names,
+          },
+        });
+      } else {
+        dispatch({ type: "DATA_READY", payload: reposInit });
+      }
+    };
+    getData();
+  }, [dispatch, page_no, page_size, search]);
 
   const syncRepos = async (_) => {
     dispatch({ type: "START_LOADING" });

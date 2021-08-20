@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useHistory } from "react-router-dom";
 import { Grid, Typography, CircularProgress } from "@material-ui/core";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 import Header from "../common/Header";
@@ -13,6 +13,7 @@ import ReferringSitesTab from "./ReferringSitesTab";
 import PopularContentTab from "./PopularContentTab";
 import ForksTab from "./ForksTab";
 import ForksTreeTab from "./ForksTreeTab";
+import MetadataTab from "./MetadataTab"
 
 function SingleRepo() {
   const tabOptions = {
@@ -22,8 +23,10 @@ function SingleRepo() {
     "Popular Content": PopularContentTab,
     Forks: ForksTab,
     "Forks Tree": ForksTreeTab,
+    "Metadata": MetadataTab,
   };
 
+  const history = useHistory();
   const { repoId } = useParams();
   const { loading, data: repo, error } = useSingleRepo(repoId);
   const [curretTab, setCurrentTab] = React.useState(Object.keys(tabOptions)[0]);
@@ -41,6 +44,8 @@ function SingleRepo() {
     );
   }
 
+  const onBackBtnClick = () => history.goBack();
+
   if (error) return <p>{error}</p>;
 
   const TheTab = tabOptions[curretTab];
@@ -50,16 +55,10 @@ function SingleRepo() {
       <Grid item xs={12}>
         <Header />
       </Grid>
-      <Link
-        to={{
-          pathname: "/dashboard/userRepos",
-        }}
-      >
-        <div className="backBtn">
-          <ArrowBackIcon className="backBtnIcon" />
-          Back to repo list
-        </div>
-      </Link>
+      <div className="backBtn" onClick={onBackBtnClick}>
+        <ArrowBackIcon className="backBtnIcon" />
+        Back to repo list
+      </div>
 
       <Grid item xs={12}>
         <Typography className="repoTitle" style={{ fontSize: "30px" }}>

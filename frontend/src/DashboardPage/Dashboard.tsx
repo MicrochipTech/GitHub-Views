@@ -10,18 +10,24 @@ import Navigation from "./Navigation";
 import Pagination from "react-js-pagination";
 import Repository from "./Repository";
 import SelfShare from "./SelfShare";
-import InfoIcon from "./InfoIcon"
+import InfoIcon from "./InfoIcon";
 import "./Dashboard.css";
+import Center from "../common/Center";
+
+type Repo = any; // untill a better typing
 
 function Dashboard() {
-  const { section } = useParams();
-  const { repos, loadingData, 
-    setPageNo, page_no,
-    setSearch, 
-    page_size, setPageSize,
+  const { section } = useParams<{ section: string }>();
+  const {
+    repos,
+    loadingData,
+    setPageNo,
+    page_no,
+    setSearch,
+    page_size,
     names,
   } = React.useContext(DataContext);
-  
+
   // TODO: different components based on section, to clear the conditional mess below
 
   return (
@@ -34,33 +40,39 @@ function Dashboard() {
 
       <Grid item md={10}>
         {loadingData && (
-          <center className="padding20">
+          <Center className="padding20">
             <CircularProgress />
-          </center>
+          </Center>
         )}
 
         <SearchBar
           show={!loadingData && section !== "aggregateCharts"}
-          onSearch={(q) => {
+          onSearch={(q: string) => {
             setPageNo(0);
             setSearch(q);
           }}
         />
 
-        {!loadingData && section !== "aggregateCharts" && ( <InfoIcon/>)}
+        {!loadingData && ["userRepos", "mchpRepos"].includes(section) && (
+          <InfoIcon />
+        )}
 
         <div>
-            {!loadingData && names.length > page_size && section === "userRepos" && <Pagination
-              activePage={page_no + 1}
-              itemsCountPerPage={page_size}
-              totalItemsCount={names.length}
-              pageRangeDisplayed={15}
-              onChange={(p) => setPageNo(p-1)}
-            />}
+          {!loadingData &&
+            names.length > page_size &&
+            ["userRepos", "mchpRepos"].includes(section) && (
+              <Pagination
+                activePage={page_no + 1}
+                itemsCountPerPage={page_size}
+                totalItemsCount={names.length}
+                pageRangeDisplayed={15}
+                onChange={(p: number) => setPageNo(p - 1)}
+              />
+            )}
 
           {!loadingData &&
             repos[section].length !== 0 &&
-            repos[section].map((d, idx) => (
+            repos[section].map((d: Repo, idx: number) => (
               <Repository
                 key={d._id}
                 index={idx}
@@ -72,18 +84,18 @@ function Dashboard() {
             ))}
 
           {!loadingData && repos[section].length === 0 && (
-              <div>
-                <br />
-                <div className="nothing">
-                  Nothing to show here.
-                  {section === "aggregateCharts" && (
-                    <div>
-                      <NewAggregateChartButton text="Create First Aggregate Chart" />
-                    </div>
-                  )}
-                </div>
+            <div>
+              <br />
+              <div className="nothing">
+                Nothing to show here.
+                {section === "aggregateCharts" && (
+                  <div>
+                    <NewAggregateChartButton text="Create First Aggregate Chart" />
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          )}
 
           {!loadingData && section === "sharedRepos" && (
             <SelfShare
@@ -97,9 +109,9 @@ function Dashboard() {
           {!loadingData &&
             section === "aggregateCharts" &&
             repos[section].length > 0 && (
-              <center>
+              <Center>
                 <NewAggregateChartButton text="Create New Aggregate Chart" />
-              </center>
+              </Center>
             )}
         </div>
       </Grid>

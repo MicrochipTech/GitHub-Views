@@ -172,7 +172,10 @@ function prepareData(data) {
   data.zombieRepos = data.userRepos
     .filter((r) => r.not_found)
     .map(prepareRepo)
+    .concat(data.mchpRepos.filter((r) => r.not_found).map(prepareRepo))
     .concat(data.sharedRepos.filter((r) => r.not_found).map(prepareRepo));
+
+  data.mchpRepos = data.mchpRepos.filter((r) => !r.not_found).map(prepareRepo);
 
   data.userRepos = data.userRepos.filter((r) => !r.not_found).map(prepareRepo);
 

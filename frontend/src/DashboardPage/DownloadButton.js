@@ -4,6 +4,17 @@ import moment from "moment";
 import { add0s, compareDate, searchDate, downloadExcelFile } from "../utils";
 import DownloadFileConfigure from "./DownloadFileConfigure";
 
+function metadataCsv(concatRepos) {
+  const metadataFields = ["ide", "codeConfigurator", "deviceFamily"]; // TODO: get from userConfig
+  const tableHead = ["reponame", ...metadataFields];
+  const rows = [tableHead];
+  for (let i = 0; i < concatRepos.length; i += 1) {
+    rows.push([concatRepos[i].reponame, ...metadataFields.map(f => concatRepos[i].metadata[f])]);
+  }
+
+  return rows;
+}
+
 function viewsCsv(concatRepos) {
   let minimumTimetamp = new Date();
   minimumTimetamp.setUTCHours(0, 0, 0, 0);
@@ -370,6 +381,9 @@ function downloadDaily(concatRepos, sheets) {
     rows = rows.concat([["Popular Content"]]).concat(contentTable);
   }
 
+  const metadataTable = metadataCsv(concatRepos);
+  rows = rows.concat([["Metadata"]]).concat(metadataTable);
+
   // console.log("rows: ", rows);
 
   downloadExcelFile(rows);
@@ -443,14 +457,14 @@ function downloadMonthly(concatRepos, sheets) {
   const sheetsDict = {};
   sheets.forEach((s) => (sheetsDict[s.name] = s.checked));
 
-  let trafficCSV = [];
+  let rows = [];
 
   if (sheetsDict["Views"]) {
     const viewsTable = viewsCsv(concatRepos);
     const reducedViewsTable = [["Views"]].concat(
       reduceToMonthly(viewsTable, 2)
     );
-    trafficCSV = trafficCSV.concat(reducedViewsTable);
+    rows = rows.concat(reducedViewsTable);
   }
 
   if (sheetsDict["Clones"]) {
@@ -458,7 +472,7 @@ function downloadMonthly(concatRepos, sheets) {
     const reducedClonesTable = [["Clones"]].concat(
       reduceToMonthly(clonesTable, 2)
     );
-    trafficCSV = trafficCSV.concat(reducedClonesTable);
+    rows = rows.concat(reducedClonesTable);
   }
 
   if (sheetsDict["Forks"]) {
@@ -466,7 +480,7 @@ function downloadMonthly(concatRepos, sheets) {
     const reducedForksTable = [["Forks"]].concat(
       reduceToMonthly(forksTable, 2)
     );
-    trafficCSV = trafficCSV.concat(reducedForksTable);
+    rows = rows.concat(reducedForksTable);
   }
 
   if (sheetsDict["Referring Sites"]) {
@@ -474,7 +488,7 @@ function downloadMonthly(concatRepos, sheets) {
     const reducedReferrersTable = [["Referring Sites"]].concat(
       reduceToMonthly(referrersTable, 3)
     );
-    trafficCSV = trafficCSV.concat(reducedReferrersTable);
+    rows = rows.concat(reducedReferrersTable);
   }
 
   if (sheetsDict["Popular Content"]) {
@@ -482,11 +496,14 @@ function downloadMonthly(concatRepos, sheets) {
     const reducedContentsTable = [["Popular Content"]].concat(
       reduceToMonthly(contentsTable, 4)
     );
-    trafficCSV = trafficCSV.concat(reducedContentsTable);
+    rows = rows.concat(reducedContentsTable);
   }
 
+  const metadataTable = metadataCsv(concatRepos);
+  rows = rows.concat([["Metadata"]]).concat(metadataTable);
+
   // console.log(trafficCSV);
-  downloadExcelFile(trafficCSV);
+  downloadExcelFile(rows);
 }
 
 function DownloadButton() {
