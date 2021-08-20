@@ -1,6 +1,6 @@
 const generateFromTemplate = require("./reportEmailTemplate");
 const { logger, errorHandler, sendMail } = require("../logs/logger");
-const UserModel = require("../models/User");
+const UserModel = require("../models/User").default;
 const UserCtrl = require("../controllers/UserCtrl");
 
 async function sendMonthlyReports() {

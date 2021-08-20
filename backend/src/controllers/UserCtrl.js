@@ -1,10 +1,10 @@
 const batch = require("async-batch").default;
 const to = require("await-to-js").default;
 
-const UserModel = require("../models/User");
-const RepositoryModel = require("../models/Repository");
-const AggregateChartModel = require("../models/AggregateChart");
-const TokenModel = require("../models/Token");
+const UserModel = require("../models/User").default;
+const RepositoryModel = require("../models/Repository").default;
+const AggregateChartModel = require("../models/AggregateChart").default;
+const TokenModel = require("../models/Token").default;
 const GitHubApiCtrl = require("./GitHubApiCtrl");
 const RepositoryCtrl = require("./RepositoryCtrl");
 const { logger, errorHandler } = require("../logs/logger");

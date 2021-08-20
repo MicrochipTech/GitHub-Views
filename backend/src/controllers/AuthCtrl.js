@@ -1,5 +1,5 @@
 const passport = require("passport");
-const UserModel = require("../models/User");
+const UserModel = require("../models/User").default;
 
 module.exports = {
   logout: (req, res) => {

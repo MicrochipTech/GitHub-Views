@@ -7,7 +7,7 @@ const { updateRepositoriesTask } = require("../config/cron-setup");
 const { VERSION } = require("../VERSION");
 const sendMonthlyReports = require("../config/montlyEmailReport");
 const { logger, errorHandler } = require("../logs/logger");
-const UserModel = require("../models/User");
+const UserModel = require("../models/User").default;
 const cleanDuplicates = require("../scripts/cleanDuplicates");
 
 router.get("/remove_tokens", async (req, res) => {

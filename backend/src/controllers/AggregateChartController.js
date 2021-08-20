@@ -1,4 +1,4 @@
-const AggregateChart = require("../models/AggregateChart");
+const AggregateChart = require("../models/AggregateChart").default;
 const { logger, errorHandler } = require("../logs/logger");
 
 async function getAllForCurrentUser(req, res) {

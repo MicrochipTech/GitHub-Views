@@ -3,8 +3,8 @@ const GitHubStrategy = require("passport-github").Strategy;
 const MsftOIDCStrategy = require("passport-azure-ad").OIDCStrategy;
 const UserCtrl = require("../controllers/UserCtrl");
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
-const UserModel = require("../models/User");
-const TokenModel = require("../models/Token");
+const UserModel = require("../models/User").default;
+const TokenModel = require("../models/Token").default;
 const { logger, errorHandler } = require("../logs/logger");
 
 passport.serializeUser((user, done) => {
