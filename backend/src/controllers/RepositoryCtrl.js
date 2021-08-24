@@ -58,7 +58,8 @@ async function getRepoTraffic(reponame, token) {
 
   if (viewsResponse.status !== 200) {
     return {
-      status: false,
+      success: false,
+      status: viewsResponse.status,
       data: viewsResponse.headers.get("x-ratelimit-reset"),
     };
   }
@@ -79,7 +80,8 @@ async function getRepoTraffic(reponame, token) {
 
   if (cloneResponse.status !== 200) {
     return {
-      status: false,
+      success: false,
+      status: cloneResponse.status,
       data: cloneResponse.headers.get("x-ratelimit-reset"),
     };
   }
@@ -103,7 +105,8 @@ async function getRepoTraffic(reponame, token) {
 
   if (referrerResponse.status !== 200) {
     return {
-      status: false,
+      success: false,
+      status: referrerResponse.status,
       data: referrerResponse.headers.get("x-ratelimit-reset"),
     };
   }
@@ -125,13 +128,14 @@ async function getRepoTraffic(reponame, token) {
 
   if (pathResponse.status !== 200) {
     return {
-      status: false,
+      success: false,
+      status: pathResponse.status,
       data: pathResponse.headers.get("x-ratelimit-reset"),
     };
   }
 
   return {
-    status: true,
+    success: true,
     data: {
       views: viewsResponseJson.views || [],
       clones: cloneResponseJson.clones || [],
