@@ -143,16 +143,23 @@ pipeline {
                             The Artifactory Push path is: ${dockerImageRegistryPath}
                             Another echo: $artifactoryURL/$dockerRepoPath/$dockerImage:$dockerVersion
                             """;
-                            sh(script: """ 
-                                /kaniko/executor \
-                                --context ${WORKSPACE}/${dockerImage} \
-                                --dockerfile Dockerfile \
-								--destination=$dockerImageRegistryPath:latest \
-                                --destination=$dockerImageRegistryPath:prod \
-                                --destination=$dockerImageRegistryPath:$dockerVersion \
-                                --destination=$dockerImageRegistryPath:$BRANCH_NAME
+                            def ideImageName = "artifacts.microchip.com:7999/${env.IDE_CITD_DOCKER_ARTIFACTORY_PATH}"
+                            withCredentials([usernamePassword(credentialsId: 'artifacts.microchip.com', usernameVariable: 'USER_NAME', passwordVariable: 'USER_PASS' )]){
+                                    writeFile(file: 'config.json',
+                                      text:"""{"auths":{"${ideImageName}":\
+                                          {"username":"${USER_NAME}","password":"${USER_PASS}"}}}""")
+                                    sh "mkdir -p /kaniko/.docker && mv config.json /kaniko/.docker/config.json"
+                                    sh(script: """ 
+                                        /kaniko/executor \
+                                        --context ${WORKSPACE}/${dockerImage} \
+                                        --dockerfile Dockerfile \
+                                        --destination=$dockerImageRegistryPath:latest \
+                                        --destination=$dockerImageRegistryPath:prod \
+                                        --destination=$dockerImageRegistryPath:$dockerVersion \
+                                        --destination=$dockerImageRegistryPath:$BRANCH_NAME
 
-                            """, returnStdout: true)
+                                    """, returnStdout: true)
+                            }  
                             echo now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"))
                         }
                     }
