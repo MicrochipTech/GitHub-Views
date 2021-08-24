@@ -51,6 +51,13 @@ router.get("/forceUpdate", async (_req, res) => {
   res.send("ok started");
 });
 
+
+import dailyUpdate from '../config/updateRepositories';
+router.get("/forceUpdateTS", async (_req, res) => {
+  dailyUpdate();
+  res.send("ok started ts");
+});
+
 router.get("/sendReports", (_req, res) => {
   sendMonthlyReports();
   res.send("started");

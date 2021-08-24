@@ -1,6 +1,44 @@
 const fetch = require("node-fetch");
 const { logger, errorHandler } = require("../logs/logger");
 
+
+async function getUserReposAtPage(token, page) {
+  const userRepos = [];
+  const perPage = 100;
+  const type = "all";
+  let res;
+  try {
+    res = await fetch(
+      `https://api.github.com/user/repos?type=${type}&per_page=${perPage}&page=${page}`,
+      {
+        method: "get",
+        headers: { Authorization: `token ${token}` },
+      }
+    );
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught in GET from GitHub API.`,
+      err
+    );
+  }
+
+  if (res.status !== 200) {
+    return { success: false, status: res.status };
+  }
+
+  let resJson;
+  try {
+    resJson = await res.json();
+  } catch (err) {
+    errorHandler(
+      `${arguments.callee.name}: Error caught when processing the reponse from GitHub API.`,
+      err
+    );
+  }
+
+  return { success: true, data: resJson };
+}
+
 async function getUserRepos(token) {
   const userRepos = [];
   let page = 1;
@@ -419,6 +457,7 @@ async function getRepoCommits(github_repo_id) {
 }
 
 module.exports = {
+  getUserReposAtPage,
   getUserRepos,
   getUserProfile,
   getUserEmails,
