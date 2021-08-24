@@ -9,7 +9,10 @@ function metadataCsv(concatRepos) {
   const tableHead = ["reponame", ...metadataFields];
   const rows = [tableHead];
   for (let i = 0; i < concatRepos.length; i += 1) {
-    rows.push([concatRepos[i].reponame, ...metadataFields.map(f => concatRepos[i].metadata[f])]);
+    rows.push([
+      concatRepos[i].reponame,
+      ...metadataFields.map((f) => concatRepos[i].metadata?.[f] ?? ""),
+    ]);
   }
 
   return rows;
