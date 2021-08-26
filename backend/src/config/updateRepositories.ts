@@ -56,6 +56,7 @@ async function syncWithGitHub(user: User): Promise<void> {
       {
         $project: {
           github_repo_id: 1,
+          private: 1,
           reponame: 1,
           forks_sum: { $sum: "$forks.data.count" },
         },
