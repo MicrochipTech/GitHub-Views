@@ -1,11 +1,11 @@
-import RepoModel, { IRepository } from "./models/Repository";
+import RepoModel, { Repository } from "./models/Repository";
 
 interface GhvRpoHooks {
-  onRepoCreate?: (repo: IRepository) => void;
-  onRepoNameUpdate?: (repo: IRepository) => void;
+  onRepoCreate?: (repo: Repository) => void;
+  onRepoNameUpdate?: (repo: Repository) => void;
 }
 
-const onRepoCreate = (repo: IRepository) => {
+const onRepoCreate = (repo: Repository) => {
   const ide = (() => {
     const match = repo.reponame.match(/(-|^)(studio|mplab)(-|$)/i);
     if (match) return match[2];
@@ -57,7 +57,7 @@ const onRepoCreate = (repo: IRepository) => {
   ).exec();
 };
 
-const onRepoNameUpdate = (repo: IRepository) => {};
+const onRepoNameUpdate = (repo: Repository) => {};
 
 const hooks: GhvRpoHooks = {
   onRepoCreate,
