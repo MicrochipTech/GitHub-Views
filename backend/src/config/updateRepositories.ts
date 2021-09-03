@@ -54,6 +54,7 @@ export async function syncWithGitHub(user: User): Promise<void> {
       },
       {
         $project: {
+          users: 1,
           github_repo_id: 1,
           private: 1,
           reponame: 1,
@@ -87,6 +88,18 @@ export async function syncWithGitHub(user: User): Promise<void> {
       console.log(`Repo ${remoteRepo.full_name} was found in local database. Updating...`);
 
       const localRepo: MinimalRepository = localReposResult[0];
+      
+      const userExists = localRepo.users.map((u) => String(u)).find((u: String) => u === String(user._id));
+      if(userExists === undefined) {
+        await RepositoryModel.updateOne(
+          { _id: localRepo._id },
+          {
+            $push: {
+              users: user._id
+            },
+          }
+        ).exec();
+      }
       
       if (localRepo.reponame !== remoteRepo.full_name) {
         RepositoryModel.updateOne(
