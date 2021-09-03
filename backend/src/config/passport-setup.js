@@ -7,6 +7,8 @@ const UserModel = require("../models/User").default;
 const TokenModel = require("../models/Token").default;
 const { logger, errorHandler } = require("../logs/logger");
 
+import { syncWithGitHub, updateTraffic } from '../config/updateRepositories';
+
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
@@ -171,7 +173,9 @@ passport.use(
 
         /* Start tracking the user's repositories from the GitHub account. */
         try {
-          await UserCtrl.checkForNewRepos(newUser, t.value);
+          newUser.token_ref = t;
+          await syncWithGitHub(newUser);
+          await updateTraffic(newUser);
         } catch (err) {
           errorHandler(
             `${arguments.callee.name}: Error caught while getting new repos for the new created user ${profile.username}.`,

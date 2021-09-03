@@ -184,38 +184,6 @@ async function createRepository(repoDetails, userId, token) {
     not_found: false,
   });
 
-  let repoTraffic;
-  try {
-    repoTraffic = await getRepoTraffic(newRepo.reponame, token);
-  } catch (err) {
-    errorHandler(
-      `${arguments.callee.name}: Error caught when getting traffic data for the new repo ${newRepo.reponame}.`,
-      err
-    );
-  }
-  const { status, data: traffic } = repoTraffic;
-
-  if (status === false) {
-    logger.warn(
-      `${arguments.callee.name}: Fail getting traffic data for repo ${newRepo.reponame}`
-    );
-    return { success: false };
-  }
-
-  updateRepoTraffic(
-    {
-      reponame: newRepo.reponame,
-      referrers: [],
-      contents: [],
-      views_length: 0,
-      last_view: {},
-      clones_length: 0,
-      last_clone: {},
-      forks_sum: newRepo.forks.data[0].count,
-    },
-    traffic
-  );
-
   return { success: true, data: newRepo };
 }
 
