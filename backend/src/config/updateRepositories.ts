@@ -34,8 +34,7 @@ async function forEachGitHubRepo(token: Token, fn: RepoSyncFunction): Promise<vo
   }
 }
 
-async function syncWithGitHub(user: User): Promise<void> {
-  console.log("starting sync...");
+export async function syncWithGitHub(user: User): Promise<void> {
   
   const token: Token = user.token_ref;
 
@@ -141,7 +140,7 @@ async function syncWithGitHub(user: User): Promise<void> {
   }); 
 }
 
-async function updateTraffic(user: User): Promise<void> {
+export async function updateTraffic(user: User): Promise<void> {
   console.log(`Updating traffic for user ${user.username}...`);
 
   const token: Token = user.token_ref;
