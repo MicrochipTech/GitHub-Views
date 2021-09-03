@@ -259,7 +259,7 @@ function getNewAndNewUniques(from, existing, lastExisting) {
   return [new_data, new_unique, toUpdate];
 }
 
-function updateRepoTraffic(repo, traffic) {
+async function updateRepoTraffic(repo, traffic) {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
@@ -274,7 +274,7 @@ function updateRepoTraffic(repo, traffic) {
     repo.last_clone
   );
 
-  RepositoryModel.updateOne(
+  await RepositoryModel.updateOne(
     { _id: repo._id },
     {
       $inc: {
@@ -291,13 +291,13 @@ function updateRepoTraffic(repo, traffic) {
   ).exec();
 
   /* Update referrers */
-  traffic.referrers.forEach((data) => {
+  await Promise.all(traffic.referrers.map(async (data) => {
     const foundReferrer = repo.referrers.findIndex(
       (r) => r.name === data.referrer
     );
     if (foundReferrer !== -1) {
       /* The referrer is already in database */
-      RepositoryModel.collection.updateOne(
+      await RepositoryModel.collection.updateOne(
         { _id: repo._id },
         {
           $push: {
@@ -310,7 +310,7 @@ function updateRepoTraffic(repo, traffic) {
         }
       ); // This is run by the JS Mongo driver, .exec does not exist there, it just works
     } else {
-      RepositoryModel.updateOne(
+      await RepositoryModel.updateOne(
         { _id: repo._id },
         {
           $push: {
@@ -328,14 +328,14 @@ function updateRepoTraffic(repo, traffic) {
         }
       ).exec();
     }
-  });
+  }));
 
   /* Update content */
-  traffic.contents.forEach((data) => {
+  await Promise.all(traffic.contents.map(async (data) => {
     const foundContent = repo.contents.findIndex((c) => c.path === data.path);
     if (foundContent !== -1) {
       /* The content is already in database */
-      RepositoryModel.collection.updateOne(
+      await RepositoryModel.collection.updateOne(
         { _id: repo._id },
         {
           $push: {
@@ -349,7 +349,7 @@ function updateRepoTraffic(repo, traffic) {
       ); // This is run by the JS Mongo driver, .exec does not exist there, it just works
     } else {
       /* Add the new content in database */
-      RepositoryModel.updateOne(
+      await RepositoryModel.updateOne(
         { _id: repo._id },
         {
           $push: {
@@ -368,7 +368,7 @@ function updateRepoTraffic(repo, traffic) {
         }
       ).exec();
     }
-  });
+  }));
 }
 
 async function updateForksTree(req, res) {
