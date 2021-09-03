@@ -8,7 +8,7 @@ import to from 'await-to-js';
 import { Token } from '../models/Token';
 
 type RemoteRepository = any;
-type RepoSyncFunction = (repo: RemoteRepository) => void;
+type RepoSyncFunction = (repo: RemoteRepository) => Promise<void>;
 
 interface Response {
   success: boolean,
@@ -22,19 +22,20 @@ async function forEachGitHubRepo(token: Token, fn: RepoSyncFunction): Promise<vo
   while(true) {
     const res: Response = await getUserReposAtPage(token.value, page);
 
-    if (res.success == false || res.data.length === 0) { // verify condition / data undefined?
+    if (res === undefined || res.success == false || res.data.length === 0) { // verify condition / data undefined?
       return;
     }
     
-    res.data.forEach((remoteRepo: RemoteRepository) => {
-      fn(remoteRepo);
-    });
+    await Promise.all(res.data.map(async (remoteRepo: RemoteRepository) => {
+      await fn(remoteRepo);
+    }));
 
     page += 1;
   }
 }
 
 export async function syncWithGitHub(user: User): Promise<void> {
+  console.log(`Syncing repos for user ${user.username}...`);
   
   const token: Token = user.token_ref;
 
@@ -68,8 +69,6 @@ export async function syncWithGitHub(user: User): Promise<void> {
     }
 
     if(localReposResult.length === 0) {
-      console.log(`Repo ${remoteRepo.full_name} not found in local database. Creating...`);
-
       const newRepoRes: Response = await createRepository(
         remoteRepo,
         user._id,
@@ -80,13 +79,13 @@ export async function syncWithGitHub(user: User): Promise<void> {
         // TODO error
       }
 
+      
+      console.log(`Repo ${remoteRepo.full_name} not found in local database. Creating...`);
       const newRepo: Repository = newRepoRes.data;
-      newRepo.save();
+      await newRepo.save();
     }
 
     if(localReposResult.length === 1) {
-      console.log(`Repo ${remoteRepo.full_name} was found in local database. Updating...`);
-
       const localRepo: MinimalRepository = localReposResult[0];
       
       const userExists = localRepo.users.map((u) => String(u)).find((u: String) => u === String(user._id));
@@ -100,9 +99,10 @@ export async function syncWithGitHub(user: User): Promise<void> {
           }
         ).exec();
       }
-      
+
       if (localRepo.reponame !== remoteRepo.full_name) {
-        RepositoryModel.updateOne(
+        console.log(`Name change: ${localRepo.reponame} -> ${remoteRepo.full_name}`);
+        await RepositoryModel.updateOne(
           { _id: localRepo._id },
           {
             reponame: remoteRepo.full_name,
@@ -117,7 +117,8 @@ export async function syncWithGitHub(user: User): Promise<void> {
       }
 
       if (localRepo.private !== remoteRepo.private) {
-        RepositoryModel.updateOne(
+        console.log(`Repo ${remoteRepo.full_name} is now ${remoteRepo.private ? `private` : `public`}...`);
+        await RepositoryModel.updateOne(
           { _id: localRepo._id },
           {
             private: remoteRepo.private
@@ -129,7 +130,8 @@ export async function syncWithGitHub(user: User): Promise<void> {
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
 
-        RepositoryModel.updateOne(
+        console.log(`Repo ${remoteRepo.full_name} forks updated...`);
+        await RepositoryModel.updateOne(
           { _id: localRepo._id },
           {
             $push: {
@@ -142,7 +144,7 @@ export async function syncWithGitHub(user: User): Promise<void> {
         ).exec();
       }
 
-      RepositoryModel.updateOne(
+      await RepositoryModel.updateOne(
         { _id: localRepo._id },
         {
           "forks.tree_updated": false, //todo
@@ -185,12 +187,13 @@ export async function updateTraffic(user: User): Promise<void> {
     },
   ]).cursor({batchSize:1}).exec();
 
-  reposCursor.eachAsync(async (localRepo : MinimalRepository) => {
+  await reposCursor.eachAsync(async (localRepo : MinimalRepository) => {
     /* Update traffic (views, clones, referrers, contents) */
     const { success, status, data: traffic } = await getRepoTraffic(localRepo.reponame, token.value);
 
     if(status == 404) {
-      RepositoryModel.updateOne(
+      console.log(`Repo ${localRepo.reponame} not found...`);
+      await RepositoryModel.updateOne(
         { _id: localRepo._id },
         {
           not_found: true,
@@ -201,11 +204,13 @@ export async function updateTraffic(user: User): Promise<void> {
     if(!success) return;
 
     try {
-      updateRepoTraffic(localRepo, traffic);
+      await updateRepoTraffic(localRepo, traffic);
     } catch (err) {
       console.log(err);
     }
   });
+
+  await reposCursor.close();
 }
 
 export default async function dailyUpdate() {
@@ -214,8 +219,11 @@ export default async function dailyUpdate() {
     token_ref: { $exists: true },
   }).populate("token_ref").cursor({batchSize:1});
 
-  usersCursor.eachAsync(async (user: User) => {
+  await usersCursor.eachAsync(async (user: User) => {
     await syncWithGitHub(user);
     await updateTraffic(user);
+    console.log(`User ${user.username} update complete.`);
   });
+
+  await usersCursor.close();
 }
