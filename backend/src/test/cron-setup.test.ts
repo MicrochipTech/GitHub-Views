@@ -1,30 +1,49 @@
-const sinon = require("sinon");
-const nock = require("nock");
-const { expect } = require("chai");
-const dbHandler = require("./db-handler");
-const UserModel = require("../models/User");
-const RepositoryModel = require("../models/Repository").default;
-const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
-const RepositoryCtrl = require("../controllers/RepositoryCtrl");
-
-const updateRepositoriesAsynch = require("../config/updateRepositoriesAsynch");
-const fs = require("fs");
-
 process.env.TOKEN_ENC_KEY = `W9fYNQnPD9Xw+S/lhJlJIoIVLIlYaN9VXuOKGNpleKY=`;
 process.env.TOKEN_SIG_KEY = `ET8V/w1JaNQrgRqeGzlFCoucarIrVktu1duJGnSVHlKzreSKQXLuoxEQhZYIGMdiVWfPmCZRBVeUALCgPjgPsw==`;
-const TokenModel = require("../models/Token");
+
+import sinon, {SinonSandbox} from 'sinon';
+import { expect } from 'chai';
+import { connect, clearDatabase, closeDatabase } from './db-handler';
+
+import RepositoryModel, { Log, Referrer, Content, Repository } from "../models/Repository";
+import UserModel, { User } from "../models/User";
+import TokenModel from '../models/Token';
+
+import GitHubApiCtrl from '../controllers/GitHubApiCtrl';
+import RepositoryCtrl from '../controllers/RepositoryCtrl';
+import dailyUpdate from '../config/updateRepositories';
+
+import fs from 'fs';
+import { ObjectId } from 'mongoose';
+
+interface Response {
+  success: boolean,
+  status?: any,
+  data: any
+}
 
 describe(`cron-setup`, () => {
+
+  let sandbox: SinonSandbox;
+
   /* Connect to a new in-memory database before running any tests. */
-  before(async () => await dbHandler.connect());
+  before(async () => {
+    await connect();
+    sandbox = sinon.createSandbox({});
+  });
 
   /* Clear all test data after every test. */
-  afterEach(async () => await dbHandler.clearDatabase());
+  afterEach(async () => {
+    await clearDatabase();
+    sandbox.restore();
+  });
 
   /* Remove and close the db and server. */
-  after(async () => await dbHandler.closeDatabase());
+  after(async () => {
+    await closeDatabase();
+  });
 
-  describe(`updateRepositoriesSynch`, () => {
+  describe(`updateRepositories`, () => {
     it(`#empty`, async () => {
       /* Ensure database is mocked: no users and repositories stored */
       await UserModel.countDocuments({}, (err, count) => {
@@ -38,9 +57,10 @@ describe(`cron-setup`, () => {
     });
 
     it(`#still empty`, async () => {
-      /* When database is empty, updateRepositoriesSynch 
+      /* When database is empty, dailyUpdate 
       should not add any data in database or crash */
-      await updateRepositoriesSynch();
+      await dailyUpdate();
+
       await UserModel.countDocuments({}, (err, count) => {
         if (err) console.log(err);
         else expect(count).to.be.equal(0);
@@ -66,11 +86,11 @@ describe(`cron-setup`, () => {
         token_ref: t._id,
       }).save();
 
-      sinon.stub(GitHubApiCtrl, "getUserRepos").callsFake(function() {
+      sandbox.stub(GitHubApiCtrl, "getUserReposAtPage").callsFake(async function(token, page) : Promise<Response> {
         return { success: true, data: [] };
       });
 
-      await updateRepositoriesSynch();
+      await dailyUpdate();
 
       await UserModel.countDocuments({}, (err, count) => {
         if (err) console.log(err);
@@ -80,8 +100,6 @@ describe(`cron-setup`, () => {
         if (err) console.log(err);
         else expect(count).to.be.equal(0);
       });
-
-      GitHubApiCtrl.getUserRepos.restore();
     });
 
     it(`#simple not_found`, async () => {
@@ -105,8 +123,12 @@ describe(`cron-setup`, () => {
         reponame: `mock_test_repo`,
       }).save();
 
-      sinon.stub(GitHubApiCtrl, "getUserRepos").callsFake(function() {
+      sandbox.stub(GitHubApiCtrl, "getUserReposAtPage").callsFake(async function(token, page) : Promise<Response> {
         return { success: true, data: [] };
+      });
+
+      sandbox.stub(RepositoryCtrl, "getRepoTraffic").callsFake(async function(reponame, token) : Promise<Response> {
+        return { success: false, status: 404, data: 'dummy_string' };
       });
 
       await RepositoryModel.countDocuments(
@@ -116,8 +138,8 @@ describe(`cron-setup`, () => {
           else expect(count).to.be.equal(1);
         }
       );
-
-      await updateRepositoriesSynch();
+      
+      await dailyUpdate();
 
       await RepositoryModel.countDocuments(
         { not_found: true },
@@ -126,8 +148,6 @@ describe(`cron-setup`, () => {
           else expect(count).to.be.equal(1);
         }
       );
-
-      GitHubApiCtrl.getUserRepos.restore();
     });
 
     it(`#simple rename`, async () => {
@@ -136,8 +156,7 @@ describe(`cron-setup`, () => {
        - the same repository is available on GitHub but it was renamed
 
        After the update the change should be visible in the database 
-      and the name change should also be visible in the nameHistory field.
-       */
+       and the name change should also be visible in the nameHistory field. */
       const t = await new TokenModel({ value: `dummy_token` }).save();
 
       const u = await new UserModel({
@@ -148,6 +167,7 @@ describe(`cron-setup`, () => {
 
       await new RepositoryModel({
         not_found: false,
+        private: false,
         users: [u._id],
         github_repo_id: `134574268`,
         reponame: `mock_user/mock_repo`,
@@ -174,18 +194,20 @@ describe(`cron-setup`, () => {
         },
       }).save();
 
-      sinon.stub(GitHubApiCtrl, "getUserRepos").callsFake(function() {
-        const rawdata = fs.readFileSync(
-          `./test/mocks/rename/getUserRepos.json`
-        );
-        return JSON.parse(rawdata);
-      });
+      const getUserReposAtPageCallback = sandbox.stub(GitHubApiCtrl, "getUserReposAtPage");
 
-      sinon.stub(RepositoryCtrl, "getRepoTraffic").callsFake(function() {
+      getUserReposAtPageCallback.onCall(0).returns(Promise.resolve(JSON.parse(fs.readFileSync(`./mocks/rename/getUserRepos.json`).toString())));
+
+      getUserReposAtPageCallback.onCall(1).returns(Promise.resolve({
+        success: true,
+        data: []
+      }));
+
+      sandbox.stub(RepositoryCtrl, "getRepoTraffic").callsFake(function() {
         const rawdata = fs.readFileSync(
-          `./test/mocks/rename/getRepoTraffic.json`
+          `./mocks/rename/getRepoTraffic.json`
         );
-        return JSON.parse(rawdata);
+        return JSON.parse(rawdata.toString());
       });
 
       const mockRepo = await RepositoryModel.findOne({
@@ -194,7 +216,7 @@ describe(`cron-setup`, () => {
       expect(mockRepo.reponame).to.be.equal("mock_user/mock_repo");
       expect(mockRepo.nameHistory.length).to.be.equal(0);
 
-      await updateRepositoriesSynch();
+      await dailyUpdate();
 
       const mockRepoRenamed = await RepositoryModel.findOne({
         github_repo_id: `134574268`,
@@ -213,9 +235,6 @@ describe(`cron-setup`, () => {
       const historyDate = new Date(mockRepoRenamed.nameHistory[0].date);
       historyDate.setUTCHours(0, 0, 0, 0);
       expect(today.getTime()).to.be.equal(historyDate.getTime());
-
-      GitHubApiCtrl.getUserRepos.restore();
-      RepositoryCtrl.getRepoTraffic.restore();
     });
 
     it(`#simple no duplicates`, async () => {
@@ -224,8 +243,7 @@ describe(`cron-setup`, () => {
         - Both users have access on GitHub to the same repository
 
         After update, one single repository should be added,
-        with both users id in the users field.
-      */
+        with both users id in the users field. */
       const t1 = await new TokenModel({ value: `dummy_token1` }).save();
       const t2 = await new TokenModel({ value: `dummy_token2` }).save();
 
@@ -241,44 +259,51 @@ describe(`cron-setup`, () => {
         token_ref: t2._id,
       }).save();
 
-      sinon.stub(GitHubApiCtrl, "getUserRepos").callsFake(function() {
+      const getUserReposAtPageCallback = sandbox.stub(GitHubApiCtrl, "getUserReposAtPage");
+
+      getUserReposAtPageCallback.onCall(0).returns(Promise.resolve(JSON.parse(fs.readFileSync(`./mocks/no_duplicates/getUserRepos.json`).toString())));
+
+      getUserReposAtPageCallback.onCall(1).returns(Promise.resolve({
+        success: true,
+        data: []
+      }));
+
+      getUserReposAtPageCallback.onCall(2).returns(Promise.resolve(JSON.parse(fs.readFileSync(`./mocks/no_duplicates/getUserRepos.json`).toString())));
+
+      getUserReposAtPageCallback.onCall(3).returns(Promise.resolve({
+        success: true,
+        data: []
+      }));
+
+      sandbox.stub(RepositoryCtrl, "getRepoTraffic").callsFake(function() {
         const rawdata = fs.readFileSync(
-          `./test/mocks/no_duplicates/getUserRepos.json`
+          `./mocks/no_duplicates/getRepoTraffic.json`
         );
-        return JSON.parse(rawdata);
+        return JSON.parse(rawdata.toString());
       });
 
-      sinon.stub(RepositoryCtrl, "getRepoTraffic").callsFake(function() {
-        const rawdata = fs.readFileSync(
-          `./test/mocks/no_duplicates/getRepoTraffic.json`
-        );
-        return JSON.parse(rawdata);
-      });
-
-      await updateRepositoriesSynch();
+      await dailyUpdate();
 
       await UserModel.countDocuments({}, (err, count) => {
         if (err) console.log(err);
         else expect(count).to.be.equal(2);
       });
 
-      repos = await RepositoryModel.find({});
+      const repos = await RepositoryModel.find({});
       expect(repos.length).to.be.equal(1);
       const mockRepo = repos[0];
       expect(mockRepo.users.length).to.be.equal(2);
-      expect(
-        mockRepo.users
-          .map((u) => String(u))
-          .find((u) => u === String(u1._id)) !== -1
-      ).to.be.equal(true);
-      expect(
-        mockRepo.users
-          .map((u) => String(u))
-          .find((u) => u === String(u2._id)) !== -1
-      ).to.be.equal(true);
 
-      GitHubApiCtrl.getUserRepos.restore();
-      RepositoryCtrl.getRepoTraffic.restore();
+      expect(
+        mockRepo.users
+          .map((u) => String(u))
+          .find((u: String) => u === String(u1._id)) !== undefined
+      ).to.be.equal(true);
+      expect(
+        mockRepo.users
+          .map((u) => String(u))
+          .find((u: String) => u === String(u2._id)) !== undefined
+      ).to.be.equal(true);
     });
 
     it(`#simple create`, async () => {
@@ -287,8 +312,7 @@ describe(`cron-setup`, () => {
        - 1 repository on GitHub
 
        After update it should appear in database with all repository
-       traffic: views, clones, forks, contents, referrers, etc.
-      */
+       traffic: views, clones, forks, contents, referrers, etc. */
       const t = await new TokenModel({ value: `dummy_token` }).save();
 
       const u = await new UserModel({
@@ -297,21 +321,21 @@ describe(`cron-setup`, () => {
         token_ref: t._id,
       }).save();
 
-      sinon.stub(GitHubApiCtrl, "getUserRepos").callsFake(function() {
+      const getUserReposAtPageCallback = sandbox.stub(GitHubApiCtrl, "getUserReposAtPage");
+      getUserReposAtPageCallback.onCall(0).returns(Promise.resolve(JSON.parse(fs.readFileSync(`./mocks/create/getUserRepos.json`).toString())));
+      getUserReposAtPageCallback.onCall(1).returns(Promise.resolve({
+        success: true,
+        data: []
+      }));
+
+      sandbox.stub(RepositoryCtrl, "getRepoTraffic").callsFake(function() {
         const rawdata = fs.readFileSync(
-          `./test/mocks/create/getUserRepos.json`
+          `./mocks/create/getRepoTraffic.json`
         );
-        return JSON.parse(rawdata);
+        return JSON.parse(rawdata.toString());
       });
 
-      sinon.stub(RepositoryCtrl, "getRepoTraffic").callsFake(function() {
-        const rawdata = fs.readFileSync(
-          `./test/mocks/create/getRepoTraffic.json`
-        );
-        return JSON.parse(rawdata);
-      });
-
-      await updateRepositoriesSynch();
+      await dailyUpdate();
 
       const repos = await RepositoryModel.find({});
       expect(repos.length).to.be.equal(1);
@@ -332,9 +356,6 @@ describe(`cron-setup`, () => {
       expect(mockRepo.nameHistory.length).to.be.equal(0);
       expect(mockRepo.commits.updated).to.be.equal(false);
       expect(mockRepo.commits.data.length).to.be.equal(0);
-
-      GitHubApiCtrl.getUserRepos.restore();
-      RepositoryCtrl.getRepoTraffic.restore();
     });
   });
 });
