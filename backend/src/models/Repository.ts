@@ -72,7 +72,7 @@ export interface Commit {
 
 export interface Repository extends Document{
   not_found: boolean,
-  users: PopulatedDoc<User>,
+  users: PopulatedDoc<User>[],
   github_repo_id: string,
   reponame: string,
   private: boolean,
