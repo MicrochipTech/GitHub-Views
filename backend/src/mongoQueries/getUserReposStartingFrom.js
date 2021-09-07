@@ -1,8 +1,8 @@
-module.exports = (user_id, dateStart, dateEnd) => [
+module.exports = (user_id, startDate) => [
   {
     $match: {
       not_found: false,
-      users: { $eq: user._id },
+      users: { $eq: user_id },
     },
   },
   {
@@ -14,7 +14,7 @@ module.exports = (user_id, dateStart, dateEnd) => [
             input: "$views.data",
             as: "view",
             cond: {
-              $gte: ["$$view.timestamp", oneMonthAgo],
+              $gte: ["$$view.timestamp", startDate],
             },
           },
         },
@@ -25,7 +25,7 @@ module.exports = (user_id, dateStart, dateEnd) => [
             input: "$clones.data",
             as: "clone",
             cond: {
-              $gte: ["$$clone.timestamp", oneMonthAgo],
+              $gte: ["$$clone.timestamp", startDate],
             },
           },
         },
@@ -36,7 +36,7 @@ module.exports = (user_id, dateStart, dateEnd) => [
             input: "$forks.data",
             as: "fork",
             cond: {
-              $gte: ["$$fork.timestamp", oneMonthAgo],
+              $gte: ["$$fork.timestamp", startDate],
             },
           },
         },

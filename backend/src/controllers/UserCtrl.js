@@ -12,7 +12,7 @@ const { logger, errorHandler } = require("../logs/logger");
 const getRepoWithTrafficBetween = require("../mongoQueries/getRepoWithTrafficBetween");
 const getRepoDataBetween = require("../mongoQueries/getUserReposWithTrafficBetween");
 const getUserSharedReposWithTrafficBetween = require("../mongoQueries/getUserSharedReposWithTrafficBetween");
-const getUserReposForLastXDays = require("../mongoQueries/getUserReposForLastXDays");
+const getUserReposStartingFrom = require("../mongoQueries/getUserReposStartingFrom");
 const getUserSharedReposFilteredByName = require("../mongoQueries/getUserSharedReposFilteredByName");
 
 function isValidDate(d) {
@@ -381,14 +381,14 @@ async function getLastXDaysData(user, xDays) {
     return { success: false, data: [] };
   }
 
-  const oneMonthAgo = new Date();
-  oneMonthAgo.setUTCHours(0, 0, 0, 0);
-  oneMonthAgo.setUTCDate(oneMonthAgo.getUTCDate() - xDays);
+  const startDate = new Date();
+  startDate.setUTCHours(0, 0, 0, 0);
+  startDate.setUTCDate(startDate.getUTCDate() - xDays);
 
   let repos;
   try {
     repos = await RepositoryModel.aggregate(
-      getUserReposForLastXDays(user, xDays)
+      getUserReposStartingFrom(user._id, startDate)
     );
   } catch (err) {
     errorHandler(

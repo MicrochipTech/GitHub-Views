@@ -1,8 +1,9 @@
 process.env.TOKEN_ENC_KEY = `W9fYNQnPD9Xw+S/lhJlJIoIVLIlYaN9VXuOKGNpleKY=`;
 process.env.TOKEN_SIG_KEY = `ET8V/w1JaNQrgRqeGzlFCoucarIrVktu1duJGnSVHlKzreSKQXLuoxEQhZYIGMdiVWfPmCZRBVeUALCgPjgPsw==`;
-const TokenModel = require("../models/Token");
-const UserModel = require("../models/User");
-const RepositoryModel = require("../models/Repository").default;
+
+import RepositoryModel, { Log, Referrer, Content, Repository } from "../models/Repository";
+import UserModel, { User } from "../models/User";
+import TokenModel from '../models/Token';
 
 const UserCtrl = require("../controllers/UserCtrl");
 
@@ -26,30 +27,36 @@ async function createMockRepo1(user) {
     timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
   }
 
+  const viewsMock = mockTraffic.map((t) => {
+    return { timestamp: t.timestamp, count: 2, uniques: 1 };
+  });
+
+  const clonesMock = mockTraffic.map((t) => {
+    return { timestamp: t.timestamp, count: 4, uniques: 3 };
+  });
+
+  const forksMock = mockTraffic.map((t) => {
+    return { timestamp: t.timestamp, count: 5 };
+  });
+
   await new RepositoryModel({
     not_found: false,
     users: [user._id],
     github_repo_id: `134574268`,
     reponame: `mock_user/mock_repo1`,
     views: {
-      total_count: 0,
-      total_uniques: 0,
-      data: mockTraffic.map((t) => {
-        return { timestamp: t.timestamp, count: 2, uniques: 1 };
-      }),
+      total_count: viewsMock.reduce((acc, data) => acc + data.count, 0),
+      total_uniques: viewsMock.reduce((acc, data) => acc + data.uniques, 0),
+      data: viewsMock,
     },
     clones: {
-      total_count: 0,
-      total_uniques: 0,
-      data: mockTraffic.map((t) => {
-        return { timestamp: t.timestamp, count: 4, uniques: 3 };
-      }),
+      total_count: clonesMock.reduce((acc, data) => acc + data.count, 0),
+      total_uniques: clonesMock.reduce((acc, data) => acc + data.uniques, 0),
+      data: clonesMock,
     },
     forks: {
       tree_updated: false,
-      data: mockTraffic.map((t) => {
-        return { timestamp: t.timestamp, count: 5 };
-      }),
+      data: forksMock,
       children: [],
     },
     referrers: [],
@@ -92,51 +99,57 @@ async function createMockRepo2(user) {
   timeIndex3.setUTCHours(0, 0, 0, 0);
   timeIndex3.setUTCDate(timeIndex3.getUTCDate() - 16);
 
+  const viewsMock = mockTraffic.map((t) => {
+    return { timestamp: t.timestamp, count: 2, uniques: 1 };
+  });
+
+  const clonesMock = [
+    {
+      timestamp: timeIndex1.toISOString(),
+      count: 7,
+      uniques: 1,
+    },
+    {
+      timestamp: timeIndex2.toISOString(),
+      count: 1,
+      uniques: 1,
+    },
+    {
+      timestamp: timeIndex3.toISOString(),
+      count: 3,
+      uniques: 2,
+    },
+  ];
+
+  const forksMock = [
+    {
+      timestamp: timeIndex1.toISOString(),
+      count: 7,
+    },
+    {
+      timestamp: timeIndex3.toISOString(),
+      count: 3,
+    },
+  ];
+
   await new RepositoryModel({
     not_found: false,
     users: [user._id],
     github_repo_id: `134574269`,
     reponame: `mock_user/mock_repo2`,
     views: {
-      total_count: 0,
-      total_uniques: 0,
-      data: mockTraffic.map((t) => {
-        return { timestamp: t.timestamp, count: 2, uniques: 1 };
-      }),
+      total_count: viewsMock.reduce((acc, data) => acc + data.count, 0),
+      total_uniques: viewsMock.reduce((acc, data) => acc + data.uniques, 0),
+      data: viewsMock,
     },
     clones: {
-      total_count: 0,
-      total_uniques: 0,
-      data: [
-        {
-          timestamp: timeIndex1.toISOString(),
-          count: 7,
-          uniques: 1,
-        },
-        {
-          timestamp: timeIndex2.toISOString(),
-          count: 1,
-          uniques: 1,
-        },
-        {
-          timestamp: timeIndex3.toISOString(),
-          count: 3,
-          uniques: 2,
-        },
-      ],
+      total_count: clonesMock.reduce((acc, data) => acc + data.count, 0),
+      total_uniques: clonesMock.reduce((acc, data) => acc + data.uniques, 0),
+      data: clonesMock,
     },
     forks: {
       tree_updated: false,
-      data: [
-        {
-          timestamp: timeIndex1.toISOString(),
-          count: 7,
-        },
-        {
-          timestamp: timeIndex3.toISOString(),
-          count: 3,
-        },
-      ],
+      data: forksMock,
       children: [],
     },
     referrers: [],
@@ -160,7 +173,7 @@ describe("UserCtrl", () => {
 
   describe("getLastXDaysData", () => {
     it("#user undefined", async () => {
-      let user;
+      const user;
       const { success, data } = await UserCtrl.getLastXDaysData(user, 30);
       expect(success).to.be.equal(false);
     });
@@ -194,6 +207,8 @@ describe("UserCtrl", () => {
       }).save();
 
       await createMockRepo1(user);
+
+      const repos = await RepositoryModel.find({});
 
       /* Call function */
       const { success, data } = await UserCtrl.getLastXDaysData(user, 30);
