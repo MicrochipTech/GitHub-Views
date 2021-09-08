@@ -8,6 +8,8 @@ const { VERSION } = require("../VERSION");
 const sendMonthlyReports = require("../config/montlyEmailReport");
 const { logger, errorHandler } = require("../logs/logger");
 const UserModel = require("../models/User").default;
+const RepoModel = require("../models/Repository").default;
+const repoHooks = require("../repoHooks").default;
 const cleanDuplicates = require("../scripts/cleanDuplicates");
 
 const restRouter = require("./rest").default;
@@ -51,11 +53,16 @@ router.get("/forceUpdate", async (_req, res) => {
   res.send("ok started");
 });
 
+router.get("/runOnCreateHook", async (_req, res) => {
+  const total = await RepoModel.count({});
+  let i = 1;
 
-import dailyUpdate from '../config/updateRepositories';
-router.get("/forceUpdateTS", async (_req, res) => {
-  dailyUpdate();
-  res.send("ok started ts");
+  for await (const r of RepoModel.find({}).cursor()) {
+    repoHooks.onRepoCreate?.(r);
+    console.log(`${i++}/${total}`);
+  }
+
+  res.send("done");
 });
 
 router.get("/sendReports", (_req, res) => {
