@@ -1,28 +1,19 @@
-import { Schema, QueryCursor, AggregationCursor } from 'mongoose';
-import { getUserRepos, getUserReposAtPage } from "../controllers/GitHubApiCtrl";
+import { QueryCursor, AggregationCursor } from 'mongoose';
+import { getUserReposAtPage } from "../controllers/GitHubApiCtrl";
 import { createRepository, getRepoTraffic, updateRepoTraffic } from "../controllers/RepositoryCtrl";
-import RepositoryModel, { Log, Referrer, Content, Repository } from "../models/Repository";
+import RepositoryModel, { Repository } from "../models/Repository";
 import UserModel, { User } from "../models/User";
-import { logger, errorHandler } from "../logs/logger";
-import to from 'await-to-js';
 import { Token } from '../models/Token';
+import { RemoteRepository, RepoSyncFunction, Response, AggRepoForkSum, AggRepoReducedTraffic } from "../config/updateRepositories.types";
+import { logger } from "../logs/logger";
 
-type RemoteRepository = any;
-type RepoSyncFunction = (repo: RemoteRepository) => Promise<void>;
-
-interface Response {
-  success: boolean,
-  status?: any,
-  data?: any
-}
-
-async function forEachGitHubRepo(token: Token, fn: RepoSyncFunction): Promise<void> { //check return type
+async function forEachGitHubRepo(token: Token, fn: RepoSyncFunction): Promise<void> {
   let page: number = 1;
 
   while(true) {
     const res: Response = await getUserReposAtPage(token.value, page);
 
-    if (res === undefined || res.success == false || res.data.length === 0) { // verify condition / data undefined?
+    if (res === undefined || res.success == false || res.data.length === 0) {
       return;
     }
     
@@ -41,15 +32,7 @@ export async function syncWithGitHub(user: User): Promise<void> {
 
   await forEachGitHubRepo(token, async (remoteRepo: RemoteRepository) => {
 
-    interface MinimalRepository extends Omit<Repository, "views" |
-                                                          "clones" | 
-                                                          "referrers" | 
-                                                          "contents" | 
-                                                          "forks"> {
-      forks_sum: number,
-    }
-
-    const localReposResult: MinimalRepository[] = await RepositoryModel.aggregate([
+    const localReposResult: AggRepoForkSum[] = await RepositoryModel.aggregate([
       {
         $match: { github_repo_id : String(remoteRepo.id) },
       },
@@ -65,7 +48,8 @@ export async function syncWithGitHub(user: User): Promise<void> {
     ]);
 
     if(localReposResult.length > 1) {
-      // TODO is it possible? 
+      logger.error(`Duplicate repositories found for repository with github id: ${remoteRepo.id}`);
+      return;
     }
 
     if(localReposResult.length === 0) {
@@ -76,7 +60,8 @@ export async function syncWithGitHub(user: User): Promise<void> {
       );
 
       if(newRepoRes.success == false) {
-        // TODO error
+        logger.error(`Error creating repository ${remoteRepo.full_name}`);
+        return;
       }
 
       
@@ -86,7 +71,7 @@ export async function syncWithGitHub(user: User): Promise<void> {
     }
 
     if(localReposResult.length === 1) {
-      const localRepo: MinimalRepository = localReposResult[0];
+      const localRepo: AggRepoForkSum = localReposResult[0];
       
       const userExists = localRepo.users.map((u) => String(u)).find((u: String) => u === String(user._id));
       if(userExists === undefined) {
@@ -147,8 +132,8 @@ export async function syncWithGitHub(user: User): Promise<void> {
       await RepositoryModel.updateOne(
         { _id: localRepo._id },
         {
-          "forks.tree_updated": false, //todo
-          "commits.updated": false, // this will be set daily
+          "forks.tree_updated": false,
+          "commits.updated": false,
         }
       ).exec();
     }
@@ -160,18 +145,9 @@ export async function updateTraffic(user: User): Promise<void> {
 
   const token: Token = user.token_ref;
 
-  interface MinimalRepository extends Omit<Repository, "views" | "clones" | "referrers" | "contents" | "forks">{
-    referrers: Omit<Referrer, "data">,
-    contents: Omit<Content, "title" | "data">,
-    views_length: number,
-    last_view: Log,
-    clones_length: number,
-    last_clone: Log,
-  }
-
   const reposCursor: AggregationCursor = RepositoryModel.aggregate([
     {
-      $match: { users: user._id }, // TODO check if it works
+      $match: { users: user._id },
     },
     {
       $project: {
@@ -187,7 +163,7 @@ export async function updateTraffic(user: User): Promise<void> {
     },
   ]).cursor({batchSize:1}).exec();
 
-  await reposCursor.eachAsync(async (localRepo : MinimalRepository) => {
+  await reposCursor.eachAsync(async (localRepo : AggRepoReducedTraffic) => {
     /* Update traffic (views, clones, referrers, contents) */
     const { success, status, data: traffic } = await getRepoTraffic(localRepo.reponame, token.value);
 
