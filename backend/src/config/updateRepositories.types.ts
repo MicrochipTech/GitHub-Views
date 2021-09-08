@@ -21,3 +21,8 @@ export interface AggRepoReducedTraffic extends Omit<Repository, "views" | "clone
   clones_length: number,
   last_clone: Log,
 }
+
+export interface UpdateObject {
+  [key: string]: any,
+  $push: {[k: string]: any}
+}

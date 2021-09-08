@@ -4,7 +4,7 @@ import { createRepository, getRepoTraffic, updateRepoTraffic } from "../controll
 import RepositoryModel, { Repository } from "../models/Repository";
 import UserModel, { User } from "../models/User";
 import { Token } from '../models/Token';
-import { RemoteRepository, RepoSyncFunction, Response, AggRepoForkSum, AggRepoReducedTraffic } from "../config/updateRepositories.types";
+import { RemoteRepository, RepoSyncFunction, Response, AggRepoForkSum, AggRepoReducedTraffic, UpdateObject } from "../config/updateRepositories.types";
 import { logger } from "../logs/logger";
 
 async function forEachGitHubRepo(token: Token, fn: RepoSyncFunction): Promise<void> {
@@ -48,7 +48,7 @@ export async function syncWithGitHub(user: User): Promise<void> {
     ]);
 
     if(localReposResult.length > 1) {
-      logger.error(`Duplicate repositories found for repository with github id: ${remoteRepo.id}`);
+      logger.error(`Duplicate repositories found for repository with github id: ${remoteRepo.id}.`);
       return;
     }
 
@@ -60,82 +60,62 @@ export async function syncWithGitHub(user: User): Promise<void> {
       );
 
       if(newRepoRes.success == false) {
-        logger.error(`Error creating repository ${remoteRepo.full_name}`);
+        logger.error(`Error creating repository ${remoteRepo.full_name}.`);
         return;
       }
 
       
-      console.log(`Repo ${remoteRepo.full_name} not found in local database. Creating...`);
+      console.log(`Repo ${remoteRepo.full_name} not found in local database; creating...`);
       const newRepo: Repository = newRepoRes.data;
       await newRepo.save();
     }
 
     if(localReposResult.length === 1) {
+
+      const updates: UpdateObject = {
+        "forks.tree_updated": false,
+        "commits.updated": false,
+        $push: {}
+      };
+
       const localRepo: AggRepoForkSum = localReposResult[0];
       
       const userExists = localRepo.users.map((u) => String(u)).find((u: String) => u === String(user._id));
       if(userExists === undefined) {
-        await RepositoryModel.updateOne(
-          { _id: localRepo._id },
-          {
-            $push: {
-              users: user._id
-            },
-          }
-        ).exec();
+        console.log(`Adding user ${user.username} to repository ${localRepo.github_repo_id}...`);
+        
+        updates.$push.users = user._id;
       }
 
       if (localRepo.reponame !== remoteRepo.full_name) {
-        console.log(`Name change: ${localRepo.reponame} -> ${remoteRepo.full_name}`);
-        await RepositoryModel.updateOne(
-          { _id: localRepo._id },
-          {
-            reponame: remoteRepo.full_name,
-            $push: {
-              nameHistory: {
-                date: new Date(),
-                change: `${localRepo.reponame} -> ${remoteRepo.full_name}`,
-              },
-            },
-          }
-        ).exec();
+        console.log(`Changing name from ${localRepo.reponame} to ${remoteRepo.full_name}...`);
+        
+        updates.reponame = remoteRepo.full_name;
+        updates.$push.nameHistory = {
+          date: new Date(),
+          change: `${localRepo.reponame} -> ${remoteRepo.full_name}`,
+        };
       }
 
       if (localRepo.private !== remoteRepo.private) {
-        console.log(`Repo ${remoteRepo.full_name} is now ${remoteRepo.private ? `private` : `public`}...`);
-        await RepositoryModel.updateOne(
-          { _id: localRepo._id },
-          {
-            private: remoteRepo.private
-          }
-        ).exec();
+        console.log(`Changing repo ${remoteRepo.full_name} visibility to ${remoteRepo.private ? `private` : `public`}...`);
+
+        updates.private = remoteRepo.private;
       }
 
       if (localRepo.forks_sum !== remoteRepo.forks_count) {
+        console.log(`Updating repo ${remoteRepo.full_name} forks...`);
+
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
-
-        console.log(`Repo ${remoteRepo.full_name} forks updated...`);
-        await RepositoryModel.updateOne(
-          { _id: localRepo._id },
-          {
-            $push: {
-              "forks.data": {
-                timestamp: today.toISOString(),
-                count: remoteRepo.forks_count - localRepo.forks_sum,
-              },
-            },
-          }
-        ).exec();
+        
+        updates.$push["forks.data"] = {
+          timestamp: today.toISOString(),
+          count: remoteRepo.forks_count - localRepo.forks_sum,
+        };
       }
 
-      await RepositoryModel.updateOne(
-        { _id: localRepo._id },
-        {
-          "forks.tree_updated": false,
-          "commits.updated": false,
-        }
-      ).exec();
+      await RepositoryModel.updateOne({ _id: localRepo._id }, updates).exec();
     }
   }); 
 }
