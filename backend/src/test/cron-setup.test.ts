@@ -5,22 +5,16 @@ import sinon, {SinonSandbox} from 'sinon';
 import { expect } from 'chai';
 import { connect, clearDatabase, closeDatabase } from './db-handler';
 
-import RepositoryModel, { Log, Referrer, Content, Repository } from "../models/Repository";
-import UserModel, { User } from "../models/User";
+import RepositoryModel from "../models/Repository";
+import UserModel from "../models/User";
 import TokenModel from '../models/Token';
 
 import GitHubApiCtrl from '../controllers/GitHubApiCtrl';
 import RepositoryCtrl from '../controllers/RepositoryCtrl';
+
 import dailyUpdate from '../config/updateRepositories';
-
+import { Response } from '../config/updateRepositories.types';
 import fs from 'fs';
-import { ObjectId } from 'mongoose';
-
-interface Response {
-  success: boolean,
-  status?: any,
-  data: any
-}
 
 describe(`cron-setup`, () => {
 
@@ -86,6 +80,7 @@ describe(`cron-setup`, () => {
         token_ref: t._id,
       }).save();
 
+      // @ts-ignore: getUserReposAtPage should return Promise<Response>
       sandbox.stub(GitHubApiCtrl, "getUserReposAtPage").callsFake(async function(token, page) : Promise<Response> {
         return { success: true, data: [] };
       });
@@ -123,10 +118,12 @@ describe(`cron-setup`, () => {
         reponame: `mock_test_repo`,
       }).save();
 
+      // @ts-ignore: getUserReposAtPage should return Promise<Response>
       sandbox.stub(GitHubApiCtrl, "getUserReposAtPage").callsFake(async function(token, page) : Promise<Response> {
         return { success: true, data: [] };
       });
 
+      // @ts-ignore: getRepoTraffic should return Promise<Response>
       sandbox.stub(RepositoryCtrl, "getRepoTraffic").callsFake(async function(reponame, token) : Promise<Response> {
         return { success: false, status: 404, data: 'dummy_string' };
       });
