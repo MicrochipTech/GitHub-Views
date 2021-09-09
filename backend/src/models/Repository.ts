@@ -34,12 +34,6 @@ export interface Views {
 
 export type Clones = Views;
 
-// interface Clones {
-//   total_count: number,
-//   total_uniques: number,
-//   data: Log[],
-// }
-
 export interface Forks {
   tree_updated: boolean,
   children: Fork[],
