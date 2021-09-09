@@ -87,12 +87,12 @@ async function* updateRepositoriesGenerator() {
           }
 
           /* Update traffic (views, clones, referrers, contents) */
-          const { status, data: traffic } = await RepositoryCtrl.getRepoTraffic(
+          const { success, data: traffic } = await RepositoryCtrl.getRepoTraffic(
             repoEntry.reponame,
             token
           );
 
-          const retry = yield status;
+          const retry = yield success;
           if (retry) {
             j--;
             continue;

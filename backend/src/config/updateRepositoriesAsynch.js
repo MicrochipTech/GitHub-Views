@@ -1,7 +1,7 @@
 const GitHubApiCtrl = require("../controllers/GitHubApiCtrl");
 const RepositoryCtrl = require("../controllers/RepositoryCtrl");
 const RepositoryModel = require("../models/Repository").default;
-const UserModel = require("../models/User");
+const UserModel = require("../models/User").default;
 const { logger, errorHandler } = require("../logs/logger");
 
 const repoHooks = require("../repoHooks").default;
@@ -215,9 +215,9 @@ async function updateRepositoriesAsynch() {
           );
         }
 
-        const { status, data: traffic } = repoTraffic;
+        const { success, data: traffic } = repoTraffic;
 
-        if (status === true) {
+        if (success === true) {
           RepositoryCtrl.updateRepoTraffic(repoEntry, traffic);
           processedRepos.push(repoEntry._id);
         } else {
@@ -240,14 +240,14 @@ async function updateRepositoriesAsynch() {
     // });
   }
 
-  try {
-    await Promise.all(userPromises);
-  } catch (err) {
-    errorHandler(
-      `${arguments.callee.name}: Error caught while updating repositories in database.`,
-      err
-    );
-  }
+  // try {
+  //   await Promise.all(userPromises);
+  // } catch (err) {
+  //   errorHandler(
+  //     `${arguments.callee.name}: Error caught while updating repositories in database.`,
+  //     err
+  //   );
+  // }
 
   const saveNewRepos = Object.keys(newRepoRequests).map((k) =>
     newRepoRequests[k].save().then((repo) => repoHooks.onRepoCreate?.(repo))
