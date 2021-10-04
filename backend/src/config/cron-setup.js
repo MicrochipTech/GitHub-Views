@@ -13,13 +13,13 @@ const to = require("await-to-js").default;
 /* Using back off is way slower because requests are made sequential.
 Still, being slower actually reduces the chance of making 5000+ requests per hour. */
 
-const MODES = {
+const DataCollectionStrategy = {
   LEGACY: 0,
   CURSORS: 1,
   BACK_OFF: 2
 }
 
-const UPDATE_MODE = MODES.CURSORS;
+const DATA_COLLECTION_STRATEGY = DataCollectionStrategy.LEGACY;
 
 async function setRepoUpdateCron() {
   logger.info(
@@ -39,8 +39,8 @@ async function setRepoUpdateCron() {
 
 async function updateRepositoriesTask() {
 
-  switch (UPDATE_MODE) {
-    case MODES.LEGACY:
+  switch (DATA_COLLECTION_STRATEGY) {
+    case DataCollectionStrategy.LEGACY:
       
       logger.info("LEGACY MODE");
       /* WARNING: running cleanDuplicates here is a dirty find
@@ -57,7 +57,7 @@ async function updateRepositoriesTask() {
       }
       break;
 
-    case MODES.CURSORS:
+    case DataCollectionStrategy.CURSORS:
 
       logger.info("CURSOR MODE");
       const [err] = await to(dailyUpdate());
@@ -69,7 +69,7 @@ async function updateRepositoriesTask() {
       }
       break;
 
-    case MODES.BACK_OFF:
+    case DataCollectionStrategy.BACK_OFF:
 
       logger.info("BACK-OFF MODE");
       const [err] = await to(runGenerator(updateRepositoriesGenerator()));
