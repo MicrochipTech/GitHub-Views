@@ -1,0 +1,96 @@
+{
+  "success": true,
+  "data": {
+    "views": [
+      { "timestamp": "2021-08-17T00:00:00Z", "count": 21, "uniques": 5 },
+      { "timestamp": "2021-08-18T00:00:00Z", "count": 37, "uniques": 6 },
+      { "timestamp": "2021-08-19T00:00:00Z", "count": 28, "uniques": 5 },
+      { "timestamp": "2021-08-20T00:00:00Z", "count": 12, "uniques": 4 },
+      { "timestamp": "2021-08-21T00:00:00Z", "count": 29, "uniques": 4 },
+      { "timestamp": "2021-08-22T00:00:00Z", "count": 12, "uniques": 3 },
+      { "timestamp": "2021-08-23T00:00:00Z", "count": 25, "uniques": 6 },
+      { "timestamp": "2021-08-24T00:00:00Z", "count": 20, "uniques": 4 },
+      { "timestamp": "2021-08-25T00:00:00Z", "count": 11, "uniques": 3 },
+      { "timestamp": "2021-08-26T00:00:00Z", "count": 8, "uniques": 2 },
+      { "timestamp": "2021-08-27T00:00:00Z", "count": 21, "uniques": 4 },
+      { "timestamp": "2021-08-28T00:00:00Z", "count": 3, "uniques": 2 },
+      { "timestamp": "2021-08-29T00:00:00Z", "count": 34, "uniques": 9 },
+      { "timestamp": "2021-08-30T00:00:00Z", "count": 4, "uniques": 2 },
+      { "timestamp": "2021-08-31T00:00:00Z", "count": 28, "uniques": 4 }
+    ],
+    "clones": [
+      { "timestamp": "2021-08-01T00:00:00Z", "count": 1, "uniques": 1 }
+    ],
+    "referrers": [
+      { "referrer": "github.com", "count": 14, "uniques": 10 },
+      { "referrer": "avrfreaks.net", "count": 7, "uniques": 5 },
+      { "referrer": "Google", "count": 4, "uniques": 4 },
+      { "referrer": "jira.microchip.com", "count": 4, "uniques": 1 },
+      { "referrer": "microchip.com", "count": 2, "uniques": 2 },
+      { "referrer": "DuckDuckGo", "count": 2, "uniques": 1 },
+      { "referrer": "tw.search.yahoo.com", "count": 1, "uniques": 1 }
+    ],
+    "contents": [
+      {
+        "path": "/mock_user/mock_repo",
+        "title": "mock_user/mock_repo: This repository contains examples of...",
+        "count": 83,
+        "uniques": 45
+      },
+      {
+        "path": "/mock_user/mock_repo/tree/master/Detect_Long_And_Short_Button_Press.X",
+        "title": "mock_repo/Detect_Long_And_Short_Button_Press.X at master · Mi...",
+        "count": 29,
+        "uniques": 15
+      },
+      {
+        "path": "/mock_user/mock_repo/blob/master/Detect_Long_And_Short_Button_Press.X/main.c",
+        "title": "mock_repo/main.c at master · mock_user/Getting_Started_wi...",
+        "count": 24,
+        "uniques": 14
+      },
+      {
+        "path": "/mock_user/mock_repo/tree/master/LED_Toggle.X",
+        "title": "mock_repo/LED_Toggle.X at master · mock_user/Getting_Star...",
+        "count": 23,
+        "uniques": 20
+      },
+      {
+        "path": "/mock_user/mock_repo/blob/master/LED_Toggle.X/main.c",
+        "title": "mock_repo/main.c at master · mock_user/Getting_Started_wi...",
+        "count": 23,
+        "uniques": 17
+      },
+      {
+        "path": "/mock_user/mock_repo/blob/master/Wake_Up_On_Button_Press.X/main.c",
+        "title": "mock_repo/main.c at master · mock_user/Getting_Started_wi...",
+        "count": 21,
+        "uniques": 15
+      },
+      {
+        "path": "/mock_user/mock_repo/tree/master/Wake_Up_On_Button_Press.X",
+        "title": "mock_repo/Wake_Up_On_Button_Press.X at master · mock_user...",
+        "count": 20,
+        "uniques": 13
+      },
+      {
+        "path": "/mock_user/mock_repo/tree/master/Detect_Long_And_Short_Button_Press.X/nbproject",
+        "title": "mock_repo/Detect_Long_And_Short_Button_Press.X/nbproject at m...",
+        "count": 4,
+        "uniques": 4
+      },
+      {
+        "path": "/mock_user/mock_repo/commit/7faa1402023b5782f3e377ac9470ca7d33a8e416",
+        "title": "Version 0.1 · mock_user/mock_repo@7faa140 · GitHub",
+        "count": 2,
+        "uniques": 2
+      },
+      {
+        "path": "/mock_user/mock_repo/find/master",
+        "title": "File Finder · GitHub",
+        "count": 2,
+        "uniques": 2
+      }
+    ]
+  }
+}

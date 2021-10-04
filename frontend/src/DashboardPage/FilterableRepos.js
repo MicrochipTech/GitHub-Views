@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import TextField from "@material-ui/core/TextField";
 import { FormControlLabel, Checkbox } from "@material-ui/core";
+import { useDebounce } from "use-debounce"
 
 function FilterableRepos({ allRepos, onChange, selectedRepos }) {
   const [values, setValues] = React.useState(
@@ -12,11 +13,13 @@ function FilterableRepos({ allRepos, onChange, selectedRepos }) {
   }, [selectedRepos]);
 
   const [searchAggFilter, setSearchAggFilter] = React.useState("");
-  const reposMatchingSearch = allRepos
+  const [searchFilterDebounced] = useDebounce(searchAggFilter, 1000)
+
+  const reposMatchingSearch = useMemo( () => allRepos
     .map((i, idx) => ({ ...i, originalIdx: idx }))
     .filter((d) =>
-      d.reponame.match(new RegExp(`${searchAggFilter.trim()}`, "i"))
-    );
+      d.reponame.match(new RegExp(`${searchFilterDebounced.trim()}`, "i"))
+    ), [searchFilterDebounced]);
 
   // console.log("reposMatchingSearch: ", reposMatchingSearch);
 

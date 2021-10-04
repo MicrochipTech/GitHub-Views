@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "husky": "^7.0.2"
+  },
+  "scripts": {
+    "prepare": "husky install",
+    "test": "cd backend && npm run test"
+  }
+}

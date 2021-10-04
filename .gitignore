@@ -1,8 +1,13 @@
+node_modules
 backend/node_modules
 backend/public/bundle.js
+backend/dist
 Makefile
 backup
 .env
 backup
 
 *.log
+
+CI
+Jenkinsfilek8s

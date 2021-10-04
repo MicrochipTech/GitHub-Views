@@ -1,33 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import produce from "immer";
 import axios from "axios";
 import { add0s } from "./utils";
 
+import { prepareRepo, prepareData } from "./utils";
+
 const DataContext = React.createContext();
-
-function prepareRepo(r) {
-  return {
-    ...r,
-    views: add0s(r.views),
-    clones: { ...r.clones, data: add0s(r.clones.data) },
-    forks: { ...r.forks, data: add0s(r.forks.data) },
-  };
-}
-
-function prepareData(data) {
-  data.zombieRepos = data.userRepos
-    .filter((r) => r.not_found)
-    .map(prepareRepo)
-    .concat(data.sharedRepos.filter((r) => r.not_found).map(prepareRepo));
-
-  data.userRepos = data.userRepos.filter((r) => !r.not_found).map(prepareRepo);
-
-  data.sharedRepos = data.sharedRepos
-    .filter((r) => !r.not_found)
-    .map(prepareRepo);
-
-  return data;
-}
 
 const reducer = (state, action) =>
   produce(state, (draft) => {
@@ -39,7 +17,8 @@ const reducer = (state, action) =>
         draft.loadingData = false;
         return draft;
       case "DATA_READY":
-        draft.repos = action.payload;
+        draft.repos = action.payload.dataToPlot;
+        draft.names = action.payload.names;
         draft.loadingData = false;
         return draft;
       case "UPDATE_CHART":
@@ -84,7 +63,10 @@ const reducer = (state, action) =>
 
       case "ADD_SHARED_REPO":
         const { repo } = action.payload;
-        draft.repos.sharedRepos.push({ ...repo, views: add0s(repo.views) });
+        draft.repos.sharedRepos.push({
+          ...repo,
+          views: { ...repo.views, data: add0s(repo.views.data) },
+        });
         return draft;
 
       case "REMOVE_SHARED_REPO":
@@ -101,31 +83,44 @@ const reducer = (state, action) =>
 
 const reposInit = {
   userRepos: [],
+  mchpRepos: [],
   sharedRepos: [],
   aggregateCharts: [],
   zombieRepos: [],
 };
 
 function DataProvider({ children }) {
+  const [page_no, setPageNo] = useState(0);
+  const [page_size, setPageSize] = useState(30);
+  const [search, setSearch] = useState("");
+
   const [data, dispatch] = React.useReducer(reducer, {
     repos: reposInit,
+    names: [],
     loadingData: true,
   });
 
-  React.useEffect(
-    (_) => {
-      const getData = async (_) => {
-        const res = await axios.get("/api/user/getData").catch((e) => {});
-        if (res != null) {
-          dispatch({ type: "DATA_READY", payload: prepareData(res.data) });
-        } else {
-          dispatch({ type: "DATA_READY", payload: reposInit });
-        }
-      };
-      getData();
-    },
-    [dispatch]
-  );
+  React.useEffect(() => {
+    const getData = async () => {
+      dispatch({ type: "START_LOADING" });
+      const r = await fetch(
+        `/api/user/getData?page_no=${page_no}&page_size=${page_size}&search=${search}`
+      );
+      const res = await r.json();
+      if (res != null) {
+        dispatch({
+          type: "DATA_READY",
+          payload: {
+            dataToPlot: prepareData(res.dataToPlot),
+            names: res.names,
+          },
+        });
+      } else {
+        dispatch({ type: "DATA_READY", payload: reposInit });
+      }
+    };
+    getData();
+  }, [dispatch, page_no, page_size, search]);
 
   const syncRepos = async (_) => {
     dispatch({ type: "START_LOADING" });
@@ -133,7 +128,13 @@ function DataProvider({ children }) {
     const json = await res.json();
     console.log(json);
     if (json.data) {
-      dispatch({ type: "DATA_READY", payload: prepareData(json.data) });
+      dispatch({
+        type: "DATA_READY",
+        payload: {
+          dataToPlot: prepareData(json.data.dataToPlot),
+          names: json.data.names,
+        },
+      });
     } else {
       dispatch({ type: "STOP_LOADING" });
     }
@@ -179,6 +180,12 @@ function DataProvider({ children }) {
         deleteAggregateChart,
         addSharedRepo,
         unfollowSharedRepo,
+        page_size,
+        page_no,
+        setPageNo,
+        setPageSize,
+        search,
+        setSearch,
       }}
     >
       {children}

@@ -6,10 +6,7 @@ WORKDIR /app
  
 # add `/app/node_modules/.bin` to $PATH
 ENV PATH /app/node_modules/.bin:$PATH
- 
-RUN apk update && apk upgrade && \
-    apk add --no-cache bash git openssh
- 
+
 # install and cache app dependencies
 COPY package.json /app/package.json
 RUN npm install
