@@ -4,6 +4,20 @@ import moment from "moment";
 import { add0s, compareDate, searchDate, downloadExcelFile } from "../utils";
 import DownloadFileConfigure from "./DownloadFileConfigure";
 
+function metadataCsv(concatRepos) {
+  const metadataFields = ["ide", "codeConfigurator", "deviceFamily"]; // TODO: get from userConfig
+  const tableHead = ["reponame", ...metadataFields];
+  const rows = [tableHead];
+  for (let i = 0; i < concatRepos.length; i += 1) {
+    rows.push([
+      concatRepos[i].reponame,
+      ...metadataFields.map((f) => concatRepos[i].metadata?.[f] ?? ""),
+    ]);
+  }
+
+  return rows;
+}
+
 function viewsCsv(concatRepos) {
   let minimumTimetamp = new Date();
   minimumTimetamp.setUTCHours(0, 0, 0, 0);
@@ -13,7 +27,7 @@ function viewsCsv(concatRepos) {
   const tableHead = ["reponame", "type"];
 
   for (let i = 0; i < concatRepos.length; i += 1) {
-    let firstRepoTimestamp = new Date(concatRepos[i].views[0].timestamp);
+    let firstRepoTimestamp = new Date(concatRepos[i].views.data[0].timestamp);
     if (firstRepoTimestamp < minimumTimetamp) {
       minimumTimetamp = firstRepoTimestamp;
     }
@@ -31,7 +45,7 @@ function viewsCsv(concatRepos) {
     let countsCSV = [concatRepos[i].reponame, "count"];
     let uniquesCSV = [concatRepos[i].reponame, "unique"];
 
-    const limitTimestamp = new Date(concatRepos[i].views[0].timestamp);
+    const limitTimestamp = new Date(concatRepos[i].views.data[0].timestamp);
     timeIndex = new Date(minimumTimetamp.getTime());
 
     while (timeIndex.getTime() < limitTimestamp.getTime()) {
@@ -41,8 +55,8 @@ function viewsCsv(concatRepos) {
       timeIndex.setUTCDate(timeIndex.getUTCDate() + 1);
     }
 
-    const views = concatRepos[i].views.map((h) => h.count);
-    const uniques = concatRepos[i].views.map((h) => h.uniques);
+    const views = concatRepos[i].views.data.map((h) => h.count);
+    const uniques = concatRepos[i].views.data.map((h) => h.uniques);
 
     countsCSV = countsCSV.concat(views);
     uniquesCSV = uniquesCSV.concat(uniques);
@@ -110,7 +124,7 @@ function forksCsv(concatRepos) {
 
   for (let i = 0; i < concatRepos.length; i += 1) {
     if (concatRepos[i].forks.data.length === 0) {
-      console.log(concatRepos[i].reponame);
+      // console.log(concatRepos[i].reponame);
       continue;
     }
     let firstRepoTimestamp = new Date(concatRepos[i].forks.data[0].timestamp);
@@ -128,7 +142,7 @@ function forksCsv(concatRepos) {
 
   for (let i = 0; i < concatRepos.length; i += 1) {
     if (concatRepos[i].forks.data.length === 0) {
-      console.log(concatRepos[i].reponame);
+      // console.log(concatRepos[i].reponame);
       continue;
     }
 
@@ -339,7 +353,7 @@ function contentsCsv(concatRepos) {
   return rows;
 }
 
-function downlaodDaily(concatRepos, sheets) {
+function downloadDaily(concatRepos, sheets) {
   const sheetsDict = {};
   sheets.forEach((s) => (sheetsDict[s.name] = s.checked));
 
@@ -370,7 +384,10 @@ function downlaodDaily(concatRepos, sheets) {
     rows = rows.concat([["Popular Content"]]).concat(contentTable);
   }
 
-  console.log("rows: ", rows);
+  const metadataTable = metadataCsv(concatRepos);
+  rows = rows.concat([["Metadata"]]).concat(metadataTable);
+
+  // console.log("rows: ", rows);
 
   downloadExcelFile(rows);
 }
@@ -405,12 +422,12 @@ function reduceToMonthly(rows, dateIndex) {
   };
 
   let rowsMapReduced = rows.map((element, index) => {
-    console.log(element.slice(0, dateIndex));
+    // console.log(element.slice(0, dateIndex));
     if (index === 0) {
       let months = element.reduce(reducer, element.slice(0, dateIndex));
       months = months.map((innerE, innerI) => {
         if (innerI >= dateIndex) {
-          console.log(innerE);
+          // console.log(innerE);
           return moment(innerE).format("MMM YYYY");
         }
         return innerE;
@@ -423,7 +440,7 @@ function reduceToMonthly(rows, dateIndex) {
         element.slice(0, dateIndex)
       );
 
-      console.log("debug: ", reducedCounts);
+      // console.log("debug: ", reducedCounts);
 
       reducedCounts = reducedCounts.map((innerE, innerI) => {
         if (innerI >= dateIndex) {
@@ -439,18 +456,18 @@ function reduceToMonthly(rows, dateIndex) {
   return rowsMapReduced;
 }
 
-function downlaodMonthly(concatRepos, sheets) {
+function downloadMonthly(concatRepos, sheets) {
   const sheetsDict = {};
   sheets.forEach((s) => (sheetsDict[s.name] = s.checked));
 
-  let trafficCSV = [];
+  let rows = [];
 
   if (sheetsDict["Views"]) {
     const viewsTable = viewsCsv(concatRepos);
     const reducedViewsTable = [["Views"]].concat(
       reduceToMonthly(viewsTable, 2)
     );
-    trafficCSV = trafficCSV.concat(reducedViewsTable);
+    rows = rows.concat(reducedViewsTable);
   }
 
   if (sheetsDict["Clones"]) {
@@ -458,7 +475,7 @@ function downlaodMonthly(concatRepos, sheets) {
     const reducedClonesTable = [["Clones"]].concat(
       reduceToMonthly(clonesTable, 2)
     );
-    trafficCSV = trafficCSV.concat(reducedClonesTable);
+    rows = rows.concat(reducedClonesTable);
   }
 
   if (sheetsDict["Forks"]) {
@@ -466,7 +483,7 @@ function downlaodMonthly(concatRepos, sheets) {
     const reducedForksTable = [["Forks"]].concat(
       reduceToMonthly(forksTable, 2)
     );
-    trafficCSV = trafficCSV.concat(reducedForksTable);
+    rows = rows.concat(reducedForksTable);
   }
 
   if (sheetsDict["Referring Sites"]) {
@@ -474,7 +491,7 @@ function downlaodMonthly(concatRepos, sheets) {
     const reducedReferrersTable = [["Referring Sites"]].concat(
       reduceToMonthly(referrersTable, 3)
     );
-    trafficCSV = trafficCSV.concat(reducedReferrersTable);
+    rows = rows.concat(reducedReferrersTable);
   }
 
   if (sheetsDict["Popular Content"]) {
@@ -482,11 +499,14 @@ function downlaodMonthly(concatRepos, sheets) {
     const reducedContentsTable = [["Popular Content"]].concat(
       reduceToMonthly(contentsTable, 4)
     );
-    trafficCSV = trafficCSV.concat(reducedContentsTable);
+    rows = rows.concat(reducedContentsTable);
   }
 
-  console.log(trafficCSV);
-  downloadExcelFile(trafficCSV);
+  const metadataTable = metadataCsv(concatRepos);
+  rows = rows.concat([["Metadata"]]).concat(metadataTable);
+
+  // console.log(trafficCSV);
+  downloadExcelFile(rows);
 }
 
 function DownloadButton() {
@@ -511,13 +531,13 @@ function DownloadButton() {
           onDownload={(selectedRepos, sheets) => {
             switch (viewToDownload) {
               case "monthly":
-                downlaodMonthly(selectedRepos, sheets);
+                downloadMonthly(selectedRepos, sheets);
                 break;
               case "daily":
-                downlaodDaily(selectedRepos, sheets);
+                downloadDaily(selectedRepos, sheets);
                 break;
               default:
-                throw Error("Unknown downlaod type requested.");
+                throw Error("Unknown download type requested.");
             }
           }}
           onClose={() => {

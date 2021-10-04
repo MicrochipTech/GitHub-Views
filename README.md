@@ -17,27 +17,56 @@
 
 Clone this repository.
 
-```sh
-$ git clone https://github.com/MicrochipTech/GitHub-Views.git
-```
-
 In the project folder create a file called `.env`. This file is used to configure the variables used by Docker. There is an example file called [.example.env](./.example.env) in this repo.
 
 The complete list of variables that have to be in your `.env` file is:
 
-- MONGO_USERNAME
-- MONGO_PASSWORD
-- MONGO_DATABASE
-- ME_CONFIG_BASICAUTH_USERNAME
-- ME_CONFIG_BASICAUTH_PASSWORD
-- GH_CLIENT_ID
-- GH_CLIENT_SECRET
-- TOKEN_ENC_KEY
-- TOKEN_SIG_KEY
+- ENVIRONMENT
+- MONGO_USERNAME=
+- MONGO_PASSWORD=
+- MONGO_DATABASE=
+- ME_CONFIG_BASICAUTH_USERNAME=
+- ME_CONFIG_BASICAUTH_PASSWORD=
+
+- GH_CLIENT_ID=
+- GH_CLIENT_SECRET=
+
+- MSFT_IDENTITY_META=
+- MSFT_CLIENT_ID=
+- MSFT_CLIENT_SECRET=
+- MSFT_REDIRECT_URL=
+- MSFT_COOKIE_ENC_KEY_1=
+- MSFT_COOKIE_ENC_KEY_2=
+- MSFT_COOKIE_ENC_IV_1=
+- MSFT_COOKIE_ENC_IV_2=
+
+- TOKEN_ENC_KEY=
+- TOKEN_SIG_KEY=
+
+- MAIL_SERVICE=
+- MAIL_AUTH_TYPE=
+- MAIL_AUTH_USER=
+- MAIL_AUTH_CLIENT_ID=
+- MAIL_AUTH_CLIENT_SECRET=
+- MAIL_AUTH_ACCESS_TOKEN=
+- MAIL_AUTH_REFRESH_TOKEN=
+- MAIL_AUTH_EXPIRES=
+- MAIL_ADMINS=
+
+- PUBLIC_REPO_OWNERS=
+- REACT_APP_FEEDBACK_MODAL_CONTENT=
 
 `MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_DATABASE`, `ME_CONFIG_BASICAUTH_USERNAME`, `ME_CONFIG_BASICAUTH_PASSWORD` values you can chose freely.
 
-Now [create a new GitHub OAuth application](https://developer.github.com/apps/building-github-apps/creating-a-github-app/). You will need the client id and the client secret associated with this GitHub OAuth application. These will be added in the `.env` file as the values of `GH_CLIENT_ID` and `GH_CLIENT_SECRET`.
+## Login
+
+### With Github
+
+[Create a new GitHub OAuth application](https://developer.github.com/apps/building-github-apps/creating-a-github-app/). You will need the client id and the client secret associated with this GitHub OAuth application. These will be added in the `.env` file as the values of `GH_CLIENT_ID` and `GH_CLIENT_SECRET`.
+
+### With Microsoft (@microchip.com email addresses only)
+
+In order to create a Microsoft Azure AD application follow the instruction in [their tutorial](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-v2-nodejs-webapp).
 
 `TOKEN_ENC_KEY` and `TOKEN_SIG_KEY` keys are used to protect the GitHub access tokens once saved in the database. Use the following commands to generate them:
 
@@ -45,6 +74,10 @@ Now [create a new GitHub OAuth application](https://developer.github.com/apps/bu
 $ openssl rand -base64 32
 $ openssl rand -base64 64
 ```
+
+The `PUBLIC_REPOS_OWNERS` variable is a space separated list of users and/or organizations whos repos will be visible by default to all users who used login with Microsoft options. Also those repos can be self-shared and are returned by the public repos endpoint.
+
+`REACT_APP_FEEDBACK_MODAL_CONTENT` is a varaible for the react app (this is visible on the client code) that holds the HTML code inside the modal for the feedback button.
 
 Install the npm dependencies and start the application.
 
@@ -54,6 +87,12 @@ $ npm i
 $ cd ..
 $ docker-compose up
 ```
+
+## Windows+Docker: frontend is not refreshing automatically on changes
+
+This issue can be fixed by adding a .env file in the frontend folder with the following cotent:
+
+`CHOKIDAR_USEPOLLING=true`
 
 Visit [http://loclahost:8000](http://loclahost:8000) and login with your GitHub account.
 

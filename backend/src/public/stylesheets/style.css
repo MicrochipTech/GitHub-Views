@@ -1,0 +1,95 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  background-color: #efefef;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Fjalla One", sans-serif;
+}
+
+* {
+  font-family: "Noto Sans", sans-serif;
+}
+
+a {
+  color: #00b7ff;
+}
+
+h2.first-page-title {
+  margin-top: 20px;
+}
+
+nav ul {
+  padding: 0px;
+  margin: 0px;
+}
+
+nav ul li {
+  list-style-type: none;
+  padding: 10px;
+}
+
+nav ul li:hover {
+  background-color: #dfdfdf;
+  cursor: pointer;
+}
+
+.share {
+  padding-right: 15px;
+}
+
+.share:hover {
+  cursor: pointer;
+  color: gray;
+}
+
+.add {
+  padding-right: 15px;
+}
+
+.padding-15 {
+  padding-right: 15px;
+}
+
+.margin-8 {
+  margin-right: 8px;
+}
+
+.add:hover {
+  cursor: pointer;
+  color: gray;
+}
+
+.repo-title {
+  word-break: break-all;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+div.container {
+  max-width: 1400px;
+}
+
+.actionButtons {
+  margin-left: auto;
+}
+
+#aggregateCharts {
+  display: none;
+}
+
+#sharedRepositories {
+  display: none;
+}
+
+div.localLoginWrapper {
+  width: 300px;
+}
+
+div.localLoginWrapper input,
+div.localLoginWrapper button {
+  margin: 5px;
+}

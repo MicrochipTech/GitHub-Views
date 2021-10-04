@@ -12,6 +12,7 @@ import Dashboard from "./DashboardPage/Dashboard";
 import Login from "./LoginPage/Login";
 import SingleRepo from "./SingleRepoPage/SingleRepo";
 import FeedbackBtn from "./common/FeedbackButton";
+import * as Sentry from "@sentry/react";
 
 import "./App.css";
 
@@ -48,11 +49,11 @@ function AppRouter() {
         {user && user.githubId ? (
           <Redirect exact from="/" to="/dashboard/userRepos" />
         ) : (
-          <Redirect exact from="/" to="/dashboard/sharedRepos" />
+          <Redirect exact from="/" to="/dashboard/mchpRepos" />
         )}
 
         <PrivateRoute
-          path="/dashboard/:page"
+          path="/dashboard/:section"
           component={Dashboard}
           authenticated={authenticated}
         />
@@ -75,11 +76,13 @@ function AppRouter() {
 
 function App() {
   return (
-    <AuthProvider>
-      <DataProvider>
-        <AppRouter />
-      </DataProvider>
-    </AuthProvider>
+    <Sentry.ErrorBoundary fallback={"An error has occurred"} showDialog>
+      <AuthProvider>
+        <DataProvider>
+          <AppRouter />
+        </DataProvider>
+      </AuthProvider>
+    </Sentry.ErrorBoundary>
   );
 }
 
