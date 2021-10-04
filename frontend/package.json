@@ -22,7 +22,7 @@
     "@types/react-js-pagination": "^3.0.4",
     "@types/react-router-dom": "^5.1.8",
     "@wojtekmaj/react-daterange-picker": "^2.5.0",
-    "axios": "^0.19.2",
+    "axios": "^0.21.2",
     "chart.js": "^2.9.3",
     "date-fns": "^1.29.0",
     "formik": "^2.2.9",
