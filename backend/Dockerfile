@@ -1,4 +1,4 @@
-FROM node:10
+FROM artifacts.microchip.com:7999/microchip/citd/nodejs:12.x
 
 WORKDIR /usr/app
 
