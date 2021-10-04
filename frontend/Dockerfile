@@ -1,5 +1,5 @@
 # base image
-FROM node:12.2.0-alpine
+FROM artifacts.microchip.com:7999/microchip/citd/nodejs:12.x
  
 # set working directory
 WORKDIR /app
@@ -7,8 +7,8 @@ WORKDIR /app
 # add `/app/node_modules/.bin` to $PATH
 ENV PATH /app/node_modules/.bin:$PATH
  
-RUN apk update && apk upgrade && \
-    apk add --no-cache bash git openssh
+# RUN apt-get update -y && apt-get upgrade -y && \
+#     apt-get add -y --no-cache bash git openssh
  
 # install and cache app dependencies
 COPY package.json /app/package.json

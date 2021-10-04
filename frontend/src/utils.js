@@ -30,7 +30,7 @@ function add0s(series) {
       series.push({
         timestamp: timeIndex.toISOString(),
         count: 0,
-        uniques: 0
+        uniques: 0,
       });
     } else {
       const currentTimestamp = new Date(series[index].timestamp);
@@ -39,7 +39,7 @@ function add0s(series) {
         series.splice(index, 0, {
           timestamp: timeIndex.toISOString(),
           count: 0,
-          uniques: 0
+          uniques: 0,
         });
       }
     }
@@ -83,7 +83,7 @@ function dailyToMonthlyReducer(dailyData) {
     return total;
   }
 
-  const reducerHof = th => (total, currentValue, currentIndex) => {
+  const reducerHof = (th) => (total, currentValue, currentIndex) => {
     if (currentIndex > 1) {
       let acc = total.pop();
 
@@ -118,7 +118,7 @@ function dailyToMonthlyReducer(dailyData) {
     } else {
       let reducedCounts = element.reduce(reducerHof(dailyData[1]), [
         element[0],
-        element[1]
+        element[1],
       ]);
 
       reducedCounts = reducedCounts.map((innerE, innerI) => {
@@ -135,7 +135,7 @@ function dailyToMonthlyReducer(dailyData) {
   return rowsMapReduced;
 }
 
-function downloadExcelFile(rows, name="repoTraffic.xlsx") {
+function downloadExcelFile(rows, name = "repoTraffic.xlsx") {
   const sheets = [];
   let currentSheet = -1;
 
@@ -143,7 +143,7 @@ function downloadExcelFile(rows, name="repoTraffic.xlsx") {
     if (rows[i].length <= 2) {
       sheets[++currentSheet] = {
         data: [],
-        name: rows[i][0]
+        name: rows[i][0],
       };
     } else {
       sheets[currentSheet].data.push(rows[i]);
@@ -151,7 +151,7 @@ function downloadExcelFile(rows, name="repoTraffic.xlsx") {
   }
 
   const wb = XLSX.utils.book_new();
-  sheets.forEach(s => {
+  sheets.forEach((s) => {
     const ws = XLSX.utils.json_to_sheet(s.data, { skipHeader: true });
     XLSX.utils.book_append_sheet(wb, ws, s.name);
   });
@@ -159,10 +159,39 @@ function downloadExcelFile(rows, name="repoTraffic.xlsx") {
   XLSX.writeFile(wb, name);
 }
 
+function prepareRepo(r) {
+  return {
+    ...r,
+    views: { ...r.views, data: add0s(r.views.data) },
+    clones: { ...r.clones, data: add0s(r.clones.data) },
+    forks: { ...r.forks, data: add0s(r.forks.data) },
+  };
+}
+
+function prepareData(data) {
+  data.zombieRepos = data.userRepos
+    .filter((r) => r.not_found)
+    .map(prepareRepo)
+    .concat(data.mchpRepos.filter((r) => r.not_found).map(prepareRepo))
+    .concat(data.sharedRepos.filter((r) => r.not_found).map(prepareRepo));
+
+  data.mchpRepos = data.mchpRepos.filter((r) => !r.not_found).map(prepareRepo);
+
+  data.userRepos = data.userRepos.filter((r) => !r.not_found).map(prepareRepo);
+
+  data.sharedRepos = data.sharedRepos
+    .filter((r) => !r.not_found)
+    .map(prepareRepo);
+
+  return data;
+}
+
 export {
   add0s,
   compareDate,
   searchDate,
   dailyToMonthlyReducer,
-  downloadExcelFile
+  downloadExcelFile,
+  prepareRepo,
+  prepareData,
 };

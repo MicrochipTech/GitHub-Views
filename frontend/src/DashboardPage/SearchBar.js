@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useEffect } from "react";
 import TextField from "@material-ui/core/TextField";
+import { useDebounce } from "use-debounce";
 
 function SearchBar({ onSearch, show }) {
-  const [searchValue, setSearchValue] = React.useState();
+  const [searchValue, setSearchValue] = React.useState(null);
+  const [debouncedSearchValue] = useDebounce(searchValue, 1000);
+
+  useEffect(() => {
+    if (debouncedSearchValue !== null) {
+      onSearch(debouncedSearchValue);
+    }
+  }, [debouncedSearchValue, onSearch]);
 
   if (!show) {
     return null;
@@ -12,18 +20,11 @@ function SearchBar({ onSearch, show }) {
     <TextField
       fullWidth
       style={{ marginTop: "20px", marginBottom: "10px" }}
-      onChange={e => {
+      onChange={(e) => {
         setSearchValue(e.target.value);
       }}
-      onKeyPress={e => {
-        if (e.key === "Enter") {
-          if (onSearch) {
-            onSearch(searchValue);
-          }
-        }
-      }}
       id="outlined-size-small"
-      label="Type and Press Enter to Search Repositories"
+      label="Type to Search Repositories"
       variant="outlined"
       size="small"
       value={searchValue}

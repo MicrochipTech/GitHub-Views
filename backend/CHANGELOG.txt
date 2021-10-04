@@ -1,0 +1,12 @@
+1.2.5: 10th of Nov. 2020
+ 
+ - Instead of querying for almost wholo repositories collection (when pulling new data) just query for an aggregate and tha  use targeted queries to do the updates (instead of modifing the in memory structure and calling .save() on it)
+
+1.2.6: 11th of Nov. 2020
+
+ - Enable non-double processing guard, only when processing (new data pull) had already been successfull.
+
+1.2.7: 11 of Nov. 2020
+
+ - Process users sequentially to avoid race conditions when multiple users share access to same repo.
+
