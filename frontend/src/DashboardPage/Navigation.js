@@ -4,33 +4,48 @@ import { AuthContext } from "../Auth";
 import { DataContext } from "../Data";
 import DownloadButton from "./DownloadButton";
 
-const PAGES = [
-  { title: "My Repositories", key: "userRepos" },
-  { title: "Shared Repositories", key: "sharedRepos" },
-  { title: "Aggregate Charts", key: "aggregateCharts" },
-];
-
 function Navigation() {
+  const PAGES = [
+    { title: "My Repositories", key: "userRepos" },
+    { title: "Shared Repositories", key: "sharedRepos" },
+    { title: "Aggregate Charts", key: "aggregateCharts" },
+  ];
+
   const history = useHistory();
   const { user } = React.useContext(AuthContext);
   const { syncRepos } = React.useContext(DataContext);
+
+  if (user.msft_oid) {
+    PAGES.unshift({
+      title: "Microchip Repos",
+      key: "mchpRepos",
+    });
+  }
 
   return (
     <nav>
       <ul>
         {PAGES.filter((p, idx) => {
-          if (idx === 0) {
+          if (p.key === "userRepos") {
             return user.githubId != null;
           }
           return true;
         }).map((p) => (
-          <li key={p.key} onClick={(_) => history.push(`/dashboard/${p.key}`)}>
+          <li
+            data-testid={p.key}
+            key={p.key}
+            onClick={(_) => history.push(`/dashboard/${p.key}`)}
+          >
             {p.title}
           </li>
         ))}
         <hr />
         <DownloadButton />
-        {user.githubId && <li onClick={syncRepos}>Sync Repositories</li>}
+        {user.githubId && (
+          <li data-testid="syncBtn" onClick={syncRepos}>
+            Sync Repositories
+          </li>
+        )}
       </ul>
     </nav>
   );

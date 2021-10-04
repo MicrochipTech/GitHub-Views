@@ -3,20 +3,31 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@babel/runtime": "^7.11.2",
     "@material-ui/core": "^4.9.1",
     "@material-ui/icons": "^4.9.1",
     "@material-ui/lab": "^4.0.0-alpha.42",
     "@material-ui/pickers": "^3.2.10",
     "@material-ui/styles": "^4.9.0",
+    "@sentry/browser": "^6.7.2",
+    "@sentry/react": "^6.7.2",
+    "@sentry/tracing": "^6.7.2",
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.4.0",
     "@testing-library/user-event": "^7.2.1",
+    "@types/jest": "^26.0.24",
+    "@types/node": "^16.4.10",
+    "@types/react": "^17.0.15",
+    "@types/react-dom": "^17.0.9",
+    "@types/react-js-pagination": "^3.0.4",
+    "@types/react-router-dom": "^5.1.8",
     "@wojtekmaj/react-daterange-picker": "^2.5.0",
     "axios": "^0.19.2",
     "chart.js": "^2.9.3",
     "date-fns": "^1.29.0",
+    "formik": "^2.2.9",
     "hsv-rgb": "^1.0.0",
-    "immer": "^5.3.4",
+    "immer": "^9.0.6",
     "lodash": "^4.17.15",
     "material-date-range-picker": "^0.1.1",
     "material-ui": "^1.0.0-beta.47",
@@ -33,6 +44,8 @@
     "react-scripts": "3.4.0",
     "typeface-fjalla-one": "0.0.72",
     "typeface-noto-sans": "0.0.72",
+    "typescript": "^4.3.5",
+    "use-debounce": "^7.0.0",
     "xlsx": "^0.16.6"
   },
   "scripts": {
@@ -55,5 +68,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "jest-fetch-mock": "^3.0.3"
   }
 }
