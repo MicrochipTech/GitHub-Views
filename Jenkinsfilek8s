@@ -1,0 +1,189 @@
+import java.time.*
+import java.time.format.DateTimeFormatter
+
+def now = LocalDateTime.now()
+
+def artifactoryURL = "artifacts.microchip.com:7999/microchip"
+def dockerRepoPath = "default"
+def dockerImages = ["backend", "frontend"]
+def dockerImage = "none"
+def dockerVersion = "latest"
+def dockerImageRegistryPath = "${artifactoryURL}/${dockerRepoPath}/${dockerImage}"
+
+pipeline {
+    agent {
+        kubernetes {
+            label 'agent-build'
+            yamlFile 'CI/k8s.yml'
+        }
+    }	
+	environment {
+		VESION_PATTERN = '\\d+\\.\\d+\\.\\d+'
+	}	
+    options {
+        timestamps ()
+        timeout(time: 40, unit: 'MINUTES')
+        ansiColor('xterm')
+    }
+    stages {
+        stage('Setup Docker Image Build') {
+            steps {
+                container('setup'){
+                    sh '''
+                        name=${GIT_URL#"https://bitbucket.microchip.com/"} && \
+                        name=${name#"scm/"} &&\
+                        name="$(echo $name | tr '[:upper:]' '[:lower:]')" && \
+                        name=${name%".git"} && \
+                        name=$(echo $name | sed -e s#~#users/#g) && echo -n $name > docker.repoPath
+                        cat docker.repoPath && echo ""
+                    '''
+                    script {
+                        dockerRepoPath = sh(returnStdout: true, script: 'cat docker.repoPath')
+                        // dockerImageRegistryPath = "artifacts.microchip.com:7999/microchip/${dockerRepoPath}/${dockerImage}:${dockerVersion}"
+                    }
+                    }
+                }
+            }
+        stage('Testing Dockerfile') {
+            when { 
+                allOf {
+                    not { branch 'master' }
+                    not { branch 'develop' }
+                }
+            }
+            steps {
+                container('kaniko') {
+                    script {
+                        for (String item : dockerImages) {
+                            echo "running in script()"
+                            dockerImage = item
+                            dockerImageRegistryPath = "$artifactoryURL/$dockerRepoPath/$dockerImage"							
+							dockerVersion = getVersion(dockerImage)
+							
+                            echo """
+                            Using these variables
+                            artifactoryURL: $artifactoryURL
+                            dockerRepoPath: $dockerRepoPath
+                            dockerImage   : $dockerImage
+                            dockerVersion : $dockerVersion
+                            """
+			    def ideImageName = "artifacts.microchip.com:7999/${env.IDE_CITD_DOCKER_ARTIFACTORY_PATH}"
+                            withCredentials([usernamePassword(credentialsId: 'artifacts.microchip.com', usernameVariable: 'USER_NAME', passwordVariable: 'USER_PASS' )]){
+                                    writeFile(file: 'config.json',
+                                      text:"""{"auths":{"${ideImageName}":\
+                                          {"username":"${USER_NAME}","password":"${USER_PASS}"}}}""")
+                                    sh "mkdir -p /kaniko/.docker && mv config.json /kaniko/.docker/config.json"
+                            sh(script: """ 
+                                /kaniko/executor \
+                                --context ${WORKSPACE}/${dockerImage} \
+                                --dockerfile Dockerfile \
+                                --cache=true \
+                                --cache-repo=$dockerImageRegistryPath \
+                                --no-push 
+
+                            """, returnStdout: true)
+                            }
+                            echo now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"))
+                        }
+                    }
+                }
+            }
+        }
+        stage('DEV: Build and push Dockerfile') {
+            when { 
+                anyOf {
+                    branch 'develop' 
+                    branch 'dev'
+                    branch 'test'
+                    branch 'staging'
+                } 
+            }
+            steps {
+                container('kaniko') {
+                    script {
+                        for (String item : dockerImages) {
+                            echo "running in script()"
+                            dockerImage = item
+                            dockerImageRegistryPath = "$artifactoryURL/$dockerRepoPath/$dockerImage"
+							dockerVersion = getVersion(dockerImage)
+							
+                            echo """
+                            Building $dockerImage
+                            The current WORKSPACE is: ${WORKSPACE}
+                            The Docker Repository Path is: ${dockerRepoPath}
+                            The Docker Image to build is: ${dockerImage}
+                            The Artifactory Push path is: ${dockerImageRegistryPath}
+                            Another echo: $artifactoryURL/$dockerRepoPath/$dockerImage:$dockerVersion
+                            """;
+                            sh(script: """ 
+                                /kaniko/executor \
+                                --context ${WORKSPACE}/${dockerImage} \
+                                --dockerfile Dockerfile \
+                                --destination=$dockerImageRegistryPath:latest \
+                                --destination=$dockerImageRegistryPath:dev \
+                                --destination=$dockerImageRegistryPath:$BRANCH_NAME \
+                                --destination=$dockerImageRegistryPath:$dockerVersion
+
+                            """, returnStdout: true)
+                            echo now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"))
+                        }
+                    }
+                }
+            }
+        }
+        stage('PROD: Build and push Dockerfile') {
+            when { branch 'master'}
+            steps{
+                container('kaniko') {
+                    script {
+                        for (String item : dockerImages) {
+                            echo "running in script()"
+                            dockerImage = item
+                            dockerImageRegistryPath = "$artifactoryURL/$dockerRepoPath/$dockerImage"
+							dockerVersion = getVersion(dockerImage)
+							
+                            echo """
+                            Building $dockerImage
+                            The current WORKSPACE is: ${WORKSPACE}
+                            The Docker Repository Path is: ${dockerRepoPath}
+                            The Docker Image to build is: ${dockerImage}
+                            The Artifactory Push path is: ${dockerImageRegistryPath}
+                            Another echo: $artifactoryURL/$dockerRepoPath/$dockerImage:$dockerVersion
+                            """;
+                            def ideImageName = "artifacts.microchip.com:7999/${env.IDE_CITD_DOCKER_ARTIFACTORY_PATH}"
+                            withCredentials([usernamePassword(credentialsId: 'artifacts.microchip.com', usernameVariable: 'USER_NAME', passwordVariable: 'USER_PASS' )]){
+                                    writeFile(file: 'config.json',
+                                      text:"""{"auths":{"${ideImageName}":\
+                                          {"username":"${USER_NAME}","password":"${USER_PASS}"}}}""")
+                                    sh "mkdir -p /kaniko/.docker && mv config.json /kaniko/.docker/config.json"
+                                    sh(script: """ 
+                                        /kaniko/executor \
+                                        --context ${WORKSPACE}/${dockerImage} \
+                                        --dockerfile Dockerfile \
+                                        --destination=$dockerImageRegistryPath:latest \
+                                        --destination=$dockerImageRegistryPath:prod \
+                                        --destination=$dockerImageRegistryPath:$dockerVersion \
+                                        --destination=$dockerImageRegistryPath:$BRANCH_NAME
+
+                                    """, returnStdout: true)
+                            }  
+                            echo now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+def getVersion(String dockerImage) {	
+	def versionFile = findFiles(glob: "${dockerImage}/**/VERSION.js")
+	def version = 'latest'
+	def versionString = null
+	for(String file : versionFile) {
+		versionString = readFile "${file}"
+		def versionList = (versionString =~ "$VESION_PATTERN")
+		version = versionList ? versionList[0]:'latest'
+	}
+	return version
+}
